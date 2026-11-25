@@ -15,6 +15,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
@@ -23,9 +27,18 @@ body {
     #070b12;
 }
 
-button {
+button,
+input {
   font-family: inherit;
+}
+
+button {
   cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .app {
@@ -40,8 +53,9 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 15px;
   border-bottom: 1px solid #1b354a;
-  background: rgba(5, 10, 18, 0.92);
+  background: rgba(5, 10, 18, 0.95);
 }
 
 .brand {
@@ -76,6 +90,13 @@ button {
   letter-spacing: 3px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .login-button {
   padding: 11px 20px;
   color: #00d9ff;
@@ -84,11 +105,25 @@ button {
   border-radius: 5px;
   font-weight: 700;
   letter-spacing: 1px;
+  transition: 0.2s;
 }
 
 .login-button:hover {
   background: #00bce8;
   color: #07101b;
+}
+
+.user-email {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #9dcce0;
+  font-size: 15px;
+}
+
+.header-status {
+  color: #00cfff;
+  font-size: 13px;
 }
 
 .hero {
@@ -227,6 +262,245 @@ button {
   font-size: 16px;
 }
 
+/* MENSAJES */
+
+.global-message {
+  max-width: 700px;
+  margin: 0 auto 25px;
+  padding: 14px 18px;
+  border-radius: 7px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.global-message button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+}
+
+.success-message {
+  color: #8affc2;
+  background: #0c3326;
+  border: 1px solid #18784f;
+}
+
+.error-message {
+  color: #ffaaaa;
+  background: #38191e;
+  border: 1px solid #873641;
+}
+
+/* CUENTA ACTIVA */
+
+.account-section {
+  max-width: 700px;
+  margin: 0 auto 60px;
+  padding: 0 20px;
+}
+
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  background: linear-gradient(145deg, #102d31, #0c1721);
+  border: 1px solid #087c80;
+  border-radius: 10px;
+}
+
+.account-icon {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #00d9a5;
+  color: #061b18;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.account-card h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  color: #00e4c1;
+}
+
+.account-card p {
+  color: #b5c9d5;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+
+/* VENTANA DE AUTENTICACIÓN */
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  overflow-y: auto;
+  background: rgba(0, 5, 12, 0.88);
+  backdrop-filter: blur(9px);
+  animation: fadeIn 0.2s ease;
+}
+
+.auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 38px 32px;
+  background:
+    radial-gradient(ellipse at top, #12314b 0%, transparent 65%),
+    #0b1420;
+  border: 1px solid #087ca8;
+  border-radius: 14px;
+  box-shadow:
+    0 0 45px #00bfff25,
+    inset 0 0 25px #00bfff08;
+  animation: slideUp 0.3s ease;
+}
+
+.auth-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 35px;
+  height: 35px;
+  border: none;
+  background: transparent;
+  color: #8caabe;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.auth-close:hover {
+  color: #00d9ff;
+}
+
+.auth-logo {
+  width: 65px;
+  height: 65px;
+  margin: 0 auto 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #00d9ff, #075a9c);
+  color: #06101b;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 25px;
+  box-shadow: 0 0 25px #00bfff55;
+}
+
+.auth-card h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  text-align: center;
+  color: #eaf9ff;
+  letter-spacing: 1px;
+}
+
+.auth-description {
+  margin: 12px 0 28px;
+  color: #91aabd;
+  font-size: 16px;
+  text-align: center;
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-card label {
+  margin: 16px 0 8px;
+  color: #7edfff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.auth-card input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  outline: none;
+  color: #f0f8ff;
+  background: #08111c;
+  border: 1px solid #28445c;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: 0.2s;
+}
+
+.auth-card input:focus {
+  border-color: #00cfff;
+  box-shadow: 0 0 12px #00bfff22;
+}
+
+.auth-card input::placeholder {
+  color: #62788c;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 49px;
+  margin-top: 25px;
+  border: 1px solid #00d9ff;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #00cfff, #0876bb);
+  color: #06111b;
+  font-weight: 900;
+  letter-spacing: 2px;
+  transition: 0.2s;
+}
+
+.auth-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px #00bfff55;
+}
+
+.auth-links {
+  margin-top: 22px;
+  text-align: center;
+  color: #9bb0c2;
+  font-size: 15px;
+}
+
+.auth-links p {
+  margin-top: 16px;
+}
+
+.auth-links button {
+  border: none;
+  background: transparent;
+  color: #00cfff;
+  font-weight: 700;
+}
+
+.auth-links button:hover {
+  text-decoration: underline;
+}
+
+.auth-message {
+  margin-top: 16px;
+  padding: 11px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* PIE DE PÁGINA */
+
 footer {
   padding: 28px 15px;
   text-align: center;
@@ -244,9 +518,33 @@ footer p {
   font-size: 13px;
 }
 
+/* ANIMACIONES */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* DISEÑO PARA MÓVILES */
+
 @media (max-width: 700px) {
   .header {
     padding: 14px 16px;
+  }
+
+  .brand {
+    gap: 9px;
   }
 
   .brand-icon {
@@ -263,9 +561,17 @@ footer p {
     letter-spacing: 2px;
   }
 
+  .header-actions {
+    gap: 6px;
+  }
+
   .login-button {
     padding: 10px 12px;
-    font-size: 11px;
+    font-size: 10px;
+  }
+
+  .user-email {
+    display: none;
   }
 
   .hero {
@@ -290,5 +596,32 @@ footer p {
 
   .section-card {
     min-height: 145px;
+  }
+
+  .auth-card {
+    padding: 35px 22px;
+  }
+
+  .auth-card h2 {
+    font-size: 18px;
+  }
+
+  .global-message {
+    margin: 0 15px 25px;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand h1 {
+    font-size: 13px;
+  }
+
+  .brand p {
+    letter-spacing: 1px;
+  }
+
+  .login-button {
+    padding: 9px 8px;
+    font-size: 9px;
   }
 }
