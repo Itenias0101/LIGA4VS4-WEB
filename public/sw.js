@@ -1,3 +1,4 @@
+
 const CACHE_NAME = "liga4vs4-shell-v1";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
 
@@ -32,12 +33,10 @@ self.addEventListener("fetch", (event) => {
       .then((response) => {
         if (response.ok && response.type === "basic") {
           const copy = response.clone();
-
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, copy);
           });
         }
-
         return response;
       })
       .catch(() =>
