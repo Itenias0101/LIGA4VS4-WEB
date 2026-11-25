@@ -21,6 +21,42 @@ import {
 
 import { auth, db } from "./firebase";
 
+// =========================================
+// FUENTES DE DATOS
+// =========================================
+
+const MATCHES_CSV_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?gid=0&single=true&output=csv";
+
+const PLAYERS_CSV_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?gid=59010702&single=true&output=csv";
+
+const REFRESH_INTERVAL = 60_000;
+
+const TEAMS = [
+  "ETERNITY",
+  "2D",
+  "KINGS",
+  "Lycoris",
+  "THE BUTCHERS",
+  "NoMercy"
+];
+
+const TEAM_SHIELDS = {
+  ETERNITY:
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYl6TgvLcJM9b2_xWsgA4t9s8VuC5aWOSErtviQ8wEvhmttljdUlNwp7qCexlHqL7Sng_gzskKwJy8eCxLvKrVeUKEARd71h11TJwINVO1UwOOGTih1KTgGXC1DyQpjxOVdsp3pH98XoSYirIAXiDXYPNz7uRbF_QWWCXbl1XnYazwYlh2vA7HUy3iY-A/s1600/1000112929.png",
+  "2D":
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgAoVpdILdUTIb7rlQbu-jmPpZN572bjvR8JcPaLzhgTuh95IggZZXrdheg2El1Cn_0h5soqHk47deBHVEfKuxlNxs04KdFpkMLCYMuiDr9HGl7WU2Ruhv3uUJqxbLVec_dy34nMHqLwJggGw8R0F2xwX7fFy6dGSBiswLIDmUV3wmyDlKdmHX3XkOVWRM/s1600/1000112780.png",
+  KINGS:
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9_Js8cNIVeuf_7SJEav59OvTKG1IQ_IXETMNG34i3TeRUfnwl1SL9tif0aqeDrUuMyV3vedMzMYbDWsofYU1xZQoSCAd04hmyFavJWbQl0i1m1iiuV3-y0YxC86iuwuRz1is6ayV2xTnq8h1S3V_4xEPbRq0amTN-vMA8rU5IF0nlkkcA7hD8fWFc6jI/s1341/1000112984.png",
+  LYCORIS:
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNFsU2keWU_HRggeS0rrLDN6LEtBCv66kskDClCREshy_DQ9afWBbBGY4PVlOmaDYb18bMj7gJMv0zvJ50gCS4WojOLUKN8WvwM5mpkfxFULCuBWRew1NJowEsYsyP-7NxXBRt-LzxZ5Jnid01yvcnhczJT3qAW-VbhB4aywBnlr5odppit-f9P5GW_y8/s896/1000112788.png",
+  "THE BUTCHERS":
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifCUkuhD1Rotz7ryg2x5csfz6tdYpBMzJjbHTxS-6q-UlccYFeG6Dn5SLVOlG9FAAY1d8oGURG5QpaDMSyeG6nN87bEbbAtjr14gQn4CKj36yhUBpTcMjLyj6C8LC9Lsrzme520bSRVvvQXYV7DAMs2zA5lN-SwfmN5EMeHp1QL8XxcaX9SafZBBCI89k/s1341/1000138092.png",
+  NOMERCY:
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcBDOqw3eSzt2_VLN1SyblE3rXVWh5Yw9-fvuw4ctVeA9zAt3KGub2nMn8z0wAHyTN7Zy14Q8JS1F8ZIxDJwfJfRNNKtt9iz0LeM2qG7A_yJCQ_2Op4qOu13A7gufB-3sHjdkNmZhEX4az8Urq-JRM6fkNzMAShQI1cplKe8IHKubVzAB-cVobGOoUYYQ/s1600/1000113547.png"
+};
+
 const getFirebaseError = (error) => {
   const errors = {
     "auth/invalid-email": "El correo electrónico no es válido.",
@@ -55,6 +91,257 @@ const formatNotificationDate = (timestamp) => {
     return "";
   }
 };
+
+// =========================================
+// UTILIDADES CSV
+// =========================================
+
+const parseCSV = (text) => {
+  const rows = [];
+  let row = [];
+  let value = "";
+  let insideQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"' && insideQuotes && next === '"') {
+      value += '"';
+      i += 1;
+    } else if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if (char === "," && !insideQuotes) {
+      row.push(value.trim());
+      value = "";
+    } else if ((char === "\n" || char === "\r") && !insideQuotes) {
+      if (char === "\r" && next === "\n") i += 1;
+
+      row.push(value.trim());
+
+      if (row.some((cell) => cell !== "")) {
+        rows.push(row);
+      }
+
+      row = [];
+      value = "";
+    } else {
+      value += char;
+    }
+  }
+
+  row.push(value.trim());
+
+  if (row.some((cell) => cell !== "")) {
+    rows.push(row);
+  }
+
+  return rows;
+};
+
+const normalizeText = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/[_\-\s]/g, "");
+
+const normalizeTeam = (name) => {
+  const normalized = normalizeText(name);
+
+  switch (normalized) {
+    case "ETERNITY":
+      return "ETERNITY";
+    case "2D":
+      return "2D";
+    case "KINGS":
+      return "KINGS";
+    case "LYCORIS":
+    case "LYCORYS":
+      return "Lycoris";
+    case "THEBUTCHERS":
+      return "THE BUTCHERS";
+    case "NOMERCY":
+      return "NoMercy";
+    default:
+      return String(name || "").trim();
+  }
+};
+
+const findHeaderIndex = (headers, candidates) =>
+  headers.findIndex((header) =>
+    candidates.includes(normalizeText(header))
+  );
+
+const parseScore = (value) => {
+  const clean = String(value ?? "").trim();
+
+  if (clean === "") return null;
+
+  const number = Number(clean);
+
+  return Number.isInteger(number) ? number : null;
+};
+
+const isFinishedMatch = (match) => {
+  const score1 = parseScore(match.score1);
+  const score2 = parseScore(match.score2);
+
+  return (
+    score1 !== null &&
+    score2 !== null &&
+    score1 >= 0 &&
+    score1 <= 5 &&
+    score2 >= 0 &&
+    score2 <= 5 &&
+    score1 + score2 === 5
+  );
+};
+
+const parseMatchesCSV = (csvText) => {
+  const rows = parseCSV(csvText);
+
+  if (rows.length < 2) return [];
+
+  const headers = rows[0];
+
+  const jornadaIndex = findHeaderIndex(headers, [
+    "JORNADA",
+    "FECHA",
+    "MATCHDAY"
+  ]);
+
+  const team1Index = findHeaderIndex(headers, [
+    "EQUIPO1",
+    "EQUIPOA",
+    "LOCAL",
+    "TEAM1"
+  ]);
+
+  const score1Index = findHeaderIndex(headers, [
+    "PUNTOS1",
+    "PUNTAJE1",
+    "MARCADOR1",
+    "SCORE1"
+  ]);
+
+  const team2Index = findHeaderIndex(headers, [
+    "EQUIPO2",
+    "EQUIPOB",
+    "VISITANTE",
+    "TEAM2"
+  ]);
+
+  const score2Index = findHeaderIndex(headers, [
+    "PUNTOS2",
+    "PUNTAJE2",
+    "MARCADOR2",
+    "SCORE2"
+  ]);
+
+  const hasRecognizedHeaders =
+    jornadaIndex >= 0 &&
+    team1Index >= 0 &&
+    team2Index >= 0;
+
+  const indexes = hasRecognizedHeaders
+    ? {
+        jornada: jornadaIndex,
+        team1: team1Index,
+        score1: score1Index,
+        team2: team2Index,
+        score2: score2Index
+      }
+    : {
+        jornada: 0,
+        team1: 1,
+        score1: 2,
+        team2: 3,
+        score2: 4
+      };
+
+  return rows.slice(1).map((row) => ({
+    jornada: row[indexes.jornada] || "",
+    team1: normalizeTeam(row[indexes.team1]),
+    score1:
+      indexes.score1 >= 0 ? row[indexes.score1] || "" : "",
+    team2: normalizeTeam(row[indexes.team2]),
+    score2:
+      indexes.score2 >= 0 ? row[indexes.score2] || "" : ""
+  })).filter(
+    (match) => match.jornada && match.team1 && match.team2
+  );
+};
+
+const getCurrentMatchday = (matches) => {
+  const groups = [];
+
+  matches.forEach((match) => {
+    let group = groups.find(
+      (item) => item.jornada === match.jornada
+    );
+
+    if (!group) {
+      group = {
+        jornada: match.jornada,
+        matches: []
+      };
+
+      groups.push(group);
+    }
+
+    group.matches.push(match);
+  });
+
+  return (
+    groups.find((group) =>
+      group.matches.some((match) => !isFinishedMatch(match))
+    ) || null
+  );
+};
+
+const parsePlayersCSV = (csvText) => {
+  const rows = parseCSV(csvText);
+
+  if (rows.length < 2) return [];
+
+  const headers = rows[0];
+
+  const teamIndex = findHeaderIndex(headers, [
+    "EQUIPO",
+    "TEAM",
+    "CLUB"
+  ]);
+
+  const playerIndex = findHeaderIndex(headers, [
+    "JUGADOR",
+    "NICK",
+    "NOMBRE",
+    "PLAYER",
+    "USUARIO"
+  ]);
+
+  if (teamIndex < 0 || playerIndex < 0) {
+    return [];
+  }
+
+  return rows.slice(1)
+    .map((row) => ({
+      team: normalizeTeam(row[teamIndex]),
+      player: String(row[playerIndex] || "").trim()
+    }))
+    .filter((player) => player.team && player.player)
+    .sort((a, b) =>
+      a.player.localeCompare(b.player, "es", {
+        sensitivity: "base"
+      })
+    );
+};
+
+// =========================================
+// MENÚ Y NAVEGACIÓN
+// =========================================
 
 const menuItems = [
   {
@@ -112,6 +399,10 @@ const sectionNames = {
   publicaciones: "JUGADAS DESTACADAS"
 };
 
+// =========================================
+// COMPONENTE PRINCIPAL
+// =========================================
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -126,7 +417,141 @@ export default function App() {
   const [processing, setProcessing] = useState(false);
 
   const [activeSection, setActiveSection] = useState("inicio");
+  const [showCompetitionMenu, setShowCompetitionMenu] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // =========================================
+  // DATOS DE LA PANTALLA PRINCIPAL
+  // =========================================
+
+  const [announcement, setAnnouncement] = useState({
+    active: false,
+    message: ""
+  });
+
+  const [matches, setMatches] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [matchesLoading, setMatchesLoading] = useState(true);
+  const [matchesError, setMatchesError] = useState("");
+  const [expandedTeams, setExpandedTeams] = useState({});
+
+  useEffect(() => {
+    const announcementRef = doc(
+      db,
+      "configuracion",
+      "barra_avisos"
+    );
+
+    const unsubscribe = onSnapshot(
+      announcementRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setAnnouncement({
+            active: false,
+            message: ""
+          });
+          return;
+        }
+
+        const data = snapshot.data();
+        const text = String(data.mensaje || "").trim();
+
+        setAnnouncement({
+          active: data.activo === true && text.length > 0,
+          message: text
+        });
+      },
+      (firebaseError) => {
+        console.error(
+          "Error al escuchar la barra de avisos:",
+          firebaseError
+        );
+
+        setAnnouncement({
+          active: false,
+          message: ""
+        });
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCompetitionData = async () => {
+      try {
+        const [matchesResponse, playersResponse] = await Promise.all([
+          fetch(MATCHES_CSV_URL, { cache: "no-store" }),
+          fetch(PLAYERS_CSV_URL, { cache: "no-store" })
+        ]);
+
+        if (!matchesResponse.ok) {
+          throw new Error(
+            `No se pudo descargar el CSV de enfrentamientos (${matchesResponse.status}).`
+          );
+        }
+
+        if (!playersResponse.ok) {
+          throw new Error(
+            `No se pudo descargar el CSV de jugadores (${playersResponse.status}).`
+          );
+        }
+
+        const [matchesText, playersText] = await Promise.all([
+          matchesResponse.text(),
+          playersResponse.text()
+        ]);
+
+        const parsedMatches = parseMatchesCSV(matchesText);
+        const parsedPlayers = parsePlayersCSV(playersText);
+
+        if (!mounted) return;
+
+        setMatches(parsedMatches);
+        setPlayers(parsedPlayers);
+        setMatchesError("");
+        setMatchesLoading(false);
+      } catch (err) {
+        console.error("Error cargando datos de competición:", err);
+
+        if (!mounted) return;
+
+        setMatchesError(
+          "No se pudieron cargar los enfrentamientos. Comprueba la conexión con Google Sheets."
+        );
+        setMatchesLoading(false);
+      }
+    };
+
+    loadCompetitionData();
+
+    const interval = window.setInterval(
+      loadCompetitionData,
+      REFRESH_INTERVAL
+    );
+
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const currentMatchday = getCurrentMatchday(matches);
+
+  const toggleTeamRoster = (team) => {
+    setExpandedTeams((previous) => ({
+      ...previous,
+      [team]: !previous[team]
+    }));
+  };
+
+  const getPlayersForTeam = (team) =>
+    players.filter(
+      (player) =>
+        normalizeText(player.team) === normalizeText(team)
+    );
 
   // =========================================
   // NOTIFICACIONES FIRESTORE
@@ -193,7 +618,7 @@ export default function App() {
   }, [user]);
 
   const markNotificationAsRead = async (notification) => {
-    if (notification.leida === true || notificationAction) return;
+    if (notification.leida === true || notificationAction || !user) return;
 
     try {
       const notificationRef = doc(
@@ -217,7 +642,7 @@ export default function App() {
   };
 
   const deleteNotification = async (notificationId) => {
-    if (notificationAction) return;
+    if (notificationAction || !user) return;
 
     const confirmed = window.confirm(
       "¿Deseas eliminar esta notificación?"
@@ -249,7 +674,13 @@ export default function App() {
   };
 
   const deleteAllNotifications = async () => {
-    if (notifications.length === 0 || notificationAction) return;
+    if (
+      notifications.length === 0 ||
+      notificationAction ||
+      !user
+    ) {
+      return;
+    }
 
     const confirmed = window.confirm(
       "¿Deseas eliminar todas tus notificaciones? Esta acción no se puede deshacer."
@@ -268,8 +699,6 @@ export default function App() {
         "notificaciones"
       );
 
-      // Firestore permite hasta 500 operaciones por lote.
-      // Se utilizan lotes de 450 para mantener un margen de seguridad.
       const chunks = [];
 
       for (let i = 0; i < notifications.length; i += 450) {
@@ -291,7 +720,11 @@ export default function App() {
         await batch.commit();
       }
     } catch (err) {
-      console.error("Error al eliminar todas las notificaciones:", err);
+      console.error(
+        "Error al eliminar todas las notificaciones:",
+        err
+      );
+
       setNotificationError(
         "No se pudieron eliminar todas las notificaciones."
       );
@@ -328,9 +761,15 @@ export default function App() {
     setProcessing(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password
+      );
+
       setMode("home");
       setActiveSection("inicio");
+      setShowCompetitionMenu(false);
       setPassword("");
     } catch (err) {
       setError(getFirebaseError(err));
@@ -357,9 +796,15 @@ export default function App() {
     setProcessing(true);
 
     try {
-      await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await createUserWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password
+      );
+
       setMode("home");
       setActiveSection("inicio");
+      setShowCompetitionMenu(false);
       setPassword("");
       setConfirmPassword("");
       setMessage("¡Tu cuenta se creó correctamente!");
@@ -384,6 +829,7 @@ export default function App() {
 
     try {
       await sendPasswordResetEmail(auth, email.trim());
+
       setMessage(
         "Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña."
       );
@@ -397,19 +843,43 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+
       setMode("home");
       setActiveSection("inicio");
+      setShowCompetitionMenu(false);
       setNotificationsOpen(false);
       setNotifications([]);
       setMessage("Has cerrado sesión correctamente.");
       setError("");
     } catch {
-      setError("No se pudo cerrar la sesión. Inténtalo nuevamente.");
+      setError(
+        "No se pudo cerrar la sesión. Inténtalo nuevamente."
+      );
     }
+  };
+
+  const enterChampionship = () => {
+    if (!user) {
+      openMode("login");
+      return;
+    }
+
+    setShowCompetitionMenu(true);
+    setActiveSection("inicio");
+    setNotificationsOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const navigateTo = (section) => {
     setActiveSection(section);
+    setShowCompetitionMenu(true);
+    setNotificationsOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const returnToWelcome = () => {
+    setShowCompetitionMenu(false);
+    setActiveSection("inicio");
     setNotificationsOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -481,16 +951,7 @@ export default function App() {
         )}
       </div>
 
-      <div
-        style={{
-          maxHeight: "245px",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          paddingRight: "3px"
-        }}
-      >
+      <div className="notifications-list">
         {notificationsLoading && (
           <div className="notifications-empty">
             CARGANDO NOTIFICACIONES...
@@ -512,129 +973,51 @@ export default function App() {
             <article
               key={notification.id}
               onClick={() => markNotificationAsRead(notification)}
-              style={{
-                background: unread ? "#102333" : "#09141E",
-                border: `1px solid ${
-                  unread ? "rgba(0,217,255,0.45)" : "rgba(142,166,186,0.16)"
-                }`,
-                borderRadius: "9px",
-                padding: "10px",
-                cursor: unread ? "pointer" : "default",
-                position: "relative"
-              }}
+              className={`notification-item ${
+                unread ? "unread" : ""
+              }`}
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: "8px"
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      marginBottom: "5px"
-                    }}
-                  >
-                    {unread && (
-                      <span
-                        style={{
-                          width: "7px",
-                          height: "7px",
-                          minWidth: "7px",
-                          borderRadius: "50%",
-                          background: "#00D9FF"
-                        }}
-                      />
-                    )}
+              <div className="notification-item-content">
+                <div className="notification-item-title">
+                  {unread && <span className="notification-unread-dot" />}
 
-                    <strong
-                      style={{
-                        color: unread ? "#00D9FF" : "#B8C8D6",
-                        fontSize: "12px",
-                        overflowWrap: "anywhere"
-                      }}
-                    >
-                      {notification.titulo || "AVISO DE LIGA4VS4"}
-                    </strong>
-                  </div>
-
-                  <p
-                    style={{
-                      color: "#D0DCE5",
-                      fontSize: "11px",
-                      lineHeight: "1.5",
-                      margin: "0",
-                      whiteSpace: "pre-wrap",
-                      overflowWrap: "anywhere"
-                    }}
-                  >
-                    {notification.mensaje || ""}
-                  </p>
-
-                  <small
-                    style={{
-                      display: "block",
-                      color: "#71879A",
-                      fontSize: "9px",
-                      marginTop: "7px"
-                    }}
-                  >
-                    {formatNotificationDate(notification.createdAt)}
-                  </small>
+                  <strong>
+                    {notification.titulo || "AVISO DE LIGA4VS4"}
+                  </strong>
                 </div>
 
-                <button
-                  type="button"
-                  aria-label="Eliminar notificación"
-                  disabled={notificationAction}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    deleteNotification(notification.id);
-                  }}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "#FF6677",
-                    fontSize: "15px",
-                    cursor: "pointer",
-                    padding: "0 2px"
-                  }}
-                >
-                  ×
-                </button>
+                <p>{notification.mensaje || ""}</p>
+
+                <small>
+                  {formatNotificationDate(notification.createdAt)}
+                </small>
+
+                {unread && (
+                  <div className="notification-read-hint">
+                    TOCA PARA MARCAR COMO LEÍDA
+                  </div>
+                )}
               </div>
 
-              {unread && (
-                <div
-                  style={{
-                    color: "#00D9FF",
-                    fontSize: "9px",
-                    fontWeight: "700",
-                    marginTop: "7px"
-                  }}
-                >
-                  TOCA PARA MARCAR COMO LEÍDA
-                </div>
-              )}
+              <button
+                type="button"
+                aria-label="Eliminar notificación"
+                disabled={notificationAction}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  deleteNotification(notification.id);
+                }}
+                className="notification-delete"
+              >
+                ×
+              </button>
             </article>
           );
         })}
       </div>
 
       {notificationError && (
-        <p
-          style={{
-            color: "#FF7B85",
-            fontSize: "11px",
-            textAlign: "center",
-            margin: "8px 0"
-          }}
-        >
+        <p className="notification-error">
           {notificationError}
         </p>
       )}
@@ -643,6 +1026,225 @@ export default function App() {
         LIGA 4VS4 • SISTEMA DE AVISOS
       </div>
     </div>
+  );
+
+  // =========================================
+  // PANTALLA DE BIENVENIDA ANDROID
+  // =========================================
+
+  const renderWelcome = () => (
+    <section className="android-welcome">
+      <div className="welcome-logo-panel">
+        <div className="welcome-logo-mark">
+          <span>LIGA</span>
+          <strong>4VS4</strong>
+        </div>
+        <div className="welcome-logo-caption">
+          COMPETICIÓN OFICIAL
+        </div>
+      </div>
+
+      <div className="welcome-matches-heading">
+        <h2>PRÓXIMOS ENFRENTAMIENTOS</h2>
+        <span className="welcome-live">
+          <i />
+          EN VIVO
+        </span>
+      </div>
+
+      <div className="welcome-matches-panel">
+        {announcement.active && (
+          <div className="announcement-bar">
+            <span className="announcement-icon">⚡</span>
+            <div className="announcement-marquee">
+              <span>{announcement.message}</span>
+            </div>
+          </div>
+        )}
+
+        {matchesLoading && (
+          <div className="matches-state">
+            <span className="matches-spinner" />
+            <p>CARGANDO ENFRENTAMIENTOS...</p>
+          </div>
+        )}
+
+        {!matchesLoading && matchesError && (
+          <div className="matches-state matches-error">
+            <p>{matchesError}</p>
+          </div>
+        )}
+
+        {!matchesLoading &&
+          !matchesError &&
+          currentMatchday && (
+            <>
+              <div className="matchday-label">
+                <span>JORNADA</span>
+                <strong>{currentMatchday.jornada}</strong>
+              </div>
+
+              <div className="matches-list">
+                {currentMatchday.matches
+                  .filter((match) => !isFinishedMatch(match))
+                  .map((match, index) => (
+                    <article
+                      className="welcome-match-card"
+                      key={`${match.jornada}-${match.team1}-${match.team2}-${index}`}
+                    >
+                      <div className="match-team">
+                        <button
+                          type="button"
+                          className="match-shield-button"
+                          onClick={() =>
+                            toggleTeamRoster(match.team1)
+                          }
+                          aria-label={`Ver jugadores de ${match.team1}`}
+                        >
+                          <img
+                            src={
+                              TEAM_SHIELDS[
+                                normalizeText(match.team1)
+                              ] || ""
+                            }
+                            alt={`Escudo ${match.team1}`}
+                            className="match-shield"
+                            onError={(event) => {
+                              event.currentTarget.style.visibility =
+                                "hidden";
+                            }}
+                          />
+                        </button>
+
+                        <strong>{match.team1}</strong>
+                      </div>
+
+                      <div className="match-center">
+                        <span className="match-vs">VS</span>
+                        <span className="match-pending">
+                          PENDIENTE
+                        </span>
+                      </div>
+
+                      <div className="match-team">
+                        <button
+                          type="button"
+                          className="match-shield-button"
+                          onClick={() =>
+                            toggleTeamRoster(match.team2)
+                          }
+                          aria-label={`Ver jugadores de ${match.team2}`}
+                        >
+                          <img
+                            src={
+                              TEAM_SHIELDS[
+                                normalizeText(match.team2)
+                              ] || ""
+                            }
+                            alt={`Escudo ${match.team2}`}
+                            className="match-shield"
+                            onError={(event) => {
+                              event.currentTarget.style.visibility =
+                                "hidden";
+                            }}
+                          />
+                        </button>
+
+                        <strong>{match.team2}</strong>
+                      </div>
+
+                      {expandedTeams[match.team1] && (
+                        <div className="team-roster">
+                          <div className="team-roster-heading">
+                            JUGADORES · {match.team1}
+                          </div>
+
+                          {getPlayersForTeam(match.team1).length > 0 ? (
+                            getPlayersForTeam(match.team1).map(
+                              (player, playerIndex) => (
+                                <div
+                                  className="team-roster-player"
+                                  key={`${player.player}-${playerIndex}`}
+                                >
+                                  <span>{playerIndex + 1}</span>
+                                  {player.player}
+                                </div>
+                              )
+                            )
+                          ) : (
+                            <p>
+                              No se encontraron jugadores para este equipo.
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {expandedTeams[match.team2] && (
+                        <div className="team-roster">
+                          <div className="team-roster-heading">
+                            JUGADORES · {match.team2}
+                          </div>
+
+                          {getPlayersForTeam(match.team2).length > 0 ? (
+                            getPlayersForTeam(match.team2).map(
+                              (player, playerIndex) => (
+                                <div
+                                  className="team-roster-player"
+                                  key={`${player.player}-${playerIndex}`}
+                                >
+                                  <span>{playerIndex + 1}</span>
+                                  {player.player}
+                                </div>
+                              )
+                            )
+                          ) : (
+                            <p>
+                              No se encontraron jugadores para este equipo.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+              </div>
+            </>
+          )}
+
+        {!matchesLoading &&
+          !matchesError &&
+          !currentMatchday && (
+            <div className="matches-state">
+              <p>NO HAY ENFRENTAMIENTOS PENDIENTES.</p>
+            </div>
+          )}
+      </div>
+
+      <div className="welcome-competition-active">
+        <span className="championship-status-dot" />
+        SISTEMA DE COMPETICIÓN ACTIVO
+      </div>
+
+      <div className="welcome-footer">
+        LIGA 4VS4 OFICIAL | 2026
+      </div>
+
+      <button
+        className="welcome-enter-button"
+        onClick={enterChampionship}
+      >
+        ENTRAR AL CAMPEONATO
+        <span>›</span>
+      </button>
+
+      {!user && (
+        <button
+          className="welcome-register-link"
+          onClick={() => openMode("register")}
+        >
+          ¿NO TIENES CUENTA? <strong>REGÍSTRATE</strong>
+        </button>
+      )}
+    </section>
   );
 
   // =========================================
@@ -659,32 +1261,16 @@ export default function App() {
 
         <button
           className="menu-notifications"
-          onClick={() => setNotificationsOpen((previous) => !previous)}
+          onClick={() =>
+            setNotificationsOpen((previous) => !previous)
+          }
           aria-label="Abrir notificaciones"
           style={{ position: "relative" }}
         >
           🔔
 
           {unreadNotifications > 0 && (
-            <span
-              style={{
-                position: "absolute",
-                top: "-5px",
-                right: "-5px",
-                minWidth: "18px",
-                height: "18px",
-                padding: "0 4px",
-                borderRadius: "20px",
-                background: "#FF354F",
-                color: "#FFFFFF",
-                fontSize: "10px",
-                fontWeight: "900",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: "2px solid #05080D"
-              }}
-            >
+            <span className="notification-counter">
               {unreadNotifications > 99
                 ? "99+"
                 : unreadNotifications}
@@ -722,13 +1308,21 @@ export default function App() {
       </div>
 
       <div className="championship-status">
-        <span className="championship-status-dot"></span>
+        <span className="championship-status-dot" />
         <span>CAMPEONATO EN CURSO</span>
       </div>
 
       <div className="menu-footer">
         LIGA 4VS4 - 2026
       </div>
+
+      <button
+        type="button"
+        className="return-welcome-button"
+        onClick={returnToWelcome}
+      >
+        VOLVER A LA PANTALLA PRINCIPAL
+      </button>
     </section>
   );
 
@@ -764,153 +1358,111 @@ export default function App() {
 
   return (
     <main className="app">
-      {!user && (
-        <header className="header">
-          <div className="brand">
-            <span className="brand-icon">L4</span>
-
-            <div>
-              <h1>LIGA4VS4</h1>
-              <p>COMPETICIÓN OFICIAL</p>
-            </div>
-          </div>
-
-          <div className="header-actions">
-            {loading ? (
-              <span className="header-status">CARGANDO...</span>
-            ) : (
-              <button
-                className="login-button"
-                onClick={() => openMode("login")}
-              >
-                INICIAR SESIÓN
-              </button>
-            )}
-          </div>
-        </header>
-      )}
-
       {loading ? (
         <div className="loading-screen">
           <span className="brand-icon">L4</span>
           <p>CARGANDO LIGA4VS4...</p>
         </div>
-      ) : user ? (
-        <>
-          <header className="logged-header">
-            <div className="brand">
-              <span className="brand-icon">L4</span>
-
-              <div>
-                <h1>LIGA4VS4</h1>
-                <p>COMPETICIÓN OFICIAL</p>
-              </div>
-            </div>
-
-            <button
-              className="login-button"
-              onClick={handleLogout}
-            >
-              CERRAR SESIÓN
-            </button>
-          </header>
-
-          {activeSection === "inicio"
-            ? renderMenu()
-            : renderSectionPlaceholder()}
-
-          <nav className="web-bottom-navigation">
-            {bottomItems.map((item) => (
-              <button
-                key={item.id}
-                className={
-                  activeSection === item.id ? "active" : ""
-                }
-                onClick={() => navigateTo(item.id)}
-              >
-                <span>{item.icon}</span>
-                <small>{item.label}</small>
-              </button>
-            ))}
-          </nav>
-        </>
       ) : (
         <>
-          <section className="hero">
-            <div className="hero-label">
-              <span className="live-dot"></span>
-              PLATAFORMA OFICIAL
-            </div>
+          {!showCompetitionMenu && (
+            <header className="welcome-header">
+              <div className="brand">
+                <span className="brand-icon">L4</span>
 
-            <h2>
-              LA COMPETICIÓN
-              <span> COMIENZA AQUÍ</span>
-            </h2>
+                <div>
+                  <h1>LIGA4VS4</h1>
+                  <p>COMPETICIÓN OFICIAL</p>
+                </div>
+              </div>
 
-            <p>
-              Sigue las jornadas, consulta los equipos
-              y vive cada enfrentamiento de LIGA4VS4.
-            </p>
-
-            <div className="hero-actions">
-              <button
-                className="primary-button"
-                onClick={() => openMode("login")}
-              >
-                ENTRAR AL CAMPEONATO
-              </button>
-
-              <button
-                className="secondary-button"
-                onClick={() => openMode("register")}
-              >
-                CREAR CUENTA
-              </button>
-            </div>
-          </section>
-
-          {message && (
-            <div className="global-message success-message">
-              {message}
-              <button onClick={() => setMessage("")}>×</button>
-            </div>
+              <div className="header-actions">
+                {user ? (
+                  <button
+                    className="login-button"
+                    onClick={handleLogout}
+                  >
+                    CERRAR SESIÓN
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className="login-button"
+                      onClick={() => openMode("login")}
+                    >
+                      INICIAR SESIÓN
+                    </button>
+                  </>
+                )}
+              </div>
+            </header>
           )}
 
-          {error && (
-            <div className="global-message error-message">
-              {error}
-              <button onClick={() => setError("")}>×</button>
-            </div>
+          {showCompetitionMenu && user && (
+            <header className="logged-header">
+              <div className="brand">
+                <span className="brand-icon">L4</span>
+
+                <div>
+                  <h1>LIGA4VS4</h1>
+                  <p>COMPETICIÓN OFICIAL</p>
+                </div>
+              </div>
+
+              <button
+                className="login-button"
+                onClick={handleLogout}
+              >
+                CERRAR SESIÓN
+              </button>
+            </header>
           )}
 
-          <section className="sections" id="explorar">
-            <h3>UNA LIGA. UNA COMUNIDAD.</h3>
+          {!showCompetitionMenu ? (
+            <>
+              {renderWelcome()}
 
-            <div className="section-grid">
-              <article className="section-card">
-                <span>01</span>
-                <h4>CLASIFICACIÓN</h4>
-                <p>Consulta las posiciones de los equipos.</p>
-              </article>
+              {message && (
+                <div className="global-message success-message">
+                  {message}
+                  <button onClick={() => setMessage("")}>×</button>
+                </div>
+              )}
 
-              <article className="section-card">
-                <span>02</span>
-                <h4>ENFRENTAMIENTOS</h4>
-                <p>Descubre los próximos partidos.</p>
-              </article>
+              {error && (
+                <div className="global-message error-message">
+                  {error}
+                  <button onClick={() => setError("")}>×</button>
+                </div>
+              )}
 
-              <article className="section-card">
-                <span>03</span>
-                <h4>EQUIPOS</h4>
-                <p>Conoce a los participantes.</p>
-              </article>
-            </div>
-          </section>
+              <footer>
+                LIGA4VS4 OFICIAL © 2026
+                <p>UNA LIGA. UNA COMUNIDAD.</p>
+              </footer>
+            </>
+          ) : (
+            <>
+              {activeSection === "inicio"
+                ? renderMenu()
+                : renderSectionPlaceholder()}
 
-          <footer>
-            LIGA4VS4 OFICIAL © 2026
-            <p>UNA LIGA. UNA COMUNIDAD.</p>
-          </footer>
+              <nav className="web-bottom-navigation">
+                {bottomItems.map((item) => (
+                  <button
+                    key={item.id}
+                    className={
+                      activeSection === item.id ? "active" : ""
+                    }
+                    onClick={() => navigateTo(item.id)}
+                  >
+                    <span>{item.icon}</span>
+                    <small>{item.label}</small>
+                  </button>
+                ))}
+              </nav>
+            </>
+          )}
         </>
       )}
 
@@ -940,8 +1492,10 @@ export default function App() {
             </h2>
 
             <p className="auth-description">
-              {mode === "login" && "Accede a tu cuenta de LIGA4VS4."}
-              {mode === "register" && "Únete a la comunidad oficial."}
+              {mode === "login" &&
+                "Accede a tu cuenta de LIGA4VS4."}
+              {mode === "register" &&
+                "Únete a la comunidad oficial."}
               {mode === "forgot" &&
                 "Te enviaremos instrucciones a tu correo."}
             </p>
@@ -964,7 +1518,9 @@ export default function App() {
                 type="email"
                 placeholder="tu correo electrónico"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
                 autoComplete="email"
                 required
               />
@@ -980,7 +1536,9 @@ export default function App() {
                     type="password"
                     placeholder="Tu contraseña"
                     value={password}
-                    onChange={(event) => setPassword(event.target.value)}
+                    onChange={(event) =>
+                      setPassword(event.target.value)
+                    }
                     autoComplete={
                       mode === "login"
                         ? "current-password"
@@ -1041,13 +1599,17 @@ export default function App() {
             <div className="auth-links">
               {mode === "login" && (
                 <>
-                  <button onClick={() => openMode("forgot")}>
+                  <button
+                    onClick={() => openMode("forgot")}
+                  >
                     ¿Olvidaste tu contraseña?
                   </button>
 
                   <p>
                     ¿No tienes cuenta?{" "}
-                    <button onClick={() => openMode("register")}>
+                    <button
+                      onClick={() => openMode("register")}
+                    >
                       Regístrate
                     </button>
                   </p>
@@ -1057,7 +1619,9 @@ export default function App() {
               {mode === "register" && (
                 <p>
                   ¿Ya tienes cuenta?{" "}
-                  <button onClick={() => openMode("login")}>
+                  <button
+                    onClick={() => openMode("login")}
+                  >
                     Inicia sesión
                   </button>
                 </p>
@@ -1065,7 +1629,9 @@ export default function App() {
 
               {mode === "forgot" && (
                 <p>
-                  <button onClick={() => openMode("login")}>
+                  <button
+                    onClick={() => openMode("login")}
+                  >
                     Volver al inicio de sesión
                   </button>
                 </p>
