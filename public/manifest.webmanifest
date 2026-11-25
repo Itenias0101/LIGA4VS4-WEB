@@ -1,0 +1,21 @@
+
+{
+  "name": "LIGA4VS4 OFICIAL",
+  "short_name": "LIGA4VS4",
+  "description": "Plataforma oficial de la liga LIGA4VS4.",
+  "lang": "es-PE",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b12",
+  "theme_color": "#00d9ff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
