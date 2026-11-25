@@ -4,7 +4,7 @@
 :root {
   font-family: 'Rajdhani', sans-serif;
   color: #f1f6ff;
-  background: #070b12;
+  background: #05080D;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -23,8 +23,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 50% 0%, #10253b 0%, transparent 55%),
-    #070b12;
+    radial-gradient(ellipse at 50% 0%, #10202c 0%, transparent 55%),
+    #05080D;
 }
 
 button,
@@ -47,7 +47,12 @@ button:disabled {
   overflow: hidden;
 }
 
-.header {
+/* ========================================
+   ENCABEZADO GENERAL
+======================================== */
+
+.header,
+.logged-header {
   min-height: 85px;
   padding: 16px 7%;
   display: flex;
@@ -55,7 +60,7 @@ button:disabled {
   justify-content: space-between;
   gap: 15px;
   border-bottom: 1px solid #1b354a;
-  background: rgba(5, 10, 18, 0.95);
+  background: rgba(5, 10, 18, 0.97);
 }
 
 .brand {
@@ -125,6 +130,10 @@ button:disabled {
   color: #00cfff;
   font-size: 13px;
 }
+
+/* ========================================
+   PANTALLA DE BIENVENIDA
+======================================== */
 
 .hero {
   max-width: 1150px;
@@ -210,6 +219,430 @@ button:disabled {
   transform: translateY(-3px);
 }
 
+/* ========================================
+   MENÚ PRINCIPAL LIGA4VS4
+======================================== */
+
+.competition-menu {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 85px);
+  padding: 25px 16px 105px;
+  background:
+    radial-gradient(ellipse at 50% 0%, #10202c 0%, transparent 45%),
+    #05080D;
+}
+
+/* PRESENTED BY / LOS AMIGOS */
+
+.menu-top {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  min-height: 95px;
+  margin: 0 auto 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-sponsor {
+  text-align: center;
+}
+
+.menu-sponsor > span {
+  display: block;
+  color: #8EA6BA;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 4px;
+}
+
+.menu-sponsor h2 {
+  margin-top: 7px;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(23px, 5vw, 32px);
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-shadow: 0 0 18px #00D9FF40;
+}
+
+/* BOTÓN DE NOTIFICACIONES */
+
+.menu-notifications {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #17465c;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #102638, #08121d);
+  color: #00D9FF;
+  font-size: 23px;
+  box-shadow: 0 0 18px #00d9ff18;
+  transition: 0.2s;
+}
+
+.menu-notifications:hover {
+  border-color: #00D9FF;
+  box-shadow: 0 0 18px #00d9ff45;
+  transform: scale(1.05);
+}
+
+/* PANEL FLOTANTE DE NOTIFICACIONES */
+
+.menu-notifications-panel {
+  position: absolute;
+  z-index: 50;
+  top: 72px;
+  right: 16px;
+  width: min(300px, calc(100vw - 32px));
+  min-height: 290px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(145deg, #102333, #08121c);
+  border: 1px solid #176078;
+  border-radius: 12px;
+  box-shadow:
+    0 15px 45px #000000bb,
+    0 0 20px #00d9ff18;
+  animation: slideUp 0.2s ease;
+}
+
+.notifications-heading {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notifications-heading h3 {
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.notifications-heading p {
+  margin-top: 4px;
+  color: #8298AC;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+
+.notifications-heading button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 5px;
+  background: #26304A5C;
+  color: #00D9FF;
+  font-size: 17px;
+}
+
+.notifications-empty {
+  min-height: 170px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  border-top: 1px solid #5500D9FF;
+  border-bottom: 1px solid #33FFFFFF;
+  color: #91A5B7;
+  text-align: center;
+  font-size: 13px;
+}
+
+.notifications-footer {
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  color: #71889B;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+/* TÍTULO CENTRO DE COMPETICIÓN */
+
+.menu-section-heading {
+  width: 100%;
+  max-width: 650px;
+  margin: 0 auto 12px;
+  color: #8EA6BA;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+/* CUADRÍCULA DE SEIS BOTONES */
+
+.competition-grid {
+  width: 100%;
+  max-width: 650px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(145px, 1fr));
+  gap: 12px;
+}
+
+.competition-card {
+  position: relative;
+  min-width: 0;
+  min-height: 145px;
+  padding: 18px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  overflow: hidden;
+  border: 1px solid #16445a;
+  border-radius: 9px;
+  background:
+    linear-gradient(145deg, #101e2b, #09121c);
+  color: #00D9FF;
+  box-shadow:
+    inset 0 0 18px #00d9ff05,
+    0 5px 15px #00000025;
+  transition:
+    border-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.competition-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 15%;
+  width: 70%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #00D9FF80,
+    transparent
+  );
+}
+
+.competition-card:hover {
+  transform: translateY(-3px);
+  border-color: #00D9FF;
+  box-shadow:
+    0 0 20px #00d9ff20,
+    inset 0 0 20px #00d9ff08;
+}
+
+.competition-card:active {
+  transform: scale(0.98);
+}
+
+.competition-card-number {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  color: #526d80;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.competition-card-icon {
+  display: block;
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px #00d9ff30);
+}
+
+.competition-card-title {
+  max-width: 100%;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(9px, 2vw, 12px);
+  font-weight: 800;
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+/* ESTADO DEL CAMPEONATO */
+
+.championship-status {
+  width: 100%;
+  max-width: 650px;
+  min-height: 44px;
+  margin: 15px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: #09151F;
+  border: 1px solid #102b32;
+  color: #00FF88;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.championship-status-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #00FF88;
+  box-shadow: 0 0 10px #00FF88;
+  animation: pulseGreen 1.8s infinite;
+}
+
+/* PIE DEL MENÚ */
+
+.menu-footer {
+  margin: 18px auto 0;
+  color: #536273;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+/* ========================================
+   NAVEGACIÓN INFERIOR
+======================================== */
+
+.web-bottom-navigation {
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 68px;
+  padding: 7px 5px calc(7px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  background: rgba(5, 11, 18, 0.97);
+  border-top: 1px solid #164052;
+  box-shadow: 0 -8px 25px #00000055;
+  backdrop-filter: blur(12px);
+}
+
+.web-bottom-navigation button {
+  min-width: 0;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: #71889B;
+  transition: 0.2s;
+}
+
+.web-bottom-navigation button > span {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.web-bottom-navigation button small {
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.web-bottom-navigation button.active {
+  color: #00D9FF;
+}
+
+.web-bottom-navigation button.active > span {
+  filter: drop-shadow(0 0 7px #00D9FF);
+}
+
+.web-bottom-navigation button:hover {
+  color: #00D9FF;
+}
+
+/* ========================================
+   PANTALLAS PROVISIONALES
+======================================== */
+
+.web-section-placeholder {
+  min-height: calc(100vh - 165px);
+  padding: 100px 20px 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 20%, #102638 0%, transparent 55%),
+    #05080D;
+}
+
+.placeholder-label {
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+}
+
+.web-section-placeholder h2 {
+  margin-top: 20px;
+  color: #f1f6ff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(20px, 5vw, 32px);
+}
+
+.web-section-placeholder p {
+  max-width: 450px;
+  margin: 20px 0 30px;
+  color: #91A5B9;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+/* ========================================
+   PANTALLA DE CARGA
+======================================== */
+
+.loading-screen {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.loading-screen p {
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+/* ========================================
+   SECCIONES DE BIENVENIDA
+======================================== */
+
 .sections {
   max-width: 1100px;
   margin: auto;
@@ -262,7 +695,9 @@ button:disabled {
   font-size: 16px;
 }
 
-/* MENSAJES */
+/* ========================================
+   MENSAJES
+======================================== */
 
 .global-message {
   max-width: 700px;
@@ -294,7 +729,9 @@ button:disabled {
   border: 1px solid #873641;
 }
 
-/* CUENTA ACTIVA */
+/* ========================================
+   CUENTA ACTIVA
+======================================== */
 
 .account-section {
   max-width: 700px;
@@ -336,7 +773,9 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-/* VENTANA DE AUTENTICACIÓN */
+/* ========================================
+   VENTANA DE AUTENTICACIÓN
+======================================== */
 
 .auth-overlay {
   position: fixed;
@@ -499,7 +938,9 @@ button:disabled {
   font-size: 14px;
 }
 
-/* PIE DE PÁGINA */
+/* ========================================
+   PIE DE PÁGINA
+======================================== */
 
 footer {
   padding: 28px 15px;
@@ -518,11 +959,18 @@ footer p {
   font-size: 13px;
 }
 
-/* ANIMACIONES */
+/* ========================================
+   ANIMACIONES
+======================================== */
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -530,17 +978,56 @@ footer p {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* DISEÑO PARA MÓVILES */
+@keyframes pulseGreen {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 10px #00FF88;
+  }
+
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 3px #00FF88;
+  }
+}
+
+/* ========================================
+   TABLET
+======================================== */
+
+@media (min-width: 701px) {
+  .competition-menu {
+    padding-top: 35px;
+  }
+
+  .competition-grid {
+    gap: 16px;
+  }
+
+  .competition-card {
+    min-height: 175px;
+  }
+
+  .competition-card-icon {
+    font-size: 40px;
+  }
+}
+
+/* ========================================
+   MÓVILES
+======================================== */
 
 @media (max-width: 700px) {
-  .header {
-    padding: 14px 16px;
+  .header,
+  .logged-header {
+    min-height: 70px;
+    padding: 12px 14px;
   }
 
   .brand {
@@ -590,6 +1077,91 @@ footer p {
     width: 100%;
   }
 
+  /* Menú principal móvil */
+
+  .competition-menu {
+    min-height: calc(100vh - 70px);
+    padding: 18px 16px 110px;
+  }
+
+  .menu-top {
+    min-height: 85px;
+    margin-bottom: 20px;
+  }
+
+  .menu-sponsor > span {
+    font-size: 8px;
+  }
+
+  .menu-sponsor h2 {
+    font-size: 25px;
+  }
+
+  .menu-notifications {
+    width: 42px;
+    height: 42px;
+    font-size: 21px;
+  }
+
+  .menu-section-heading {
+    margin-bottom: 12px;
+    font-size: 9px;
+  }
+
+  .competition-grid {
+    gap: 10px;
+    grid-template-rows: repeat(3, minmax(130px, 1fr));
+  }
+
+  .competition-card {
+    min-height: 130px;
+    padding: 16px 7px 10px;
+    gap: 11px;
+  }
+
+  .competition-card-icon {
+    font-size: 31px;
+  }
+
+  .competition-card-title {
+    font-size: 9px;
+  }
+
+  .championship-status {
+    min-height: 42px;
+    font-size: 9px;
+  }
+
+  .menu-footer {
+    font-size: 8px;
+  }
+
+  .menu-notifications-panel {
+    top: 67px;
+    right: 0;
+  }
+
+  .web-section-placeholder {
+    min-height: calc(100vh - 138px);
+    padding: 70px 20px 110px;
+  }
+
+  /* Navegación inferior */
+
+  .web-bottom-navigation {
+    min-height: 65px;
+  }
+
+  .web-bottom-navigation button > span {
+    font-size: 18px;
+  }
+
+  .web-bottom-navigation button small {
+    font-size: 6px;
+  }
+
+  /* Secciones de bienvenida */
+
   .section-grid {
     grid-template-columns: 1fr;
   }
@@ -611,6 +1183,10 @@ footer p {
   }
 }
 
+/* ========================================
+   MÓVILES PEQUEÑOS
+======================================== */
+
 @media (max-width: 360px) {
   .brand h1 {
     font-size: 13px;
@@ -623,5 +1199,26 @@ footer p {
   .login-button {
     padding: 9px 8px;
     font-size: 9px;
+  }
+
+  .competition-menu {
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
+  .competition-grid {
+    gap: 8px;
+  }
+
+  .competition-card {
+    min-height: 120px;
+  }
+
+  .competition-card-title {
+    font-size: 8px;
+  }
+
+  .web-bottom-navigation button small {
+    font-size: 5px;
   }
 }
