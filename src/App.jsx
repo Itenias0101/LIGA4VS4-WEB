@@ -25,6 +25,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
+import Clasificacion from "./clasificacion/Clasificacion";
 
 // =========================================
 // FUENTES DE DATOS
@@ -2987,7 +2988,9 @@ export default function App() {
                     ? renderMenu()
                     : activeSection === "equipos"
                       ? renderTeams()
-                      : renderSectionPlaceholder()}
+                      : activeSection === "clasificacion"
+                        ? <Clasificacion />
+                        : renderSectionPlaceholder()}
 
               <nav className="web-bottom-navigation">
                 {bottomItems.map((item) => (
