@@ -251,9 +251,8 @@ const getCurrentMatchday = (matches) => {
 
 // =========================================
 // JUGADORES
-// IMPORTANTE: se conserva el orden original
-// de Google Sheets. El primer jugador será
-// el capitán, igual que en Android.
+// El orden de Google Sheets se conserva.
+// El primer jugador de cada equipo es capitán.
 // =========================================
 
 const parsePlayersCSV = (csvText) => {
@@ -280,9 +279,7 @@ const parsePlayersCSV = (csvText) => {
       return (
         player.team &&
         player.player &&
-        name !== "VACANTE" &&
-        name !== "LIBRE" &&
-        name !== "DISPONIBLE"
+        name !== "VACANTE"
       );
     });
 };
@@ -338,17 +335,13 @@ export default function App() {
   const [showCompetitionMenu, setShowCompetitionMenu] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  // DATOS DE COMPETICIÓN
   const [announcement, setAnnouncement] = useState({ active: false, message: "" });
   const [matches, setMatches] = useState([]);
   const [players, setPlayers] = useState([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [matchesError, setMatchesError] = useState("");
 
-  // En la pantalla de inicio se pueden desplegar plantillas.
   const [expandedTeams, setExpandedTeams] = useState({});
-
-  // En EQUIPOS solo se despliega una plantilla a la vez.
   const [expandedTeam, setExpandedTeam] = useState(null);
 
   // =========================================
@@ -858,7 +851,7 @@ export default function App() {
   );
 
   // =========================================
-  // TARJETA DE PLANTILLA PARA EQUIPOS
+  // TARJETA DE EQUIPO
   // =========================================
 
   const renderTeamRoster = (team) => {
@@ -866,10 +859,14 @@ export default function App() {
     const shield = getTeamShield(team);
     const isExpanded = expandedTeam === team;
 
+    const toggleFromCard = () => toggleCompetitionTeam(team);
+
     return (
       <article
         className={`teams-card ${isExpanded ? "expanded" : ""}`}
         key={team}
+        onClick={toggleFromCard}
+        aria-expanded={isExpanded}
       >
         <div className="teams-card-top">
           <div className="teams-shield-wrap">
@@ -891,30 +888,27 @@ export default function App() {
 
           <h3 className="teams-name">{team}</h3>
 
-          <span className="teams-player-count">
-            {teamPlayers.length} {teamPlayers.length === 1 ? "JUGADOR" : "JUGADORES"}
-          </span>
+          <button
+            type="button"
+            className="teams-toggle-button"
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleFromCard();
+            }}
+            aria-expanded={isExpanded}
+          >
+            <span>VER PLANTILLA</span>
+            <strong className={isExpanded ? "rotated" : ""}>
+              +
+            </strong>
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="teams-toggle-button"
-          onClick={() => toggleCompetitionTeam(team)}
-          aria-expanded={isExpanded}
-        >
-          <span>{isExpanded ? "OCULTAR PLANTILLA" : "VER PLANTILLA"}</span>
-          <strong className={isExpanded ? "rotated" : ""}>
-            {isExpanded ? "−" : "+"}
-          </strong>
-        </button>
-
         {isExpanded && (
-          <div className="teams-roster">
-            <div className="teams-roster-heading">
-              <span>PLANTILLA OFICIAL</span>
-              <span>{teamPlayers.length} / 4</span>
-            </div>
-
+          <div
+            className="teams-roster"
+            onClick={(event) => event.stopPropagation()}
+          >
             {teamPlayers.length > 0 ? (
               <div className="teams-player-list">
                 {teamPlayers.map((player, index) => (
@@ -932,15 +926,27 @@ export default function App() {
 
                     {index === 0 && (
                       <span className="teams-captain-label">
-                        CAPITÁN
+                        (CAPITÁN)
                       </span>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
+              <div className="teams-player-list">
+                <div className="teams-player-row">
+                  <span className="teams-player-number">01</span>
+                  <span className="teams-player-name">POR DEFINIR</span>
+                </div>
+                <p className="teams-empty-roster">
+                  SIN MÁS JUGADORES ASIGNADOS
+                </p>
+              </div>
+            )}
+
+            {teamPlayers.length === 1 && (
               <p className="teams-empty-roster">
-                No se encontraron jugadores registrados para este equipo.
+                SIN MÁS JUGADORES ASIGNADOS
               </p>
             )}
           </div>
@@ -1227,38 +1233,27 @@ export default function App() {
 
   const renderTeams = () => (
     <section className="teams-screen">
-      <div className="teams-screen-header">
-        <span className="placeholder-label">CENTRO DE COMPETICIÓN</span>
-        <h2>EQUIPOS</h2>
-        <p>CONOCE A LOS SEIS EQUIPOS DEL CAMPEONATO</p>
-      </div>
-
       {matchesLoading && players.length === 0 ? (
         <div className="matches-state">
           <span className="matches-spinner" />
           <p>CARGANDO PLANTILLAS...</p>
         </div>
+      ) : matchesError && players.length === 0 ? (
+        <button
+          type="button"
+          className="teams-load-error"
+          onClick={() => window.location.reload()}
+        >
+          NO SE PUDIERON CARGAR LAS PLANTILLAS
+          <br />
+          <br />
+          TOCA AQUÍ PARA REINTENTAR
+        </button>
       ) : (
-        <>
-          <div className="teams-summary">
-            <span className="teams-summary-icon">🛡️</span>
-            <span>6 EQUIPOS OFICIALES</span>
-            <span className="teams-summary-line" />
-          </div>
-
-          <div className="teams-grid">
-            {TEAMS.map((team) => renderTeamRoster(team))}
-          </div>
-        </>
+        <div className="teams-grid">
+          {TEAMS.map((team) => renderTeamRoster(team))}
+        </div>
       )}
-
-      <button
-        type="button"
-        className="return-welcome-button teams-return-button"
-        onClick={() => navigateTo("inicio")}
-      >
-        VOLVER AL MENÚ
-      </button>
     </section>
   );
 
