@@ -28,11 +28,12 @@ import { auth, db } from "./firebase";
 // FUENTES DE DATOS
 // =========================================
 
-const MATCHES_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?gid=0&single=true&output=csv";
+const SHEETS_BASE =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?";
 
-const PLAYERS_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?gid=59010702&single=true&output=csv";
+const MATCHES_CSV_URL = `${SHEETS_BASE}gid=0&single=true&output=csv`;
+const PLAYERS_CSV_URL = `${SHEETS_BASE}gid=59010702&single=true&output=csv`;
+const STATS_CSV_URL = `${SHEETS_BASE}gid=1093177355&single=true&output=csv`;
 
 const REFRESH_INTERVAL = 60_000;
 
@@ -52,12 +53,23 @@ const TEAM_SHIELDS = {
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgAoVpdILdUTIb7rlQbu-jmPpZN572bjvR8JcPaLzhgTuh95IggZZXrdheg2El1Cn_0h5soqHk47deBHVEfKuxlNxs04KdFpkMLCYMuiDr9HGl7WU2Ruhv3uUJqxbLVec_dy34nMHqLwJggGw8R0F2xwX7fFy6dGSBiswLIDmUV3wmyDlKdmHX3XkOVWRM/s1600/1000112780.png",
   KINGS:
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9_Js8cNIVeuf_7SJEav59OvTKG1IQ_IXETMNG34i3TeRUfnwl1SL9tif0aqeDrUuMyV3vedMzMYbDWsofYU1xZQoSCAd04hmyFavJWbQl0i1m1iiuV3-y0YxC86iuwuRz1is6ayV2xTnq8h1S3V_4xEPbRq0amTN-vMA8rU5IF0nlkkcA7hD8fWFc6jI/s1341/1000112984.png",
-    LYCORIS:
-    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNFsU2keWU_HRggeS0rrLDN6LEtBCv66kskDClCREshy_DQ9afWBbBGY4PVlOmaDYb18bMj7gJMv0zvJ50gCS4WojOLUKN8WvwM5mpkfxFULCuBWRew1NJowEsYsyP-7NxXBRt-LzxZ5Jnid01yvcnhczJT3qAW-VbhB4aywBnlr5odppit-f9P5GW_y8/s896/1000112788.png",
+  LYCORIS:
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNFsU2keWU_HRggeS0rrLDN6LEtBCv66ksbDClCREshy_DQ9afWBbBGY4PVlOmaDYb18bMj7gJMv0zvJ50gCS4WojOLUKN8WvwM5mpkfxFULCuBWRew1NJowEsYsyP-7NxXBRt-LzxZ5Jnid01yvcnhczJT3qAW-VbhB4aywBnlr5odppit-f9P5GW_y8/s896/1000112788.png",
   THEBUTCHERS:
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifCUkuhD1Rotz7ryg2x5csfz6tdYpBMzJjbHTxS-6q-UlccYFeG6Dn5SLVOlG9FAAY1d8oGURG5QpaDMSyeG6nN87bEbbAtjr14gQn4CKj36yhUBpTcMjLyj6C8LC9Lsrzme520bSRVvvQXYV7DAMs2zA5lN-SwfmN5EMeHp1QL8XxcaX9SafZBBCI89k/s1341/1000138092.png",
   NOMERCY:
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcBDOqw3eSzt2_VLN1SyblE3rXVWh5Yw9-fvuw4ctVeA9zAt3KGub2nMn8z0wAHyTN7Zy14Q8JS1F8ZIxDJwfJfRNNKtt9iz0LeM2qG7A_yJCQ_2Op4qOu13A7gufB-3sHjdkNmZhEX4az8Urq-JRM6fkNzMAShQI1cplKe8IHKubVzAB-cVobGOoUYYQ/s1600/1000113547.png"
+};
+
+const GRADIENTS = {
+  oceano: ["#06152E", "#087CA7"],
+  obsidiana: ["#090909", "#414141"],
+  carmesi: ["#310B24", "#B21F45"],
+  galaxia: ["#160B35", "#7139B8"],
+  esmeralda: ["#062C26", "#16866A"],
+  fenix: ["#421B08", "#D87819"],
+  neon: ["#07313D", "#11B9C9"],
+  aurora: ["#28102D", "#A04487"]
 };
 
 // =========================================
@@ -68,9 +80,19 @@ const normalizeText = (value) =>
   String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
     .trim()
     .toUpperCase()
     .replace(/[_\-\s]/g, "");
+
+const normalizeNick = (value) =>
+  String(value || "")
+    .replace(/[\uFEFF\u200B-\u200D\u00A0]/g, " ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 
 const normalizeTeam = (name) => {
   const normalized = normalizeText(name);
@@ -89,6 +111,30 @@ const normalizeTeam = (name) => {
 
 const getTeamShield = (teamName) =>
   TEAM_SHIELDS[normalizeText(normalizeTeam(teamName))] || "";
+
+const normalizeHeader = (value) =>
+  String(value || "")
+    .replace(/^\uFEFF/, "")
+    .replace(/[\u200B-\u200D\u00A0]/g, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
+const parseNumber = (value) => {
+  const clean = String(value ?? "")
+    .trim()
+    .replace(",", ".");
+  if (!clean) return 0;
+  const number = Number(clean);
+  return Number.isFinite(number) ? number : 0;
+};
+
+const formatNumber = (value, decimals = 0) =>
+  Number(value || 0).toLocaleString("es-PE", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
 
 const getFirebaseError = (error) => {
   const errors = {
@@ -110,10 +156,26 @@ const formatNotificationDate = (timestamp) => {
 
   try {
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-
     return date.toLocaleString("es-PE", {
       day: "2-digit",
       month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "";
+  }
+};
+
+const formatPostDate = (timestamp) => {
+  if (!timestamp) return "";
+
+  try {
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString("es-PE", {
+      day: "2-digit",
+      month: "long",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit"
@@ -127,11 +189,37 @@ const formatNotificationDate = (timestamp) => {
 // LECTOR CSV
 // =========================================
 
-const parseCSV = (text) => {
+const detectCSVSeparator = (text) => {
+  const firstLine = String(text || "").split(/\r?\n/)[0] || "";
+  const separators = [",", ";", "\t"];
+
+  let selected = ",";
+  let highest = -1;
+
+  separators.forEach((separator) => {
+    let count = 0;
+    let quoted = false;
+
+    for (let i = 0; i < firstLine.length; i += 1) {
+      if (firstLine[i] === '"') quoted = !quoted;
+      else if (firstLine[i] === separator && !quoted) count += 1;
+    }
+
+    if (count > highest) {
+      highest = count;
+      selected = separator;
+    }
+  });
+
+  return selected;
+};
+
+const parseCSV = (text, separator = null) => {
   const rows = [];
   let row = [];
   let value = "";
   let insideQuotes = false;
+  const delimiter = separator || detectCSVSeparator(text);
 
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
@@ -142,15 +230,13 @@ const parseCSV = (text) => {
       i += 1;
     } else if (char === '"') {
       insideQuotes = !insideQuotes;
-    } else if (char === "," && !insideQuotes) {
+    } else if (char === delimiter && !insideQuotes) {
       row.push(value.trim());
       value = "";
     } else if ((char === "\n" || char === "\r") && !insideQuotes) {
       if (char === "\r" && next === "\n") i += 1;
       row.push(value.trim());
-
       if (row.some((cell) => cell !== "")) rows.push(row);
-
       row = [];
       value = "";
     } else {
@@ -165,12 +251,13 @@ const parseCSV = (text) => {
 };
 
 const findHeaderIndex = (headers, candidates) =>
-  headers.findIndex((header) => candidates.includes(normalizeText(header)));
+  headers.findIndex((header) =>
+    candidates.includes(normalizeHeader(header))
+  );
 
 const parseScore = (value) => {
   const clean = String(value ?? "").trim();
   if (clean === "") return null;
-
   const number = Number(clean);
   return Number.isInteger(number) ? number : null;
 };
@@ -257,7 +344,6 @@ const parsePlayersCSV = (csvText) => {
   if (rows.length < 2) return [];
 
   const headers = rows[0];
-
   const teamIndex = findHeaderIndex(headers, ["EQUIPO", "TEAM", "CLUB"]);
   const playerIndex = findHeaderIndex(headers, [
     "JUGADOR", "NICK", "NOMBRE", "PLAYER", "USUARIO"
@@ -270,15 +356,100 @@ const parsePlayersCSV = (csvText) => {
       team: normalizeTeam(row[teamIndex]),
       player: String(row[playerIndex] || "").trim()
     }))
-    .filter((player) => {
-      const name = normalizeText(player.player);
+    .filter((player) =>
+      player.team &&
+      player.player &&
+      normalizeText(player.player) !== "VACANTE"
+    );
+};
 
-      return (
-        player.team &&
-        player.player &&
-        name !== "VACANTE"
-      );
-    });
+// =========================================
+// ESTADÍSTICAS INDIVIDUALES
+// =========================================
+
+const parsePlayerStatsCSV = (csvText) => {
+  const rows = parseCSV(csvText);
+  if (!rows.length) return [];
+
+  // Android busca la fila real de encabezados, no presupone que sea la primera.
+  const headerIndex = rows.findIndex((row) => {
+    const normalized = row.map(normalizeHeader);
+    return normalized.includes("JUGADOR") && normalized.includes("EQUIPO");
+  });
+
+  if (headerIndex < 0) {
+    throw new Error("No se encontraron las columnas JUGADOR y EQUIPO en el CSV.");
+  }
+
+  const headers = rows[headerIndex].map(normalizeHeader);
+
+  const indexes = {
+    player: findHeaderIndex(headers, ["JUGADOR"]),
+    team: findHeaderIndex(headers, ["EQUIPO"]),
+    maps: findHeaderIndex(headers, ["MAPAS", "MAPASJUGADOS", "PARTIDOS"]),
+    kills: findHeaderIndex(headers, ["BAJAS", "KILLS"]),
+    deaths: findHeaderIndex(headers, ["MUERTES", "DEATHS"]),
+    assists: findHeaderIndex(headers, ["ASISTENCIAS", "ASSISTS"]),
+    kd: findHeaderIndex(headers, ["KDGLOBAL", "KDGLOBAL", "KD", "KDR"]),
+    wins: findHeaderIndex(headers, ["MAPASGANADOS", "GANADOS"]),
+    losses: findHeaderIndex(headers, ["MAPASPERDIDOS", "PERDIDOS"])
+  };
+
+  return rows.slice(headerIndex + 1)
+    .map((row) => {
+      const player = String(row[indexes.player] || "").trim();
+      const team = String(row[indexes.team] || "").trim();
+      const kills = parseNumber(row[indexes.kills] >= 0 ? row[indexes.kills] : 0);
+      const deaths = parseNumber(row[indexes.deaths] >= 0 ? row[indexes.deaths] : 0);
+      const assists = parseNumber(row[indexes.assists] >= 0 ? row[indexes.assists] : 0);
+      const kdValue = indexes.kd >= 0 ? row[indexes.kd] : "";
+      const maps = indexes.maps >= 0 ? parseNumber(row[indexes.maps]) : 0;
+      const wins = indexes.wins >= 0 ? parseNumber(row[indexes.wins]) : 0;
+      const losses = indexes.losses >= 0 ? parseNumber(row[indexes.losses]) : 0;
+
+      return {
+        player,
+        normalizedPlayer: normalizeNick(player),
+        team: normalizeTeam(team),
+        kills,
+        deaths,
+        assists,
+        kd: String(kdValue || "").trim() !== ""
+          ? parseNumber(kdValue)
+          : deaths > 0 ? kills / deaths : kills,
+        maps,
+        wins,
+        losses,
+        hasMaps: indexes.maps >= 0,
+        hasWins: indexes.wins >= 0,
+        hasLosses: indexes.losses >= 0
+      };
+    })
+    .filter((item) => item.player);
+};
+
+const getPlayerStats = (allStats, nick) => {
+  const normalizedNick = normalizeNick(nick);
+  const ranking = [...allStats].sort((a, b) =>
+    b.kills - a.kills ||
+    b.kd - a.kd ||
+    a.normalizedPlayer.localeCompare(b.normalizedPlayer)
+  );
+
+  const index = ranking.findIndex(
+    (item) => item.normalizedPlayer === normalizedNick
+  );
+
+  if (index < 0) return null;
+
+  return {
+    ...ranking[index],
+    ranking: index + 1,
+    totalPlayers: ranking.length,
+    winRate: ranking[index].maps > 0
+      ? (ranking[index].wins * 100) / ranking[index].maps
+      : 0
+  };
 };
 
 // =========================================
@@ -341,11 +512,21 @@ export default function App() {
   const [expandedTeams, setExpandedTeams] = useState({});
   const [expandedTeam, setExpandedTeam] = useState(null);
 
-  // Menú de perfil del jugador
+  // Perfil público
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [selectedPlayerPhoto, setSelectedPlayerPhoto] = useState("");
   const [playerPhotoLoading, setPlayerPhotoLoading] = useState(false);
   const [playerPhotoStatus, setPlayerPhotoStatus] = useState("");
+  const [selectedPlayerProfile, setSelectedPlayerProfile] = useState(null);
+
+  // Vistas individuales
+  const [playerView, setPlayerView] = useState("");
+  const [playerStats, setPlayerStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState("");
+  const [playerPosts, setPlayerPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postsError, setPostsError] = useState("");
 
   // =========================================
   // BARRA DE AVISOS FIRESTORE
@@ -406,13 +587,10 @@ export default function App() {
           playersResponse.text()
         ]);
 
-        const parsedMatches = parseMatchesCSV(matchesText);
-        const parsedPlayers = parsePlayersCSV(playersText);
-
         if (!mounted) return;
 
-        setMatches(parsedMatches);
-        setPlayers(parsedPlayers);
+        setMatches(parseMatchesCSV(matchesText));
+        setPlayers(parsePlayersCSV(playersText));
         setMatchesError("");
         setMatchesLoading(false);
       } catch (err) {
@@ -427,7 +605,6 @@ export default function App() {
     };
 
     loadCompetitionData();
-
     const interval = window.setInterval(loadCompetitionData, REFRESH_INTERVAL);
 
     return () => {
@@ -455,50 +632,86 @@ export default function App() {
   };
 
   // =========================================
-  // PERFIL DEL JUGADOR
+  // PERFIL PÚBLICO DEL JUGADOR
   // =========================================
+
+  const closePlayerMenu = () => {
+    setSelectedPlayer("");
+    setSelectedPlayerPhoto("");
+    setPlayerPhotoLoading(false);
+    setPlayerPhotoStatus("");
+    setSelectedPlayerProfile(null);
+  };
 
   const openPlayerMenu = async (playerName) => {
     setSelectedPlayer(playerName);
     setSelectedPlayerPhoto("");
+    setSelectedPlayerProfile(null);
     setPlayerPhotoLoading(true);
     setPlayerPhotoStatus("BUSCANDO PERFIL...");
 
     try {
       const profilesRef = collection(db, "perfiles_publicos");
-      const profileQuery = query(
+      let foundDoc = null;
+
+      // Primero se intenta la búsqueda exacta usada por Android.
+      const exactQuery = query(
         profilesRef,
         where("nick", "==", playerName),
         limit(2)
       );
 
-      const snapshot = await getDocs(profileQuery);
+      const exactSnapshot = await getDocs(exactQuery);
 
-      if (snapshot.empty) {
+      if (exactSnapshot.size === 1) {
+        foundDoc = exactSnapshot.docs[0];
+      } else if (exactSnapshot.size > 1) {
+        setPlayerPhotoStatus("NO SE PUDO IDENTIFICAR EL PERFIL");
+        return;
+      } else {
+        // Respaldo: comparación normalizada para diferencias de espacios,
+        // acentos y caracteres invisibles.
+        const allProfiles = await getDocs(profilesRef);
+        const matchesFound = allProfiles.docs.filter((profileDoc) => {
+          const data = profileDoc.data();
+          return normalizeNick(data.nick) === normalizeNick(playerName);
+        });
+
+        if (matchesFound.length === 1) {
+          foundDoc = matchesFound[0];
+        } else if (matchesFound.length > 1) {
+          setPlayerPhotoStatus("NO SE PUDO IDENTIFICAR EL PERFIL");
+          return;
+        }
+      }
+
+      if (!foundDoc) {
         setPlayerPhotoStatus("PERFIL NO ENCONTRADO");
         return;
       }
 
-      if (snapshot.size > 1) {
-        setPlayerPhotoStatus("NO SE PUDO IDENTIFICAR EL PERFIL");
-        return;
-      }
-
-      const profile = snapshot.docs[0].data();
+      const profile = foundDoc.data();
       const photo = String(profile.fotoPerfil || "").trim();
+
+      const profileData = {
+        uid: foundDoc.id,
+        nick: String(profile.nick || playerName),
+        equipo: String(profile.equipo || ""),
+        biografia: String(profile.biografia || ""),
+        fotoPerfil: photo.startsWith("https://") ? photo : "",
+        gradientePerfil: String(profile.gradientePerfil || "")
+      };
+
+      setSelectedPlayerProfile(profileData);
+      setSelectedPlayerPhoto(profileData.fotoPerfil);
 
       if (!photo) {
         setPlayerPhotoStatus("SIN FOTO REGISTRADA");
-        return;
-      }
-
-      if (!photo.startsWith("https://")) {
+      } else if (!photo.startsWith("https://")) {
         setPlayerPhotoStatus("URL DE FOTO INVÁLIDA");
-        return;
+      } else {
+        setPlayerPhotoStatus("");
       }
-
-      setSelectedPlayerPhoto(photo);
-      setPlayerPhotoStatus("");
     } catch (err) {
       console.error("Error buscando perfil público:", err);
       setPlayerPhotoStatus("ERROR AL BUSCAR PERFIL");
@@ -507,11 +720,118 @@ export default function App() {
     }
   };
 
-  const closePlayerMenu = () => {
+  // =========================================
+  // ABRIR ESTADÍSTICAS DEL JUGADOR
+  // =========================================
+
+  const openPlayerStats = async () => {
+    if (!selectedPlayer) return;
+
+    const nick = selectedPlayer;
+    setPlayerView("stats");
     setSelectedPlayer("");
-    setSelectedPlayerPhoto("");
-    setPlayerPhotoLoading(false);
-    setPlayerPhotoStatus("");
+    setStatsLoading(true);
+    setStatsError("");
+    setPlayerStats(null);
+
+    try {
+      const response = await fetch(STATS_CSV_URL, { cache: "no-store" });
+
+      if (!response.ok) {
+        throw new Error(`No se pudo descargar el CSV (${response.status}).`);
+      }
+
+      const csvText = await response.text();
+      const allStats = parsePlayerStatsCSV(csvText);
+      const stats = getPlayerStats(allStats, nick);
+
+      if (!stats) {
+        setStatsError(
+          `Todavía no aparecen estadísticas para el nick oficial "${nick}".`
+        );
+      } else {
+        setPlayerStats(stats);
+      }
+    } catch (err) {
+      console.error("Error cargando estadísticas:", err);
+      setStatsError(
+        err.message || "No se pudieron cargar las estadísticas del jugador."
+      );
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // =========================================
+  // PUBLICACIONES DEL JUGADOR
+  // =========================================
+
+  useEffect(() => {
+    if (playerView !== "posts" || !selectedPlayerProfile) {
+      setPlayerPosts([]);
+      setPostsLoading(false);
+      setPostsError("");
+      return;
+    }
+
+    setPostsLoading(true);
+    setPostsError("");
+
+    const postsRef = collection(db, "publicaciones");
+    const postsQuery = query(postsRef, orderBy("createdAt", "desc"));
+
+    const unsubscribe = onSnapshot(
+      postsQuery,
+      (snapshot) => {
+        const profileUid = selectedPlayerProfile.uid;
+        const profileNick = normalizeNick(selectedPlayerProfile.nick || selectedPlayer);
+
+        const filtered = snapshot.docs
+          .map((postDoc) => ({
+            id: postDoc.id,
+            ...postDoc.data()
+          }))
+          .filter((post) => {
+            // Se prioriza el UID. Se conserva el filtro por nombre
+            // como respaldo compatible con el comportamiento Android.
+            if (post.uid && profileUid && post.uid === profileUid) return true;
+
+            return normalizeNick(post.nombre) === profileNick;
+          });
+
+        setPlayerPosts(filtered);
+        setPostsLoading(false);
+        setPostsError("");
+      },
+      (firebaseError) => {
+        console.error("Error cargando publicaciones:", firebaseError);
+        setPostsLoading(false);
+        setPostsError(
+          "No se pudieron cargar las publicaciones. Comprueba los permisos de Firestore."
+        );
+      }
+    );
+
+    return () => unsubscribe();
+  }, [playerView, selectedPlayerProfile, selectedPlayer]);
+
+  const openPlayerPosts = () => {
+    if (!selectedPlayerProfile) {
+      setPlayerPhotoStatus("NO SE ENCONTRÓ EL PERFIL DEL JUGADOR");
+      return;
+    }
+
+    setPlayerView("posts");
+    setSelectedPlayer("");
+  };
+
+  const closePlayerView = () => {
+    setPlayerView("");
+    setPlayerStats(null);
+    setStatsError("");
+    setPlayerPosts([]);
+    setPostsError("");
+    closePlayerMenu();
   };
 
   // =========================================
@@ -587,22 +907,19 @@ export default function App() {
 
   const deleteNotification = async (notificationId) => {
     if (notificationAction || !user) return;
-
     if (!window.confirm("¿Deseas eliminar esta notificación?")) return;
 
     setNotificationAction(true);
     setNotificationError("");
 
     try {
-      const notificationRef = doc(
+      await deleteDoc(doc(
         db,
         "jugadores",
         user.uid,
         "notificaciones",
         notificationId
-      );
-
-      await deleteDoc(notificationRef);
+      ));
     } catch (err) {
       console.error("Error al eliminar notificación:", err);
       setNotificationError("No se pudo eliminar la notificación.");
@@ -631,11 +948,9 @@ export default function App() {
 
       for (const chunk of chunks) {
         const batch = writeBatch(db);
-
         chunk.forEach((notification) => {
           batch.delete(doc(notificationsRef, notification.id));
         });
-
         await batch.commit();
       }
     } catch (err) {
@@ -766,7 +1081,6 @@ export default function App() {
     setShowCompetitionMenu(true);
     setActiveSection("inicio");
     setNotificationsOpen(false);
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -775,7 +1089,7 @@ export default function App() {
     setShowCompetitionMenu(true);
     setNotificationsOpen(false);
     setExpandedTeam(null);
-    closePlayerMenu();
+    closePlayerView();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -785,7 +1099,7 @@ export default function App() {
     setActiveSection("inicio");
     setNotificationsOpen(false);
     setExpandedTeam(null);
-    closePlayerMenu();
+    closePlayerView();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -802,31 +1116,24 @@ export default function App() {
           <p>CENTRO DE AVISOS</p>
         </div>
 
-        <button
-          onClick={() => setNotificationsOpen(false)}
-          aria-label="Cerrar notificaciones"
-        >
+        <button onClick={() => setNotificationsOpen(false)} aria-label="Cerrar notificaciones">
           ✕
         </button>
       </div>
 
-      <div
-        style={{
-          height: "2px",
-          background: "linear-gradient(90deg, #00D9FF, transparent)",
-          margin: "10px 0"
-        }}
-      />
+      <div style={{
+        height: "2px",
+        background: "linear-gradient(90deg, #00D9FF, transparent)",
+        margin: "10px 0"
+      }} />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "10px",
-          gap: "8px"
-        }}
-      >
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "10px",
+        gap: "8px"
+      }}>
         <span style={{ color: "#8EA6BA", fontSize: "11px", fontWeight: "700" }}>
           {unreadNotifications} SIN LEER
         </span>
@@ -878,7 +1185,6 @@ export default function App() {
                 </div>
 
                 <p>{notification.mensaje || ""}</p>
-
                 <small>{formatNotificationDate(notification.createdAt)}</small>
 
                 {unread && (
@@ -965,19 +1271,14 @@ export default function App() {
         </div>
 
         {isExpanded && (
-          <div
-            className="teams-roster"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div className="teams-roster" onClick={(event) => event.stopPropagation()}>
             {teamPlayers.length === 0 ? (
               <>
                 <div className="teams-player-row">
                   <span className="teams-player-number">01</span>
                   <span className="teams-player-name">POR DEFINIR</span>
                 </div>
-                <p className="teams-empty-roster">
-                  SIN MÁS JUGADORES ASIGNADOS
-                </p>
+                <p className="teams-empty-roster">SIN MÁS JUGADORES ASIGNADOS</p>
               </>
             ) : (
               <>
@@ -992,22 +1293,16 @@ export default function App() {
                       {String(index + 1).padStart(2, "0")}
                     </span>
 
-                    <span className="teams-player-name">
-                      {player.player}
-                    </span>
+                    <span className="teams-player-name">{player.player}</span>
 
                     {index === 0 && (
-                      <span className="teams-captain-label">
-                        (CAPITÁN)
-                      </span>
+                      <span className="teams-captain-label">(CAPITÁN)</span>
                     )}
                   </button>
                 ))}
 
                 {teamPlayers.length === 1 && (
-                  <p className="teams-empty-roster">
-                    SIN MÁS JUGADORES ASIGNADOS
-                  </p>
+                  <p className="teams-empty-roster">SIN MÁS JUGADORES ASIGNADOS</p>
                 )}
               </>
             )}
@@ -1024,17 +1319,23 @@ export default function App() {
   const renderPlayerMenu = () => {
     if (!selectedPlayer) return null;
 
+    const gradientName = selectedPlayerProfile?.gradientePerfil || "";
+    const gradient = GRADIENTS[gradientName] || ["#071827", "#123D59"];
+
     return (
       <div className="player-profile-overlay" onClick={closePlayerMenu}>
         <section
           className="player-profile-modal"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="player-profile-heading">
-            PERFIL DEL JUGADOR
-          </div>
+          <div className="player-profile-heading">PERFIL DEL JUGADOR</div>
 
-          <div className="player-profile-avatar">
+          <div
+            className="player-profile-avatar"
+            style={{
+              background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`
+            }}
+          >
             {selectedPlayerPhoto ? (
               <img src={selectedPlayerPhoto} alt={selectedPlayer} />
             ) : (
@@ -1048,14 +1349,39 @@ export default function App() {
             <p className="player-profile-photo-status">{playerPhotoStatus}</p>
           ) : null}
 
-          <h3 className="player-profile-name">{selectedPlayer}</h3>
+          <h3 className="player-profile-name">
+            {selectedPlayerProfile?.nick || selectedPlayer}
+          </h3>
+
+          {selectedPlayerProfile?.equipo && (
+            <p style={{
+              color: "#00D9FF",
+              textAlign: "center",
+              fontSize: "12px",
+              fontWeight: "700",
+              margin: "5px 0"
+            }}>
+              {selectedPlayerProfile.equipo}
+            </p>
+          )}
+
+          {selectedPlayerProfile?.biografia && (
+            <p style={{
+              color: "#AABBCB",
+              textAlign: "center",
+              fontSize: "12px",
+              margin: "8px 12px"
+            }}>
+              {selectedPlayerProfile.biografia}
+            </p>
+          )}
 
           <div className="player-profile-divider" />
 
           <button
             type="button"
             className="player-profile-option"
-            onClick={() => window.alert("La pantalla de estadísticas individuales todavía está pendiente de implementación en la versión web.")}
+            onClick={openPlayerStats}
           >
             <span className="player-profile-option-icon">◈</span>
             <span>
@@ -1068,7 +1394,7 @@ export default function App() {
           <button
             type="button"
             className="player-profile-option"
-            onClick={() => window.alert("La pantalla de publicaciones todavía está pendiente de implementación en la versión web.")}
+            onClick={openPlayerPosts}
           >
             <span className="player-profile-option-icon">▣</span>
             <span>
@@ -1091,6 +1417,341 @@ export default function App() {
   };
 
   // =========================================
+  // VISTA DE ESTADÍSTICAS
+  // =========================================
+
+  const renderPlayerStats = () => (
+    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
+      <span className="placeholder-label">PERFIL DEL JUGADOR</span>
+      <h2>ESTADÍSTICAS</h2>
+
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "12px",
+        margin: "15px 0 25px"
+      }}>
+        {selectedPlayerProfile?.fotoPerfil ? (
+          <img
+            src={selectedPlayerProfile.fotoPerfil}
+            alt={selectedPlayer}
+            style={{
+              width: "58px",
+              height: "58px",
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "2px solid #00D9FF"
+            }}
+          />
+        ) : (
+          <div style={{
+            width: "58px",
+            height: "58px",
+            borderRadius: "50%",
+            display: "grid",
+            placeItems: "center",
+            background: "#123D59",
+            color: "#fff",
+            fontSize: "24px",
+            fontWeight: "800"
+          }}>
+            {(selectedPlayerProfile?.nick || selectedPlayer || "?").slice(0, 1)}
+          </div>
+        )}
+
+        <div style={{ textAlign: "left" }}>
+          <strong style={{ color: "#fff", display: "block" }}>
+            {selectedPlayerProfile?.nick || selectedPlayer}
+          </strong>
+          <small style={{ color: "#00D9FF" }}>
+            {selectedPlayerProfile?.equipo || ""}
+          </small>
+        </div>
+      </div>
+
+      {statsLoading && (
+        <div className="matches-state">
+          <span className="matches-spinner" />
+          <p>CARGANDO ESTADÍSTICAS...</p>
+        </div>
+      )}
+
+      {!statsLoading && statsError && (
+        <div className="matches-state matches-error">
+          <p>{statsError}</p>
+        </div>
+      )}
+
+      {!statsLoading && playerStats && (
+        <>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: "10px",
+            margin: "15px 0"
+          }}>
+            {[
+              ["RANKING", `#${playerStats.ranking}`],
+              ["BAJAS", formatNumber(playerStats.kills)],
+              ["MUERTES", formatNumber(playerStats.deaths)],
+              ["ASISTENCIAS", formatNumber(playerStats.assists)],
+              ["K/D GLOBAL", formatNumber(playerStats.kd, 2)],
+              ["MAPAS JUGADOS", formatNumber(playerStats.maps)]
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  padding: "18px 10px",
+                  border: "1px solid rgba(0,217,255,.25)",
+                  borderRadius: "10px",
+                  background: "rgba(5,20,35,.75)"
+                }}
+              >
+                <small style={{
+                  display: "block",
+                  color: "#8EA6BA",
+                  fontSize: "10px",
+                  fontWeight: "700"
+                }}>
+                  {label}
+                </small>
+                <strong style={{
+                  display: "block",
+                  color: "#00D9FF",
+                  fontSize: "23px",
+                  marginTop: "7px"
+                }}>
+                  {value}
+                </strong>
+              </div>
+            ))}
+          </div>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: "8px",
+            margin: "12px 0"
+          }}>
+            {[
+              ["GANADOS", playerStats.hasWins ? formatNumber(playerStats.wins) : "—"],
+              ["PERDIDOS", playerStats.hasLosses ? formatNumber(playerStats.losses) : "—"],
+              ["VICTORIAS", playerStats.hasMaps
+                ? `${formatNumber(playerStats.winRate, 1)}%`
+                : "—"]
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  padding: "14px 5px",
+                  borderRadius: "8px",
+                  background: "rgba(255,255,255,.04)",
+                  border: "1px solid rgba(255,255,255,.1)"
+                }}
+              >
+                <small style={{ display: "block", color: "#8EA6BA", fontSize: "9px" }}>
+                  {label}
+                </small>
+                <strong style={{ color: "#fff", fontSize: "17px" }}>{value}</strong>
+              </div>
+            ))}
+          </div>
+
+          <p style={{
+            color: "#71899D",
+            fontSize: "10px",
+            textAlign: "center",
+            marginTop: "15px"
+          }}>
+            POSICIÓN CALCULADA POR BAJAS ACUMULADAS
+          </p>
+        </>
+      )}
+
+      <button className="primary-button" onClick={closePlayerView}>
+        VOLVER
+      </button>
+    </section>
+  );
+
+  // =========================================
+  // VISTA DE PUBLICACIONES
+  // =========================================
+
+  const renderPlayerPosts = () => (
+    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
+      <span className="placeholder-label">PERFIL DEL JUGADOR</span>
+      <h2>JUGADAS DESTACADAS</h2>
+
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "12px",
+        margin: "15px 0 25px"
+      }}>
+        {selectedPlayerProfile?.fotoPerfil ? (
+          <img
+            src={selectedPlayerProfile.fotoPerfil}
+            alt={selectedPlayer}
+            style={{
+              width: "52px",
+              height: "52px",
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "2px solid #00D9FF"
+            }}
+          />
+        ) : null}
+
+        <strong style={{ color: "#fff" }}>
+          {selectedPlayerProfile?.nick || selectedPlayer}
+        </strong>
+      </div>
+
+      {postsLoading && (
+        <div className="matches-state">
+          <span className="matches-spinner" />
+          <p>CARGANDO PUBLICACIONES...</p>
+        </div>
+      )}
+
+      {!postsLoading && postsError && (
+        <div className="matches-state matches-error">
+          <p>{postsError}</p>
+        </div>
+      )}
+
+      {!postsLoading && !postsError && playerPosts.length === 0 && (
+        <div className="matches-state">
+          <p>ESTE JUGADOR TODAVÍA NO TIENE PUBLICACIONES.</p>
+        </div>
+      )}
+
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr)",
+        gap: "18px",
+        marginTop: "15px"
+      }}>
+        {playerPosts.map((post) => {
+          const isVideo = String(post.mediaType || "").startsWith("video/");
+
+          return (
+            <article
+              key={post.id}
+              style={{
+                overflow: "hidden",
+                borderRadius: "12px",
+                background: "rgba(5,15,27,.9)",
+                border: "1px solid rgba(0,217,255,.2)",
+                textAlign: "left"
+              }}
+            >
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "12px"
+              }}>
+                {selectedPlayerProfile?.fotoPerfil ? (
+                  <img
+                    src={selectedPlayerProfile.fotoPerfil}
+                    alt=""
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "50%",
+                      objectFit: "cover"
+                    }}
+                  />
+                ) : (
+                  <span style={{
+                    width: "38px",
+                    height: "38px",
+                    borderRadius: "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#123D59",
+                    color: "#fff"
+                  }}>
+                    {(post.nick || post.nombre || "?").slice(0, 1)}
+                  </span>
+                )}
+
+                <div>
+                  <strong style={{ color: "#fff", display: "block" }}>
+                    {post.nick || post.nombre || selectedPlayer}
+                  </strong>
+                  <small style={{ color: "#00D9FF" }}>
+                    {post.equipo || selectedPlayerProfile?.equipo || ""}
+                  </small>
+                </div>
+              </div>
+
+              {post.mediaUrl && (
+                isVideo ? (
+                  <video
+                    src={post.mediaUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      maxHeight: "440px",
+                      background: "#000"
+                    }}
+                  />
+                ) : (
+                  <img
+                    src={post.mediaUrl}
+                    alt="Publicación del jugador"
+                    loading="lazy"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      maxHeight: "440px",
+                      objectFit: "contain",
+                      background: "#000"
+                    }}
+                  />
+                )
+              )}
+
+              {post.descripcion && (
+                <p style={{
+                  color: "#E5EDF5",
+                  padding: "12px",
+                  margin: 0,
+                  fontSize: "13px",
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere"
+                }}>
+                  {post.descripcion}
+                </p>
+              )}
+
+              <div style={{
+                padding: "0 12px 12px",
+                color: "#7890A5",
+                fontSize: "10px"
+              }}>
+                {formatPostDate(post.createdAt)}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <button className="primary-button" onClick={closePlayerView}>
+        VOLVER
+      </button>
+    </section>
+  );
+
+  // =========================================
   // PANTALLA PRINCIPAL
   // =========================================
 
@@ -1102,18 +1763,12 @@ export default function App() {
           <strong>4VS4</strong>
         </div>
 
-        <div className="welcome-logo-caption">
-          COMPETICIÓN OFICIAL
-        </div>
+        <div className="welcome-logo-caption">COMPETICIÓN OFICIAL</div>
       </div>
 
       <div className="welcome-matches-heading">
         <h2>PRÓXIMOS ENFRENTAMIENTOS</h2>
-
-        <span className="welcome-live">
-          <i />
-          EN VIVO
-        </span>
+        <span className="welcome-live"><i /> EN VIVO</span>
       </div>
 
       <div className="welcome-matches-panel">
@@ -1134,9 +1789,7 @@ export default function App() {
         )}
 
         {!matchesLoading && matchesError && (
-          <div className="matches-state matches-error">
-            <p>{matchesError}</p>
-          </div>
+          <div className="matches-state matches-error"><p>{matchesError}</p></div>
         )}
 
         {!matchesLoading && !matchesError && currentMatchday && (
@@ -1180,7 +1833,6 @@ export default function App() {
                             </span>
                           )}
                         </button>
-
                         <strong>{match.team1}</strong>
                       </div>
 
@@ -1211,7 +1863,6 @@ export default function App() {
                             </span>
                           )}
                         </button>
-
                         <strong>{match.team2}</strong>
                       </div>
 
@@ -1221,19 +1872,13 @@ export default function App() {
                             JUGADORES · {match.team1}
                           </div>
 
-                          {getPlayersForTeam(match.team1).length > 0 ? (
-                            getPlayersForTeam(match.team1).map((player, playerIndex) => (
-                              <div
-                                className="team-roster-player"
-                                key={`${player.player}-${playerIndex}`}
-                              >
-                                <span>{playerIndex + 1}</span>
-                                {player.player}
-                              </div>
-                            ))
-                          ) : (
-                            <p>No se encontraron jugadores para este equipo.</p>
-                          )}
+                          {getPlayersForTeam(match.team1).length > 0
+                            ? getPlayersForTeam(match.team1).map((player, playerIndex) => (
+                                <div className="team-roster-player" key={`${player.player}-${playerIndex}`}>
+                                  <span>{playerIndex + 1}</span>{player.player}
+                                </div>
+                              ))
+                            : <p>No se encontraron jugadores para este equipo.</p>}
                         </div>
                       )}
 
@@ -1243,19 +1888,13 @@ export default function App() {
                             JUGADORES · {match.team2}
                           </div>
 
-                          {getPlayersForTeam(match.team2).length > 0 ? (
-                            getPlayersForTeam(match.team2).map((player, playerIndex) => (
-                              <div
-                                className="team-roster-player"
-                                key={`${player.player}-${playerIndex}`}
-                              >
-                                <span>{playerIndex + 1}</span>
-                                {player.player}
-                              </div>
-                            ))
-                          ) : (
-                            <p>No se encontraron jugadores para este equipo.</p>
-                          )}
+                          {getPlayersForTeam(match.team2).length > 0
+                            ? getPlayersForTeam(match.team2).map((player, playerIndex) => (
+                                <div className="team-roster-player" key={`${player.player}-${playerIndex}`}>
+                                  <span>{playerIndex + 1}</span>{player.player}
+                                </div>
+                              ))
+                            : <p>No se encontraron jugadores para este equipo.</p>}
                         </div>
                       )}
                     </article>
@@ -1277,20 +1916,14 @@ export default function App() {
         SISTEMA DE COMPETICIÓN ACTIVO
       </div>
 
-      <div className="welcome-footer">
-        LIGA 4VS4 OFICIAL | 2026
-      </div>
+      <div className="welcome-footer">LIGA 4VS4 OFICIAL | 2026</div>
 
       <button className="welcome-enter-button" onClick={enterChampionship}>
-        ENTRAR AL CAMPEONATO
-        <span>›</span>
+        ENTRAR AL CAMPEONATO <span>›</span>
       </button>
 
       {!user && (
-        <button
-          className="welcome-register-link"
-          onClick={() => openMode("register")}
-        >
+        <button className="welcome-register-link" onClick={() => openMode("register")}>
           ¿NO TIENES CUENTA? <strong>REGÍSTRATE</strong>
         </button>
       )}
@@ -1316,7 +1949,6 @@ export default function App() {
           style={{ position: "relative" }}
         >
           🔔
-
           {unreadNotifications > 0 && (
             <span className="notification-counter">
               {unreadNotifications > 99 ? "99+" : unreadNotifications}
@@ -1327,9 +1959,7 @@ export default function App() {
 
       {notificationsOpen && renderNotifications()}
 
-      <div className="menu-section-heading">
-        CENTRO DE COMPETICIÓN
-      </div>
+      <div className="menu-section-heading">CENTRO DE COMPETICIÓN</div>
 
       <div className="competition-grid">
         {menuItems.map((item) => (
@@ -1352,11 +1982,7 @@ export default function App() {
 
       <div className="menu-footer">LIGA 4VS4 - 2026</div>
 
-      <button
-        type="button"
-        className="return-welcome-button"
-        onClick={returnToWelcome}
-      >
+      <button type="button" className="return-welcome-button" onClick={returnToWelcome}>
         VOLVER A LA PANTALLA PRINCIPAL
       </button>
     </section>
@@ -1380,10 +2006,7 @@ export default function App() {
           onClick={() => window.location.reload()}
         >
           NO SE PUDIERON CARGAR LAS PLANTILLAS
-
-          <span>
-            TOCA AQUÍ PARA REINTENTAR
-          </span>
+          <span>TOCA AQUÍ PARA REINTENTAR</span>
         </button>
       ) : (
         <div className="teams-grid">
@@ -1400,18 +2023,12 @@ export default function App() {
   const renderSectionPlaceholder = () => (
     <section className="web-section-placeholder">
       <span className="placeholder-label">CENTRO DE COMPETICIÓN</span>
-
       <h2>{sectionNames[activeSection]}</h2>
-
       <p>
         Este apartado se está preparando para conectarlo con los mismos datos
         de la aplicación Android.
       </p>
-
-      <button
-        className="primary-button"
-        onClick={() => navigateTo("inicio")}
-      >
+      <button className="primary-button" onClick={() => navigateTo("inicio")}>
         VOLVER AL MENÚ
       </button>
     </section>
@@ -1434,7 +2051,6 @@ export default function App() {
             <header className="welcome-header">
               <div className="brand">
                 <span className="brand-icon">L4</span>
-
                 <div>
                   <h1>LIGA4VS4</h1>
                   <p>COMPETICIÓN OFICIAL</p>
@@ -1459,7 +2075,6 @@ export default function App() {
             <header className="logged-header">
               <div className="brand">
                 <span className="brand-icon">L4</span>
-
                 <div>
                   <h1>LIGA4VS4</h1>
                   <p>COMPETICIÓN OFICIAL</p>
@@ -1497,17 +2112,21 @@ export default function App() {
             </>
           ) : (
             <>
-              {activeSection === "inicio"
-                ? renderMenu()
-                : activeSection === "equipos"
-                  ? renderTeams()
-                  : renderSectionPlaceholder()}
+              {playerView === "stats"
+                ? renderPlayerStats()
+                : playerView === "posts"
+                  ? renderPlayerPosts()
+                  : activeSection === "inicio"
+                    ? renderMenu()
+                    : activeSection === "equipos"
+                      ? renderTeams()
+                      : renderSectionPlaceholder()}
 
               <nav className="web-bottom-navigation">
                 {bottomItems.map((item) => (
                   <button
                     key={item.id}
-                    className={activeSection === item.id ? "active" : ""}
+                    className={activeSection === item.id && !playerView ? "active" : ""}
                     onClick={() => navigateTo(item.id)}
                   >
                     <span>{item.icon}</span>
@@ -1524,10 +2143,7 @@ export default function App() {
 
       {mode !== "home" && !user && (
         <div className="auth-overlay" onClick={() => openMode("home")}>
-          <section
-            className="auth-card"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <section className="auth-card" onClick={(event) => event.stopPropagation()}>
             <button
               className="auth-close"
               onClick={() => openMode("home")}
@@ -1574,7 +2190,6 @@ export default function App() {
               {mode !== "forgot" && (
                 <>
                   <label htmlFor="auth-password">CONTRASEÑA</label>
-
                   <input
                     id="auth-password"
                     type="password"
@@ -1590,7 +2205,6 @@ export default function App() {
               {mode === "register" && (
                 <>
                   <label htmlFor="auth-confirm">CONFIRMAR CONTRASEÑA</label>
-
                   <input
                     id="auth-confirm"
                     type="password"
@@ -1623,12 +2237,9 @@ export default function App() {
                   <button onClick={() => openMode("forgot")}>
                     ¿Olvidaste tu contraseña?
                   </button>
-
                   <p>
                     ¿No tienes cuenta?{" "}
-                    <button onClick={() => openMode("register")}>
-                      Regístrate
-                    </button>
+                    <button onClick={() => openMode("register")}>Regístrate</button>
                   </p>
                 </>
               )}
@@ -1636,9 +2247,7 @@ export default function App() {
               {mode === "register" && (
                 <p>
                   ¿Ya tienes cuenta?{" "}
-                  <button onClick={() => openMode("login")}>
-                    Inicia sesión
-                  </button>
+                  <button onClick={() => openMode("login")}>Inicia sesión</button>
                 </p>
               )}
 
