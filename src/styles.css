@@ -1635,3 +1635,43 @@ footer p {
     font-size: 8px;
   }
 }
+/* =====================================
+   CONTROL DE TAMAÑO DE ESCUDOS - EQUIPOS
+===================================== */
+
+.teams-shield-wrap {
+  width: 82px;
+  height: 82px;
+  min-width: 82px;
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin: 0 auto 12px;
+}
+
+.teams-shield {
+  width: 100%;
+  height: 100%;
+  max-width: 82px;
+  max-height: 82px;
+  object-fit: contain;
+  display: block;
+}
+
+.teams-shield-fallback {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.match-shield {
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+}
