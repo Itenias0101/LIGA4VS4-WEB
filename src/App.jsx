@@ -845,14 +845,23 @@ export default function App() {
     }
   };
 
+  const openPlayerProfile = () => {
+    if (!selectedPlayerProfile) {
+      setPlayerPhotoStatus("NO SE ENCONTRÓ EL PERFIL DEL JUGADOR");
+      return;
+    }
+
+    setPlayerView("profile");
+    setSelectedPlayer("");
+  };
+
   // =========================================
   // ABRIR ESTADÍSTICAS DEL JUGADOR
   // =========================================
 
   const openPlayerStats = async () => {
-    if (!selectedPlayer) return;
-
-    const nick = selectedPlayer;
+    const nick = selectedPlayer || selectedPlayerProfile?.nick || "";
+    if (!nick) return;
     setPlayerView("stats");
     setSelectedPlayer("");
     setStatsLoading(true);
@@ -1506,6 +1515,19 @@ export default function App() {
           <button
             type="button"
             className="player-profile-option"
+            onClick={openPlayerProfile}
+          >
+            <span className="player-profile-option-icon">◉</span>
+            <span>
+              <strong>VER PERFIL</strong>
+              <small>Información y biografía del jugador</small>
+            </span>
+            <b>›</b>
+          </button>
+
+          <button
+            type="button"
+            className="player-profile-option"
             onClick={openPlayerStats}
           >
             <span className="player-profile-option-icon">◈</span>
@@ -1542,6 +1564,137 @@ export default function App() {
   };
 
   // =========================================
+  // PESTAÑAS DEL PERFIL PÚBLICO
+  // =========================================
+
+  const renderPlayerTabs = () => (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+      gap: "6px",
+      width: "100%",
+      margin: "18px 0 22px",
+      padding: "5px",
+      borderRadius: "12px",
+      background: "rgba(3,12,22,.9)",
+      border: "1px solid rgba(0,217,255,.18)"
+    }}>
+      {[
+        ["profile", "PERFIL"],
+        ["stats", "ESTADÍSTICAS"],
+        ["posts", "ACTIVIDAD"]
+      ].map(([tab, label]) => (
+        <button
+          key={tab}
+          type="button"
+          onClick={() => {
+            if (tab === "stats") {
+              if (playerView !== "stats" || !playerStats) openPlayerStats();
+            } else if (tab === "posts") {
+              openPlayerPosts();
+            } else {
+              setPlayerView("profile");
+            }
+          }}
+          style={{
+            minWidth: 0,
+            padding: "12px 4px",
+            border: playerView === tab ? "1px solid rgba(0,217,255,.7)" : "1px solid transparent",
+            borderRadius: "8px",
+            background: playerView === tab ? "linear-gradient(135deg,rgba(0,217,255,.2),rgba(0,91,140,.18))" : "transparent",
+            color: playerView === tab ? "#00D9FF" : "#8197AA",
+            fontSize: "clamp(9px, 2.5vw, 11px)",
+            fontWeight: 900,
+            letterSpacing: ".35px",
+            cursor: "pointer"
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderPlayerIdentity = () => (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "12px",
+      margin: "15px 0 8px"
+    }}>
+      {selectedPlayerProfile?.fotoPerfil ? (
+        <img
+          src={selectedPlayerProfile.fotoPerfil}
+          alt={selectedPlayerProfile.nick || selectedPlayer}
+          style={{
+            width: "58px",
+            height: "58px",
+            borderRadius: "50%",
+            objectFit: "cover",
+            border: "2px solid #00D9FF"
+          }}
+        />
+      ) : (
+        <div style={{
+          width: "58px",
+          height: "58px",
+          borderRadius: "50%",
+          display: "grid",
+          placeItems: "center",
+          background: "#123D59",
+          color: "#fff",
+          fontSize: "24px",
+          fontWeight: "800"
+        }}>
+          {(selectedPlayerProfile?.nick || selectedPlayer || "?").slice(0, 1).toUpperCase()}
+        </div>
+      )}
+      <div style={{ textAlign: "left" }}>
+        <strong style={{ color: "#fff", display: "block", fontSize: "17px" }}>
+          {selectedPlayerProfile?.nick || selectedPlayer}
+        </strong>
+        <small style={{ color: "#00D9FF", fontWeight: 700 }}>
+          {selectedPlayerProfile?.equipo || ""}
+        </small>
+      </div>
+    </div>
+  );
+
+  const renderPlayerProfile = () => (
+    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
+      <span className="placeholder-label">JUGADOR</span>
+      <h2>PERFIL</h2>
+      {renderPlayerIdentity()}
+      {renderPlayerTabs()}
+
+      <div style={{
+        padding: "20px 16px",
+        borderRadius: "12px",
+        border: "1px solid rgba(0,217,255,.22)",
+        background: "linear-gradient(145deg,rgba(5,25,43,.95),rgba(3,10,19,.95))",
+        textAlign: "left"
+      }}>
+        <small style={{ color: "#00D9FF", fontWeight: 800, letterSpacing: "1px" }}>BIOGRAFÍA</small>
+        <p style={{
+          color: selectedPlayerProfile?.biografia ? "#D5E0EA" : "#71899D",
+          fontSize: "13px",
+          lineHeight: 1.65,
+          margin: "10px 0 0",
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere"
+        }}>
+          {selectedPlayerProfile?.biografia || "Este jugador todavía no ha añadido una biografía."}
+        </p>
+      </div>
+
+      <button className="primary-button" onClick={closePlayerView} style={{ marginTop: "20px" }}>
+        VOLVER A EQUIPOS
+      </button>
+    </section>
+  );
+
+  // =========================================
   // VISTA DE ESTADÍSTICAS
   // =========================================
 
@@ -1550,50 +1703,8 @@ export default function App() {
       <span className="placeholder-label">PERFIL DEL JUGADOR</span>
       <h2>ESTADÍSTICAS</h2>
 
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "12px",
-        margin: "15px 0 25px"
-      }}>
-        {selectedPlayerProfile?.fotoPerfil ? (
-          <img
-            src={selectedPlayerProfile.fotoPerfil}
-            alt={selectedPlayer}
-            style={{
-              width: "58px",
-              height: "58px",
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "2px solid #00D9FF"
-            }}
-          />
-        ) : (
-          <div style={{
-            width: "58px",
-            height: "58px",
-            borderRadius: "50%",
-            display: "grid",
-            placeItems: "center",
-            background: "#123D59",
-            color: "#fff",
-            fontSize: "24px",
-            fontWeight: "800"
-          }}>
-            {(selectedPlayerProfile?.nick || selectedPlayer || "?").slice(0, 1)}
-          </div>
-        )}
-
-        <div style={{ textAlign: "left" }}>
-          <strong style={{ color: "#fff", display: "block" }}>
-            {selectedPlayerProfile?.nick || selectedPlayer}
-          </strong>
-          <small style={{ color: "#00D9FF" }}>
-            {selectedPlayerProfile?.equipo || ""}
-          </small>
-        </div>
-      </div>
+      {renderPlayerIdentity()}
+      {renderPlayerTabs()}
 
       {statsLoading && (
         <div className="matches-state">
@@ -1709,31 +1820,8 @@ export default function App() {
       <span className="placeholder-label">PERFIL DEL JUGADOR</span>
       <h2>JUGADAS DESTACADAS</h2>
 
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "12px",
-        margin: "15px 0 25px"
-      }}>
-        {selectedPlayerProfile?.fotoPerfil ? (
-          <img
-            src={selectedPlayerProfile.fotoPerfil}
-            alt={selectedPlayer}
-            style={{
-              width: "52px",
-              height: "52px",
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "2px solid #00D9FF"
-            }}
-          />
-        ) : null}
-
-        <strong style={{ color: "#fff" }}>
-          {selectedPlayerProfile?.nick || selectedPlayer}
-        </strong>
-      </div>
+      {renderPlayerIdentity()}
+      {renderPlayerTabs()}
 
       {postsLoading && (
         <div className="matches-state">
@@ -2262,11 +2350,13 @@ export default function App() {
             </>
           ) : (
             <>
-              {playerView === "stats"
-                ? renderPlayerStats()
-                : playerView === "posts"
-                  ? renderPlayerPosts()
-                  : activeSection === "inicio"
+              {playerView === "profile"
+                ? renderPlayerProfile()
+                : playerView === "stats"
+                  ? renderPlayerStats()
+                  : playerView === "posts"
+                    ? renderPlayerPosts()
+                    : activeSection === "inicio"
                     ? renderMenu()
                     : activeSection === "equipos"
                       ? renderTeams()
