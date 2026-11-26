@@ -16,7 +16,10 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  getDocs,
+  where,
+  limit
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
@@ -41,10 +44,6 @@ const TEAMS = [
   "THE BUTCHERS",
   "NoMercy"
 ];
-
-// =========================================
-// ESCUDOS
-// =========================================
 
 const TEAM_SHIELDS = {
   ETERNITY:
@@ -251,8 +250,6 @@ const getCurrentMatchday = (matches) => {
 
 // =========================================
 // JUGADORES
-// El orden de Google Sheets se conserva.
-// El primer jugador de cada equipo es capitán.
 // =========================================
 
 const parsePlayersCSV = (csvText) => {
@@ -343,6 +340,12 @@ export default function App() {
 
   const [expandedTeams, setExpandedTeams] = useState({});
   const [expandedTeam, setExpandedTeam] = useState(null);
+
+  // Menú de perfil del jugador
+  const [selectedPlayer, setSelectedPlayer] = useState("");
+  const [selectedPlayerPhoto, setSelectedPlayerPhoto] = useState("");
+  const [playerPhotoLoading, setPlayerPhotoLoading] = useState(false);
+  const [playerPhotoStatus, setPlayerPhotoStatus] = useState("");
 
   // =========================================
   // BARRA DE AVISOS FIRESTORE
@@ -449,6 +452,66 @@ export default function App() {
 
   const toggleCompetitionTeam = (team) => {
     setExpandedTeam((previous) => previous === team ? null : team);
+  };
+
+  // =========================================
+  // PERFIL DEL JUGADOR
+  // =========================================
+
+  const openPlayerMenu = async (playerName) => {
+    setSelectedPlayer(playerName);
+    setSelectedPlayerPhoto("");
+    setPlayerPhotoLoading(true);
+    setPlayerPhotoStatus("BUSCANDO PERFIL...");
+
+    try {
+      const profilesRef = collection(db, "perfiles_publicos");
+      const profileQuery = query(
+        profilesRef,
+        where("nick", "==", playerName),
+        limit(2)
+      );
+
+      const snapshot = await getDocs(profileQuery);
+
+      if (snapshot.empty) {
+        setPlayerPhotoStatus("PERFIL NO ENCONTRADO");
+        return;
+      }
+
+      if (snapshot.size > 1) {
+        setPlayerPhotoStatus("NO SE PUDO IDENTIFICAR EL PERFIL");
+        return;
+      }
+
+      const profile = snapshot.docs[0].data();
+      const photo = String(profile.fotoPerfil || "").trim();
+
+      if (!photo) {
+        setPlayerPhotoStatus("SIN FOTO REGISTRADA");
+        return;
+      }
+
+      if (!photo.startsWith("https://")) {
+        setPlayerPhotoStatus("URL DE FOTO INVÁLIDA");
+        return;
+      }
+
+      setSelectedPlayerPhoto(photo);
+      setPlayerPhotoStatus("");
+    } catch (err) {
+      console.error("Error buscando perfil público:", err);
+      setPlayerPhotoStatus("ERROR AL BUSCAR PERFIL");
+    } finally {
+      setPlayerPhotoLoading(false);
+    }
+  };
+
+  const closePlayerMenu = () => {
+    setSelectedPlayer("");
+    setSelectedPlayerPhoto("");
+    setPlayerPhotoLoading(false);
+    setPlayerPhotoStatus("");
   };
 
   // =========================================
@@ -712,6 +775,7 @@ export default function App() {
     setShowCompetitionMenu(true);
     setNotificationsOpen(false);
     setExpandedTeam(null);
+    closePlayerMenu();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -721,6 +785,7 @@ export default function App() {
     setActiveSection("inicio");
     setNotificationsOpen(false);
     setExpandedTeam(null);
+    closePlayerMenu();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -859,13 +924,11 @@ export default function App() {
     const shield = getTeamShield(team);
     const isExpanded = expandedTeam === team;
 
-    const toggleFromCard = () => toggleCompetitionTeam(team);
-
     return (
       <article
         className={`teams-card ${isExpanded ? "expanded" : ""}`}
         key={team}
-        onClick={toggleFromCard}
+        onClick={() => toggleCompetitionTeam(team)}
         aria-expanded={isExpanded}
       >
         <div className="teams-card-top">
@@ -893,14 +956,11 @@ export default function App() {
             className="teams-toggle-button"
             onClick={(event) => {
               event.stopPropagation();
-              toggleFromCard();
+              toggleCompetitionTeam(team);
             }}
             aria-expanded={isExpanded}
           >
-            <span>VER PLANTILLA</span>
-            <strong className={isExpanded ? "rotated" : ""}>
-              +
-            </strong>
+            VER PLANTILLA <strong>{isExpanded ? "−" : "+"}</strong>
           </button>
         </div>
 
@@ -909,12 +969,24 @@ export default function App() {
             className="teams-roster"
             onClick={(event) => event.stopPropagation()}
           >
-            {teamPlayers.length > 0 ? (
-              <div className="teams-player-list">
+            {teamPlayers.length === 0 ? (
+              <>
+                <div className="teams-player-row">
+                  <span className="teams-player-number">01</span>
+                  <span className="teams-player-name">POR DEFINIR</span>
+                </div>
+                <p className="teams-empty-roster">
+                  SIN MÁS JUGADORES ASIGNADOS
+                </p>
+              </>
+            ) : (
+              <>
                 {teamPlayers.map((player, index) => (
-                  <div
+                  <button
+                    type="button"
                     className={`teams-player-row ${index === 0 ? "team-captain" : ""}`}
                     key={`${team}-${player.player}-${index}`}
+                    onClick={() => openPlayerMenu(player.player)}
                   >
                     <span className="teams-player-number">
                       {String(index + 1).padStart(2, "0")}
@@ -929,29 +1001,92 @@ export default function App() {
                         (CAPITÁN)
                       </span>
                     )}
-                  </div>
+                  </button>
                 ))}
-              </div>
-            ) : (
-              <div className="teams-player-list">
-                <div className="teams-player-row">
-                  <span className="teams-player-number">01</span>
-                  <span className="teams-player-name">POR DEFINIR</span>
-                </div>
-                <p className="teams-empty-roster">
-                  SIN MÁS JUGADORES ASIGNADOS
-                </p>
-              </div>
-            )}
 
-            {teamPlayers.length === 1 && (
-              <p className="teams-empty-roster">
-                SIN MÁS JUGADORES ASIGNADOS
-              </p>
+                {teamPlayers.length === 1 && (
+                  <p className="teams-empty-roster">
+                    SIN MÁS JUGADORES ASIGNADOS
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
       </article>
+    );
+  };
+
+  // =========================================
+  // VENTANA PERFIL DEL JUGADOR
+  // =========================================
+
+  const renderPlayerMenu = () => {
+    if (!selectedPlayer) return null;
+
+    return (
+      <div className="player-profile-overlay" onClick={closePlayerMenu}>
+        <section
+          className="player-profile-modal"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="player-profile-heading">
+            PERFIL DEL JUGADOR
+          </div>
+
+          <div className="player-profile-avatar">
+            {selectedPlayerPhoto ? (
+              <img src={selectedPlayerPhoto} alt={selectedPlayer} />
+            ) : (
+              <span>{selectedPlayer.slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+
+          {playerPhotoLoading ? (
+            <p className="player-profile-photo-status">BUSCANDO JUGADOR...</p>
+          ) : playerPhotoStatus ? (
+            <p className="player-profile-photo-status">{playerPhotoStatus}</p>
+          ) : null}
+
+          <h3 className="player-profile-name">{selectedPlayer}</h3>
+
+          <div className="player-profile-divider" />
+
+          <button
+            type="button"
+            className="player-profile-option"
+            onClick={() => window.alert("La pantalla de estadísticas individuales todavía está pendiente de implementación en la versión web.")}
+          >
+            <span className="player-profile-option-icon">◈</span>
+            <span>
+              <strong>VER STATS</strong>
+              <small>Estadísticas individuales del jugador</small>
+            </span>
+            <b>›</b>
+          </button>
+
+          <button
+            type="button"
+            className="player-profile-option"
+            onClick={() => window.alert("La pantalla de publicaciones todavía está pendiente de implementación en la versión web.")}
+          >
+            <span className="player-profile-option-icon">▣</span>
+            <span>
+              <strong>VER PUBLICACIONES</strong>
+              <small>Jugadas destacadas de este jugador</small>
+            </span>
+            <b>›</b>
+          </button>
+
+          <button
+            type="button"
+            className="player-profile-close"
+            onClick={closePlayerMenu}
+          >
+            CERRAR
+          </button>
+        </section>
+      </div>
     );
   };
 
@@ -1234,7 +1369,7 @@ export default function App() {
   const renderTeams = () => (
     <section className="teams-screen">
       {matchesLoading && players.length === 0 ? (
-        <div className="matches-state">
+        <div className="teams-loading">
           <span className="matches-spinner" />
           <p>CARGANDO PLANTILLAS...</p>
         </div>
@@ -1245,9 +1380,10 @@ export default function App() {
           onClick={() => window.location.reload()}
         >
           NO SE PUDIERON CARGAR LAS PLANTILLAS
-          <br />
-          <br />
-          TOCA AQUÍ PARA REINTENTAR
+
+          <span>
+            TOCA AQUÍ PARA REINTENTAR
+          </span>
         </button>
       ) : (
         <div className="teams-grid">
@@ -1383,6 +1519,8 @@ export default function App() {
           )}
         </>
       )}
+
+      {renderPlayerMenu()}
 
       {mode !== "home" && !user && (
         <div className="auth-overlay" onClick={() => openMode("home")}>
