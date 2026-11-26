@@ -19,6 +19,7 @@ import {
   setDoc,
   writeBatch,
   getDocs,
+  getDoc,
   where,
   limit
 } from "firebase/firestore";
@@ -37,6 +38,9 @@ const PLAYERS_CSV_URL = `${SHEETS_BASE}gid=59010702&single=true&output=csv`;
 const STATS_CSV_URL = `${SHEETS_BASE}gid=1093177355&single=true&output=csv`;
 
 const REFRESH_INTERVAL = 60_000;
+const MEDIA_WORKER_URL = "https://liga4vs4-media-api.itenias01.workers.dev";
+const MAX_PROFILE_PHOTO_SIZE = 15 * 1024 * 1024;
+const PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const TEAMS = [
   "ETERNITY",
@@ -577,6 +581,21 @@ const sectionNames = {
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Perfil propio, replicado desde PerfilActivity de Android.
+  const [ownProfile, setOwnProfile] = useState(null);
+  const [ownProfileLoading, setOwnProfileLoading] = useState(false);
+  const [ownProfileOpen, setOwnProfileOpen] = useState(false);
+  const [ownProfileError, setOwnProfileError] = useState("");
+  const [ownProfileMessage, setOwnProfileMessage] = useState("");
+  const [ownBiographyDraft, setOwnBiographyDraft] = useState("");
+  const [ownBiographyEditing, setOwnBiographyEditing] = useState(false);
+  const [ownProfileSaving, setOwnProfileSaving] = useState(false);
+  const [ownPhotoUploading, setOwnPhotoUploading] = useState(false);
+  const [ownGradientSaving, setOwnGradientSaving] = useState(false);
+  const [ownAvatarPosition, setOwnAvatarPosition] = useState(null);
+  const [ownAvatarDragStart, setOwnAvatarDragStart] = useState(null);
+  const [ownAvatarWasDragged, setOwnAvatarWasDragged] = useState(false);
   const [mode, setMode] = useState("home");
 
   const [email, setEmail] = useState("");
@@ -1166,10 +1185,244 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      if (!currentUser) {
+        setOwnProfile(null);
+        setOwnProfileOpen(false);
+        setOwnAvatarPosition(null);
+      }
     });
 
     return unsubscribe;
   }, []);
+
+  const refreshOwnProfile = async (showLoader = true) => {
+    if (!user?.uid) return null;
+
+    if (showLoader) setOwnProfileLoading(true);
+    setOwnProfileError("");
+
+    try {
+      const playerRef = doc(db, "jugadores", user.uid);
+      const playerSnapshot = await getDoc(playerRef);
+
+      if (!playerSnapshot.exists()) {
+        setOwnProfile(null);
+        setOwnProfileError("TU CUENTA TODAVÍA NO TIENE UN PERFIL DE JUGADOR ASIGNADO.");
+        return null;
+      }
+
+      const data = playerSnapshot.data();
+      const profile = {
+        uid: user.uid,
+        nick: String(data.nick || ""),
+        equipo: String(data.equipo || ""),
+        estado: String(data.estado || ""),
+        biografia: String(data.biografia || ""),
+        fotoPerfil: String(data.fotoPerfil || "").startsWith("https://") ? String(data.fotoPerfil) : "",
+        gradientePerfil: String(data.gradientePerfil || "")
+      };
+
+      setOwnProfile(profile);
+      setOwnBiographyDraft(profile.biografia);
+
+      // Android mantiene el perfil público sincronizado con el documento privado.
+      if (profile.estado === "ASIGNADO" && profile.nick && profile.equipo) {
+        try {
+          await setDoc(doc(db, "perfiles_publicos", user.uid), {
+            uid: user.uid,
+            nick: profile.nick,
+            equipo: profile.equipo,
+            ...(Object.prototype.hasOwnProperty.call(data, "fotoPerfil") ? { fotoPerfil: profile.fotoPerfil } : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "biografia") ? { biografia: profile.biografia } : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "gradientePerfil") ? { gradientePerfil: profile.gradientePerfil } : {})
+          }, { merge: true });
+        } catch (syncError) {
+          console.warn("No se pudo sincronizar el perfil público:", syncError);
+        }
+      }
+
+      return profile;
+    } catch (profileError) {
+      console.error("Error cargando el perfil propio:", profileError);
+      setOwnProfileError("NO SE PUDO CARGAR TU PERFIL. COMPRUEBA TU CONEXIÓN Y LOS PERMISOS DE FIRESTORE.");
+      return null;
+    } finally {
+      if (showLoader) setOwnProfileLoading(false);
+    }
+  };
+
+  const openOwnProfile = async () => {
+    if (!user) {
+      openMode("login");
+      return;
+    }
+
+    setOwnProfileOpen(true);
+    setOwnProfileMessage("");
+    setOwnProfileError("");
+    await refreshOwnProfile(true);
+  };
+
+  // Carga la foto y los datos propios al entrar al menú del campeonato,
+  // para que el avatar flotante aparezca con la imagen real sin esperar un toque.
+  useEffect(() => {
+    if (user?.uid && showCompetitionMenu) {
+      refreshOwnProfile(false);
+    }
+  }, [user?.uid, showCompetitionMenu]);
+
+  const closeOwnProfile = () => {
+    setOwnProfileOpen(false);
+    setOwnBiographyEditing(false);
+    setOwnProfileError("");
+    setOwnProfileMessage("");
+  };
+
+  const saveOwnBiography = async () => {
+    if (!user?.uid || !ownProfile) return;
+
+    const biography = String(ownBiographyDraft || "").slice(0, 250).trim();
+    setOwnProfileSaving(true);
+    setOwnProfileError("");
+    setOwnProfileMessage("");
+
+    try {
+      await updateDoc(doc(db, "jugadores", user.uid), { biografia: biography });
+      const updated = { ...ownProfile, biografia: biography };
+      setOwnProfile(updated);
+
+      if (updated.estado === "ASIGNADO" && updated.nick && updated.equipo) {
+        await setDoc(doc(db, "perfiles_publicos", user.uid), {
+          uid: user.uid,
+          nick: updated.nick,
+          equipo: updated.equipo,
+          biografia
+        }, { merge: true });
+      }
+
+      setOwnBiographyDraft(biography);
+      setOwnBiographyEditing(false);
+      setOwnProfileMessage("BIOGRAFÍA ACTUALIZADA CORRECTAMENTE.");
+    } catch (saveError) {
+      console.error("Error guardando la biografía:", saveError);
+      setOwnProfileError("NO SE PUDO GUARDAR LA BIOGRAFÍA. REVISA LOS PERMISOS DE FIRESTORE.");
+    } finally {
+      setOwnProfileSaving(false);
+    }
+  };
+
+  const saveOwnGradient = async (gradientName) => {
+    if (!user?.uid || !ownProfile || !GRADIENTS[gradientName] || ownGradientSaving) return;
+
+    setOwnGradientSaving(true);
+    setOwnProfileError("");
+    setOwnProfileMessage("");
+
+    try {
+      await updateDoc(doc(db, "jugadores", user.uid), { gradientePerfil: gradientName });
+      const updated = { ...ownProfile, gradientePerfil: gradientName };
+      setOwnProfile(updated);
+
+      if (updated.estado === "ASIGNADO" && updated.nick && updated.equipo) {
+        await setDoc(doc(db, "perfiles_publicos", user.uid), {
+          uid: user.uid,
+          nick: updated.nick,
+          equipo: updated.equipo,
+          gradientePerfil: gradientName
+        }, { merge: true });
+      }
+
+      setOwnProfileMessage("DISEÑO DE PERFIL ACTUALIZADO.");
+    } catch (saveError) {
+      console.error("Error guardando el diseño del perfil:", saveError);
+      setOwnProfileError("NO SE PUDO GUARDAR EL DISEÑO. REVISA LOS PERMISOS DE FIRESTORE.");
+    } finally {
+      setOwnGradientSaving(false);
+    }
+  };
+
+  const uploadOwnProfilePhoto = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !user) return;
+
+    if (!PROFILE_PHOTO_TYPES.includes(file.type)) {
+      setOwnProfileError("FORMATO NO VÁLIDO. USA JPG, PNG O WEBP.");
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_PHOTO_SIZE) {
+      setOwnProfileError("LA FOTO SUPERA EL LÍMITE DE 15 MB.");
+      return;
+    }
+
+    setOwnPhotoUploading(true);
+    setOwnProfileError("");
+    setOwnProfileMessage("");
+
+    try {
+      const token = await user.getIdToken(true);
+      if (!token) throw new Error("Firebase no devolvió un token de sesión.");
+
+      const response = await fetch(MEDIA_WORKER_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": file.type,
+          Accept: "application/json"
+        },
+        body: file
+      });
+
+      const responseText = await response.text();
+      let result = {};
+      try { result = JSON.parse(responseText); } catch { /* respuesta no JSON */ }
+
+      if (!response.ok || result.success !== true || !String(result.url || "").startsWith("https://")) {
+        throw new Error(result.error || result.message || `El servicio de imágenes respondió ${response.status}.`);
+      }
+
+      await updateDoc(doc(db, "jugadores", user.uid), { fotoPerfil: result.url });
+      const updated = { ...ownProfile, fotoPerfil: result.url };
+      setOwnProfile(updated);
+
+      if (updated.estado === "ASIGNADO" && updated.nick && updated.equipo) {
+        await setDoc(doc(db, "perfiles_publicos", user.uid), {
+          uid: user.uid,
+          nick: updated.nick,
+          equipo: updated.equipo,
+          fotoPerfil: result.url
+        }, { merge: true });
+      }
+
+      setOwnProfileMessage("FOTO DE PERFIL ACTUALIZADA.");
+    } catch (uploadError) {
+      console.error("Error subiendo la foto de perfil:", uploadError);
+      setOwnProfileError(uploadError.message || "NO SE PUDO SUBIR LA FOTO DE PERFIL.");
+    } finally {
+      setOwnPhotoUploading(false);
+    }
+  };
+
+  const handleOwnAvatarPointerDown = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setOwnAvatarDragStart({ x: event.clientX, y: event.clientY, left: rect.left, top: rect.top });
+    setOwnAvatarWasDragged(false);
+  };
+
+  const handleOwnAvatarPointerMove = (event) => {
+    if (!ownAvatarDragStart) return;
+    const dx = event.clientX - ownAvatarDragStart.x;
+    const dy = event.clientY - ownAvatarDragStart.y;
+    if (Math.abs(dx) + Math.abs(dy) > 5) setOwnAvatarWasDragged(true);
+
+    const left = Math.max(8, Math.min(window.innerWidth - 68, ownAvatarDragStart.left + dx));
+    const top = Math.max(8, Math.min(window.innerHeight - 68, ownAvatarDragStart.top + dy));
+    setOwnAvatarPosition({ left, top });
+  };
+
+  const handleOwnAvatarPointerUp = () => setOwnAvatarDragStart(null);
 
   const openMode = (newMode) => {
     setMode(newMode);
@@ -1579,6 +1832,143 @@ export default function App() {
           letterSpacing: "1px"
         }}>{selectedPlayerProfile.nick || selectedPlayer}</p>
       </div>
+    );
+  };
+
+  // =========================================
+  // AVATAR FLOTANTE Y PERFIL PROPIO
+  // =========================================
+
+  const renderOwnProfile = () => {
+    if (!ownProfileOpen) return null;
+
+    const gradient = GRADIENTS[ownProfile?.gradientePerfil] || GRADIENTS.oceano;
+    const displayName = ownProfile?.nick || user?.displayName || user?.email?.split("@")[0] || "JUGADOR";
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mi perfil"
+        onClick={closeOwnProfile}
+        style={{ position: "fixed", inset: 0, zIndex: 10040, display: "grid", placeItems: "center", padding: "14px", background: "rgba(0,0,0,.82)", backdropFilter: "blur(7px)" }}
+      >
+        <section
+          onClick={(event) => event.stopPropagation()}
+          style={{ width: "min(100%, 560px)", maxHeight: "92vh", overflowY: "auto", boxSizing: "border-box", padding: "22px 18px 26px", borderRadius: "18px", border: "1px solid rgba(0,217,255,.42)", background: `linear-gradient(145deg, ${gradient[0]}, #050B13 72%, ${gradient[1]})`, boxShadow: "0 0 36px rgba(0,217,255,.16)", color: "#fff" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}>
+            <div>
+              <small style={{ color: "#00D9FF", fontWeight: 900, letterSpacing: "1.4px" }}>LIGA4VS4 · CUENTA</small>
+              <h2 style={{ margin: "5px 0 0", fontSize: "22px" }}>MI PERFIL</h2>
+            </div>
+            <button type="button" onClick={closeOwnProfile} aria-label="Cerrar perfil" style={{ width: "40px", height: "40px", borderRadius: "50%", border: "1px solid rgba(0,217,255,.35)", background: "rgba(0,0,0,.35)", color: "#fff", fontSize: "24px", cursor: "pointer" }}>×</button>
+          </div>
+
+          {ownProfileLoading && <div className="matches-state"><span className="matches-spinner" /><p>CARGANDO TU PERFIL...</p></div>}
+
+          {!ownProfileLoading && ownProfile && (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 12px", borderRadius: "15px", background: "rgba(0,0,0,.25)", border: "1px solid rgba(255,255,255,.1)" }}>
+                <div style={{ width: "132px", height: "132px", borderRadius: "50%", padding: "4px", background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`, border: "2px solid #00D9FF", boxShadow: "0 0 26px rgba(0,217,255,.3)" }}>
+                  {ownProfile.fotoPerfil ? <img src={ownProfile.fotoPerfil} alt="Mi foto de perfil" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", borderRadius: "50%", display: "grid", placeItems: "center", background: "#102B42", fontSize: "48px", fontWeight: 900 }}>{displayName.slice(0, 1).toUpperCase()}</div>}
+                </div>
+                <h3 style={{ margin: "14px 0 4px", fontSize: "23px", textAlign: "center" }}>{displayName}</h3>
+                <strong style={{ color: "#00D9FF", fontSize: "12px", letterSpacing: ".7px" }}>{ownProfile.equipo || "EQUIPO PENDIENTE"}</strong>
+                <small style={{ color: "#AABBCB", marginTop: "7px" }}>{ownProfile.estado === "ASIGNADO" ? "JUGADOR ASIGNADO" : "CUENTA REGISTRADA"}</small>
+              </div>
+
+              <div style={{ marginTop: "18px", padding: "16px", borderRadius: "13px", background: "rgba(0,0,0,.28)", border: "1px solid rgba(255,255,255,.1)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "12px" }}>
+                  <strong style={{ color: "#00D9FF", letterSpacing: "1px", fontSize: "13px" }}>FOTO DE PERFIL</strong>
+                  <small style={{ color: "#8EA6BA" }}>JPG · PNG · WEBP</small>
+                </div>
+                <label htmlFor="own-profile-photo" style={{ display: "block", textAlign: "center", padding: "12px", borderRadius: "9px", border: "1px solid rgba(0,217,255,.5)", background: "rgba(0,217,255,.1)", color: "#DDF9FF", fontWeight: 900, fontSize: "12px", cursor: ownPhotoUploading ? "wait" : "pointer" }}>
+                  {ownPhotoUploading ? "SUBIENDO FOTO..." : "📷 CAMBIAR FOTO DE PERFIL"}
+                </label>
+                <input id="own-profile-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadOwnProfilePhoto} disabled={ownPhotoUploading} style={{ display: "none" }} />
+                <small style={{ display: "block", color: "#8298AA", textAlign: "center", marginTop: "8px" }}>Tamaño máximo: 15 MB</small>
+              </div>
+
+              <div style={{ marginTop: "14px", padding: "16px", borderRadius: "13px", background: "rgba(0,0,0,.28)", border: "1px solid rgba(255,255,255,.1)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "10px" }}>
+                  <strong style={{ color: "#00D9FF", letterSpacing: "1px", fontSize: "13px" }}>BIOGRAFÍA</strong>
+                  {!ownBiographyEditing && <button type="button" onClick={() => { setOwnBiographyDraft(ownProfile.biografia || ""); setOwnBiographyEditing(true); }} style={{ border: "1px solid rgba(0,217,255,.4)", borderRadius: "7px", background: "rgba(0,217,255,.1)", color: "#00D9FF", padding: "7px 10px", fontSize: "11px", fontWeight: 900 }}>EDITAR</button>}
+                </div>
+                {ownBiographyEditing ? (
+                  <>
+                    <textarea value={ownBiographyDraft} onChange={(event) => setOwnBiographyDraft(event.target.value.slice(0, 250))} maxLength={250} rows={4} placeholder="Escribe algo sobre ti..." style={{ width: "100%", boxSizing: "border-box", resize: "vertical", borderRadius: "9px", border: "1px solid rgba(0,217,255,.35)", background: "rgba(2,8,15,.85)", color: "#fff", padding: "12px", font: "inherit", fontSize: "14px", outline: "none" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginTop: "9px" }}>
+                      <small style={{ color: "#8298AA" }}>{ownBiographyDraft.length}/250</small>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button type="button" onClick={() => { setOwnBiographyDraft(ownProfile.biografia || ""); setOwnBiographyEditing(false); }} style={{ padding: "9px 12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,.2)", background: "transparent", color: "#B8C7D5", fontWeight: 800 }}>CANCELAR</button>
+                        <button type="button" onClick={saveOwnBiography} disabled={ownProfileSaving} style={{ padding: "9px 13px", borderRadius: "8px", border: 0, background: "#00AFCB", color: "#001018", fontWeight: 900 }}>{ownProfileSaving ? "GUARDANDO..." : "GUARDAR"}</button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ margin: 0, color: ownProfile.biografia ? "#DCE7F0" : "#8197AA", fontSize: "14px", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{ownProfile.biografia || "Todavía no has escrito una biografía."}</p>
+                )}
+              </div>
+
+              <div style={{ marginTop: "14px", padding: "16px", borderRadius: "13px", background: "rgba(0,0,0,.28)", border: "1px solid rgba(255,255,255,.1)" }}>
+                <strong style={{ color: "#00D9FF", letterSpacing: "1px", fontSize: "13px" }}>DISEÑO DE FONDO</strong>
+                <p style={{ color: "#8298AA", fontSize: "12px", margin: "6px 0 13px" }}>Elige uno de los ocho diseños disponibles en Android.</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "9px" }}>
+                  {Object.entries(GRADIENTS).map(([name, colors]) => (
+                    <button key={name} type="button" onClick={() => saveOwnGradient(name)} disabled={ownGradientSaving} style={{ minHeight: "58px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px", borderRadius: "9px", border: ownProfile.gradientePerfil === name ? "2px solid #00D9FF" : "1px solid rgba(255,255,255,.18)", background: `linear-gradient(110deg, ${colors[0]}, ${colors[1]})`, color: "#fff", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", cursor: "pointer" }}>
+                      {name}{ownProfile.gradientePerfil === name ? <span>✓</span> : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {!ownProfileLoading && !ownProfile && (
+            <div className="matches-state matches-error"><p>{ownProfileError || "NO SE ENCONTRÓ TU DOCUMENTO DE JUGADOR."}</p><button type="button" className="primary-button" onClick={() => refreshOwnProfile(true)}>REINTENTAR</button></div>
+          )}
+
+          {ownProfileError && ownProfile && <p style={{ color: "#FF8290", fontSize: "12px", textAlign: "center" }}>{ownProfileError}</p>}
+          {ownProfileMessage && <p style={{ color: "#67E6A5", fontSize: "12px", textAlign: "center", fontWeight: 800 }}>{ownProfileMessage}</p>}
+          <button type="button" onClick={closeOwnProfile} style={{ width: "100%", marginTop: "18px", padding: "13px", borderRadius: "9px", border: "1px solid rgba(0,217,255,.35)", background: "rgba(0,217,255,.1)", color: "#DDF9FF", fontWeight: 900, letterSpacing: "1px" }}>CERRAR PERFIL</button>
+        </section>
+      </div>
+    );
+  };
+
+  const renderOwnFloatingAvatar = () => {
+    if (!user || !showCompetitionMenu) return null;
+
+    const style = ownAvatarPosition
+      ? { left: `${ownAvatarPosition.left}px`, top: `${ownAvatarPosition.top}px`, right: "auto", bottom: "auto" }
+      : { right: "16px", bottom: "82px" };
+
+    return (
+      <button
+        type="button"
+        aria-label="Abrir mi perfil"
+        title="Mi perfil"
+        onPointerDown={handleOwnAvatarPointerDown}
+        onPointerMove={handleOwnAvatarPointerMove}
+        onPointerUp={handleOwnAvatarPointerUp}
+        onPointerCancel={handleOwnAvatarPointerUp}
+        onClick={() => {
+          if (ownAvatarWasDragged) {
+            setOwnAvatarWasDragged(false);
+            return;
+          }
+          openOwnProfile();
+        }}
+        style={{ position: "fixed", ...style, zIndex: 10020, width: "60px", height: "60px", padding: "3px", borderRadius: "50%", border: "2px solid #00D9FF", background: "#082335", boxShadow: "0 0 22px rgba(0,217,255,.35), 0 8px 22px rgba(0,0,0,.55)", display: "grid", placeItems: "center", cursor: ownAvatarDragStart ? "grabbing" : "grab", touchAction: "none", userSelect: "none", animation: "ownProfileAvatarIn .45s ease-out" }}
+      >
+        {ownProfile?.fotoPerfil ? (
+          <img src={ownProfile.fotoPerfil} alt="" draggable="false" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", pointerEvents: "none" }} />
+        ) : (
+          <span style={{ width: "100%", height: "100%", borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", fontSize: "24px", fontWeight: 900, background: "linear-gradient(145deg,#0C4261,#071827)" }}>{String(ownProfile?.nick || user.displayName || user.email || "U").slice(0, 1).toUpperCase()}</span>
+        )}
+        <style>{`@keyframes ownProfileAvatarIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }`}</style>
+      </button>
     );
   };
 
@@ -2618,6 +3008,8 @@ export default function App() {
 
       {renderPlayerMenu()}
       {renderExpandedProfilePhoto()}
+      {renderOwnFloatingAvatar()}
+      {renderOwnProfile()}
 
       {mode !== "home" && !user && (
         <div className="auth-overlay" onClick={() => openMode("home")}>
