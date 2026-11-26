@@ -1,1110 +1,7 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap');
-
-:root {
-  font-family: 'Rajdhani', sans-serif;
-  color: #f1f6ff;
-  background: #05080D;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  background:
-    radial-gradient(ellipse at 50% 0%, #10202c 0%, transparent 55%),
-    #05080D;
-}
-
-button,
-input {
-  font-family: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.app {
-  width: 100%;
-  min-height: 100vh;
-  overflow: hidden;
-}
-
 /* ========================================
-   ENCABEZADO GENERAL
-======================================== */
-
-.header,
-.logged-header,
-.welcome-header {
-  min-height: 85px;
-  padding: 16px 7%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  border-bottom: 1px solid #1b354a;
-  background: rgba(5, 10, 18, 0.97);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
-.brand-icon {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #00d9ff, #075a9c);
-  color: #06101b;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 900;
-  font-size: 19px;
-  border-radius: 10px;
-  box-shadow: 0 0 22px #00bfff55;
-}
-
-.brand h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 19px;
-  letter-spacing: 1px;
-}
-
-.brand p {
-  color: #00cfff;
-  font-size: 11px;
-  letter-spacing: 3px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.login-button {
-  padding: 11px 20px;
-  color: #00d9ff;
-  background: transparent;
-  border: 1px solid #00bce8;
-  border-radius: 5px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  transition: 0.2s;
-}
-
-.login-button:hover {
-  background: #00bce8;
-  color: #07101b;
-}
-
-.user-email {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #9dcce0;
-  font-size: 15px;
-}
-
-.header-status {
-  color: #00cfff;
-  font-size: 13px;
-}
-
-/* ========================================
-   PANTALLA PRINCIPAL REPLICADA DE ANDROID
-======================================== */
-
-.android-welcome {
-  width: 100%;
-  max-width: 760px;
-  min-height: calc(100vh - 85px);
-  margin: 0 auto;
-  padding: 28px 18px 38px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  background:
-    radial-gradient(ellipse at 50% 0%, #102638 0%, transparent 48%),
-    #03070D;
-}
-
-.welcome-logo-panel {
-  width: 100%;
-  min-height: 190px;
-  padding: 22px 15px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #00D9FF;
-  border-radius: 20px;
-  background:
-    radial-gradient(ellipse at center, #0c2c40 0%, #05111B 70%);
-  box-shadow:
-    0 0 24px #00d9ff18,
-    inset 0 0 25px #00d9ff0c;
-}
-
-.welcome-logo-mark {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: 3px;
-  text-shadow: 0 0 20px #00D9FF55;
-}
-
-.welcome-logo-mark span {
-  color: #EAFBFF;
-  font-size: clamp(25px, 7vw, 42px);
-}
-
-.welcome-logo-mark strong {
-  color: #00D9FF;
-  font-size: clamp(45px, 12vw, 76px);
-}
-
-.welcome-logo-caption {
-  margin-top: 17px;
-  color: #8EA6BA;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 4px;
-}
-
-.welcome-matches-heading {
-  margin: 25px 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.welcome-matches-heading h2 {
-  color: #F1F6FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(12px, 3vw, 16px);
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-
-.welcome-live {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #00FF88;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1px;
-}
-
-.welcome-live i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #00FF88;
-  box-shadow: 0 0 9px #00FF88;
-  animation: pulseGreen 1.8s infinite;
-}
-
-.welcome-matches-panel {
-  width: 100%;
-  min-height: 120px;
-  padding: 12px;
-  border: 1px solid #144155;
-  border-radius: 16px;
-  background: #091622;
-  box-shadow: inset 0 0 18px #00D9FF08;
-}
-
-/* BARRA DE AVISOS */
-
-.announcement-bar {
-  width: 100%;
-  min-height: 38px;
-  margin-bottom: 12px;
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  overflow: hidden;
-  border: 1px solid #00D9FF;
-  border-radius: 9px;
-  background: #051826;
-  box-shadow: 0 0 12px #00d9ff12;
-}
-
-.announcement-icon {
-  flex-shrink: 0;
-  color: #00D9FF;
-  font-size: 15px;
-  line-height: 1;
-}
-
-.announcement-marquee {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.announcement-marquee span {
-  display: inline-block;
-  min-width: 100%;
-  color: #F1F6FF;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  animation: announcementScroll 18s linear infinite;
-}
-
-.announcement-bar:hover .announcement-marquee span {
-  animation-play-state: paused;
-}
-
-@keyframes announcementScroll {
-  0% {
-    transform: translateX(100%);
-  }
-
-  100% {
-    transform: translateX(-100%);
-  }
-}
-
-/* JORNADA ACTUAL */
-
-.matchday-label {
-  min-height: 30px;
-  margin: 3px 0 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #8EA6BA;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
-  letter-spacing: 2px;
-}
-
-.matchday-label strong {
-  color: #00D9FF;
-  font-size: 12px;
-}
-
-/* TARJETAS DE ENFRENTAMIENTOS */
-
-.matches-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.welcome-match-card {
-  width: 100%;
-  min-width: 0;
-  padding: 12px 8px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 75px minmax(0, 1fr);
-  align-items: center;
-  gap: 5px;
-  border: 1px solid #17394D;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #0D1D2A, #07111B);
-}
-
-.match-team {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-}
-
-.match-shield-button {
-  width: 78px;
-  height: 78px;
-  padding: 4px;
-  display: grid;
-  place-items: center;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  transition: 0.2s;
-}
-
-.match-shield-button:hover {
-  border-color: #00D9FF;
-  background: #00D9FF0D;
-  transform: scale(1.04);
-}
-
-.match-shield {
-  width: 48px;
-  height: 48px;
-  max-width: 48px;
-  max-height: 48px;
-  object-fit: contain;
-  display: block;
-  filter: drop-shadow(0 0 8px #00D9FF20);
-}
-
-.match-team strong {
-  max-width: 100%;
-  color: #EAF5FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(8px, 2.2vw, 11px);
-  font-weight: 800;
-  line-height: 1.4;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.match-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.match-vs {
-  color: #00D9FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
-  font-weight: 900;
-  text-shadow: 0 0 12px #00D9FF55;
-}
-
-.match-pending {
-  padding: 5px 6px;
-  border: 1px solid #176849;
-  border-radius: 4px;
-  background: #06291F;
-  color: #00FF88;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 7px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-}
-
-/* PLANTILLA DESPLEGABLE */
-
-.team-roster {
-  grid-column: 1 / -1;
-  width: 100%;
-  margin-top: 9px;
-  padding: 10px;
-  border: 1px solid #16465A;
-  border-radius: 8px;
-  background: #06121D;
-  animation: slideUp 0.2s ease;
-}
-
-.team-roster-heading {
-  margin-bottom: 8px;
-  padding-bottom: 7px;
-  border-bottom: 1px solid #16465A;
-  color: #00D9FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-align: center;
-}
-
-.team-roster-player {
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #DCEAF5;
-  font-size: 13px;
-  border-bottom: 1px solid #ffffff0b;
-}
-
-.team-roster-player:last-child {
-  border-bottom: none;
-}
-
-.team-roster-player span {
-  width: 19px;
-  color: #6D879B;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-}
-
-.team-roster > p {
-  color: #91A5B9;
-  font-size: 12px;
-  text-align: center;
-}
-
-/* ESTADOS DE CARGA Y VACÍO */
-
-.matches-state {
-  min-height: 100px;
-  padding: 20px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-  color: #8EA6BA;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
-  letter-spacing: 1px;
-  line-height: 1.7;
-  text-align: center;
-}
-
-.matches-error {
-  color: #FF9AA4;
-}
-
-.matches-spinner {
-  width: 25px;
-  height: 25px;
-  border: 2px solid #17445B;
-  border-top-color: #00D9FF;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ESTADO Y PIE DE LA PANTALLA */
-
-.welcome-competition-active {
-  min-height: 34px;
-  margin-top: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #00FF88;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-align: center;
-}
-
-.welcome-footer {
-  margin-top: 12px;
-  color: #718093;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  letter-spacing: 1px;
-  text-align: center;
-}
-
-.welcome-enter-button {
-  width: 100%;
-  min-height: 52px;
-  margin-top: 25px;
-  padding: 12px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  border: 1px solid #00D9FF;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #00CFFF, #0876BB);
-  color: #06111B;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 1.2px;
-  box-shadow: 0 0 20px #00bfff22;
-  transition: 0.2s;
-}
-
-.welcome-enter-button span {
-  font-size: 22px;
-  line-height: 0.8;
-}
-
-.welcome-enter-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 25px #00bfff55;
-}
-
-.welcome-register-link {
-  margin-top: 17px;
-  border: none;
-  background: transparent;
-  color: #91A5B9;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-}
-
-.welcome-register-link strong {
-  color: #00D9FF;
-}
-
-/* ========================================
-   MENÚ PRINCIPAL LIGA4VS4
-======================================== */
-
-.competition-menu {
-  position: relative;
-  width: 100%;
-  min-height: calc(100vh - 85px);
-  padding: 25px 16px 105px;
-  background:
-    radial-gradient(ellipse at 50% 0%, #10202c 0%, transparent 45%),
-    #05080D;
-}
-
-.menu-top {
-  position: relative;
-  width: 100%;
-  max-width: 650px;
-  min-height: 95px;
-  margin: 0 auto 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.menu-sponsor {
-  text-align: center;
-}
-
-.menu-sponsor > span {
-  display: block;
-  color: #8EA6BA;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 4px;
-}
-
-.menu-sponsor h2 {
-  margin-top: 7px;
-  color: #00D9FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(23px, 5vw, 32px);
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-shadow: 0 0 18px #00D9FF40;
-}
-
-/* BOTÓN DE NOTIFICACIONES */
-
-.menu-notifications {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #17465c;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #102638, #08121d);
-  color: #00D9FF;
-  font-size: 23px;
-  box-shadow: 0 0 18px #00d9ff18;
-  transition: 0.2s;
-}
-
-.menu-notifications:hover {
-  border-color: #00D9FF;
-  box-shadow: 0 0 18px #00d9ff45;
-  transform: scale(1.05);
-}
-
-.notification-counter {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #05080D;
-  border-radius: 20px;
-  background: #FF354F;
-  color: #FFFFFF;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-/* PANEL FLOTANTE DE NOTIFICACIONES */
-
-.menu-notifications-panel {
-  position: absolute;
-  z-index: 50;
-  top: 72px;
-  right: 16px;
-  width: min(300px, calc(100vw - 32px));
-  min-height: 290px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(145deg, #102333, #08121c);
-  border: 1px solid #176078;
-  border-radius: 12px;
-  box-shadow:
-    0 15px 45px #000000bb,
-    0 0 20px #00d9ff18;
-  animation: slideUp 0.2s ease;
-}
-
-.notifications-heading {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.notifications-heading h3 {
-  color: #00D9FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-
-.notifications-heading p {
-  margin-top: 4px;
-  color: #8298AC;
-  font-size: 9px;
-  letter-spacing: 2px;
-}
-
-.notifications-heading button {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 5px;
-  background: #26304A5C;
-  color: #00D9FF;
-  font-size: 17px;
-}
-
-.notifications-list {
-  max-height: 245px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-right: 3px;
-}
-
-.notifications-empty {
-  min-height: 170px;
-  flex: 1;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  border-top: 1px solid #5500D9FF;
-  border-bottom: 1px solid #33FFFFFF;
-  color: #91A5B7;
-  text-align: center;
-  font-size: 13px;
-}
-
-.notification-item {
-  position: relative;
-  padding: 10px;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  border: 1px solid rgba(142,166,186,0.16);
-  border-radius: 9px;
-  background: #09141E;
-  cursor: default;
-}
-
-.notification-item.unread {
-  border-color: rgba(0,217,255,0.45);
-  background: #102333;
-  cursor: pointer;
-}
-
-.notification-item-content {
-  min-width: 0;
-  flex: 1;
-}
-
-.notification-item-title {
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.notification-item-title strong {
-  color: #B8C8D6;
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-
-.notification-item.unread .notification-item-title strong {
-  color: #00D9FF;
-}
-
-.notification-unread-dot {
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #00D9FF;
-}
-
-.notification-item p {
-  margin: 0;
-  color: #D0DCE5;
-  font-size: 11px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.notification-item small {
-  display: block;
-  margin-top: 7px;
-  color: #71879A;
-  font-size: 9px;
-}
-
-.notification-read-hint {
-  margin-top: 7px;
-  color: #00D9FF;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.notification-delete {
-  padding: 0 2px;
-  border: none;
-  background: transparent;
-  color: #FF6677;
-  font-size: 15px;
-}
-
-.notification-error {
-  margin: 8px 0;
-  color: #FF7B85;
-  font-size: 11px;
-  text-align: center;
-}
-
-.notifications-footer {
-  min-height: 28px;
-  display: grid;
-  place-items: center;
-  color: #71889B;
-  font-size: 9px;
-  letter-spacing: 1px;
-}
-
-/* TÍTULO CENTRO DE COMPETICIÓN */
-
-.menu-section-heading {
-  width: 100%;
-  max-width: 650px;
-  margin: 0 auto 12px;
-  color: #8EA6BA;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-/* CUADRÍCULA DE SEIS BOTONES */
-
-.competition-grid {
-  width: 100%;
-  max-width: 650px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(145px, 1fr));
-  gap: 12px;
-}
-
-.competition-card {
-  position: relative;
-  min-width: 0;
-  min-height: 145px;
-  padding: 18px 10px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  overflow: hidden;
-  border: 1px solid #16445a;
-  border-radius: 9px;
-  background: linear-gradient(145deg, #101e2b, #09121c);
-  color: #00D9FF;
-  box-shadow:
-    inset 0 0 18px #00d9ff05,
-    0 5px 15px #00000025;
-  transition:
-    border-color 0.2s,
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
-.competition-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 15%;
-  width: 70%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    #00D9FF80,
-    transparent
-  );
-}
-
-.competition-card:hover {
-  transform: translateY(-3px);
-  border-color: #00D9FF;
-  box-shadow:
-    0 0 20px #00d9ff20,
-    inset 0 0 20px #00d9ff08;
-}
-
-.competition-card:active {
-  transform: scale(0.98);
-}
-
-.competition-card-number {
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  color: #526d80;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  letter-spacing: 1px;
-}
-
-.competition-card-icon {
-  display: block;
-  font-size: 34px;
-  line-height: 1;
-  filter: drop-shadow(0 0 8px #00d9ff30);
-}
-
-.competition-card-title {
-  max-width: 100%;
-  color: #00D9FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(9px, 2vw, 12px);
-  font-weight: 800;
-  line-height: 1.5;
-  letter-spacing: 0.5px;
-  text-align: center;
-}
-
-/* ESTADO DEL CAMPEONATO */
-
-.championship-status {
-  width: 100%;
-  max-width: 650px;
-  min-height: 44px;
-  margin: 15px auto 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  background: #09151F;
-  border: 1px solid #102b32;
-  color: #00FF88;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-.championship-status-dot {
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #00FF88;
-  box-shadow: 0 0 10px #00FF88;
-  animation: pulseGreen 1.8s infinite;
-}
-
-/* PIE DEL MENÚ */
-
-.menu-footer {
-  margin: 18px auto 0;
-  color: #536273;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  letter-spacing: 1px;
-  text-align: center;
-}
-
-.return-welcome-button {
-  margin: 22px auto 0;
-  padding: 9px 14px;
-  display: block;
-  border: 1px solid #23465A;
-  border-radius: 5px;
-  background: transparent;
-  color: #8EA6BA;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 8px;
-  letter-spacing: 1px;
-}
-
-.return-welcome-button:hover {
-  border-color: #00D9FF;
-  color: #00D9FF;
-}
-
-/* ========================================
-   NAVEGACIÓN INFERIOR
-======================================== */
-
-.web-bottom-navigation {
-  position: fixed;
-  z-index: 100;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  min-height: 68px;
-  padding: 7px 5px calc(7px + env(safe-area-inset-bottom));
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  background: rgba(5, 11, 18, 0.97);
-  border-top: 1px solid #164052;
-  box-shadow: 0 -8px 25px #00000055;
-  backdrop-filter: blur(12px);
-}
-
-.web-bottom-navigation button {
-  min-width: 0;
-  padding: 4px 2px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: none;
-  background: transparent;
-  color: #71889B;
-  transition: 0.2s;
-}
-
-.web-bottom-navigation button > span {
-  font-size: 19px;
-  line-height: 1;
-}
-
-.web-bottom-navigation button small {
-  max-width: 100%;
-  overflow: hidden;
-  color: inherit;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.web-bottom-navigation button.active {
-  color: #00D9FF;
-}
-
-.web-bottom-navigation button.active > span {
-  filter: drop-shadow(0 0 7px #00D9FF);
-}
-
-.web-bottom-navigation button:hover {
-  color: #00D9FF;
-}
-
-/* ========================================
-   PANTALLAS PROVISIONALES
-======================================== */
-
-.web-section-placeholder {
-  min-height: calc(100vh - 165px);
-  padding: 100px 20px 130px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  background:
-    radial-gradient(ellipse at 50% 20%, #102638 0%, transparent 55%),
-    #05080D;
-}
-
-.placeholder-label {
-  color: #00D9FF;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
-  letter-spacing: 3px;
-}
-
-.web-section-placeholder h2 {
-  margin-top: 20px;
-  color: #f1f6ff;
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(20px, 5vw, 32px);
-}
-
-.web-section-placeholder p {
-  max-width: 450px;
-  margin: 20px 0 30px;
-  color: #91A5B9;
-  font-size: 17px;
-  line-height: 1.6;
-}
-
-/* ========================================
-   PANTALLA DE EQUIPOS
+   PANTALLA EQUIPOS
+   REPLICA DE EQUIPOSACTIVITY ANDROID
 ======================================== */
 
 .teams-screen {
@@ -1112,346 +9,170 @@ button:disabled {
   max-width: 760px;
   min-height: calc(100vh - 150px);
   margin: 0 auto;
-  padding: 30px 16px 115px;
-  background:
-    radial-gradient(ellipse at 50% 0%, #102638 0%, transparent 50%),
-    #05080D;
+  padding: 13px 11px 85px;
+  background: #03070E;
 }
 
-.teams-screen img {
-  display: block;
-  width: 76px !important;
-  height: 76px !important;
-  max-width: 76px !important;
-  max-height: 76px !important;
-  object-fit: contain;
+.teams-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  row-gap: 13px;
+  align-items: start;
+}
+
+.teams-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(0, 155, 220);
+  border-radius: 15px;
+  background: rgb(5, 15, 28);
+  box-shadow: 0 5px 12px #00000055;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.teams-card.expanded {
+  transform: scale(1.015);
+  box-shadow:
+    0 0 15px #00bfff28,
+    0 7px 16px #00000070;
+}
+
+.teams-card-top {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(
+    135deg,
+    rgb(5, 19, 36),
+    rgb(3, 10, 21),
+    rgb(8, 24, 43)
+  );
 }
 
 .teams-shield-wrap {
-  width: 82px;
-  height: 82px;
-  min-width: 82px;
-  min-height: 82px;
-  max-width: 82px;
-  max-height: 82px;
-  margin: 0 auto 12px;
+  width: 100%;
+  height: 137px;
+  min-height: 137px;
+  margin: 0;
+  padding: 5px 5px 5px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgb(5, 19, 36),
+    rgb(3, 10, 21),
+    rgb(8, 24, 43)
+  );
 }
 
-.teams-shield {
-  display: block;
-  width: 76px !important;
-  height: 76px !important;
-  max-width: 76px !important;
-  max-height: 76px !important;
-  object-fit: contain;
-}
-
-.teams-shield-fallback {
-  width: 70px;
-  height: 70px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ESCUDOS DENTRO DE LAS TARJETAS */
-
+.teams-screen img,
+.teams-screen .teams-shield,
 .teams-screen .team-card img,
 .teams-screen .team-shield,
 .teams-screen .team-card-shield {
   display: block;
-  width: 76px !important;
-  height: 76px !important;
-  max-width: 76px !important;
-  max-height: 76px !important;
-  object-fit: contain;
-  flex: 0 0 76px;
-}
-
-/* CONTENEDORES DE ESCUDOS */
-
-.teams-screen .team-card,
-.teams-screen .team-card-header {
+  width: 116px !important;
+  height: 116px !important;
   min-width: 0;
+  min-height: 0;
+  max-width: 116px !important;
+  max-height: 116px !important;
+  padding: 3px;
+  flex: 0 0 116px;
+  object-fit: contain;
 }
 
-.teams-screen .team-card .teams-shield-wrap,
-.teams-screen .team-card .team-shield-wrap {
-  width: 82px;
-  height: 82px;
-  min-width: 82px;
-  max-width: 82px;
-  min-height: 82px;
-  max-height: 82px;
-  margin: 0 auto 10px;
+.teams-shield-fallback {
+  width: 116px;
+  height: 116px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-}
-
-/* ========================================
-   PANTALLA DE CARGA
-======================================== */
-
-.loading-screen {
-  min-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-}
-
-.loading-screen p {
   color: #00D9FF;
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
-  letter-spacing: 2px;
-}
-
-/* ========================================
-   MENSAJES
-======================================== */
-
-.global-message {
-  max-width: 700px;
-  margin: 0 auto 25px;
-  padding: 14px 18px;
-  border-radius: 7px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-}
-
-.global-message button {
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-size: 22px;
-}
-
-.success-message {
-  color: #8affc2;
-  background: #0c3326;
-  border: 1px solid #18784f;
-}
-
-.error-message {
-  color: #ffaaaa;
-  background: #38191e;
-  border: 1px solid #873641;
-}
-
-/* ========================================
-   VENTANA DE AUTENTICACIÓN
-======================================== */
-
-.auth-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  overflow-y: auto;
-  background: rgba(0, 5, 12, 0.88);
-  backdrop-filter: blur(9px);
-  animation: fadeIn 0.2s ease;
-}
-
-.auth-card {
-  position: relative;
-  width: 100%;
-  max-width: 440px;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
-  padding: 38px 32px;
-  background:
-    radial-gradient(ellipse at top, #12314b 0%, transparent 65%),
-    #0b1420;
-  border: 1px solid #087ca8;
-  border-radius: 14px;
-  box-shadow:
-    0 0 45px #00bfff25,
-    inset 0 0 25px #00bfff08;
-  animation: slideUp 0.3s ease;
-}
-
-.auth-close {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  width: 35px;
-  height: 35px;
-  border: none;
-  background: transparent;
-  color: #8caabe;
   font-size: 30px;
-  line-height: 1;
-}
-
-.auth-close:hover {
-  color: #00d9ff;
-}
-
-.auth-logo {
-  width: 65px;
-  height: 65px;
-  margin: 0 auto 22px;
-  display: grid;
-  place-items: center;
-  border-radius: 13px;
-  background: linear-gradient(135deg, #00d9ff, #075a9c);
-  color: #06101b;
-  font-family: 'Orbitron', sans-serif;
   font-weight: 900;
-  font-size: 25px;
-  box-shadow: 0 0 25px #00bfff55;
+  text-shadow: 0 0 15px #00D9FF55;
 }
 
-.auth-card h2 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
-  text-align: center;
-  color: #eaf9ff;
-  letter-spacing: 1px;
-}
-
-.auth-description {
-  margin: 12px 0 28px;
-  color: #91aabd;
-  font-size: 16px;
-  text-align: center;
-}
-
-.auth-card form {
-  display: flex;
-  flex-direction: column;
-}
-
-.auth-card label {
-  margin: 16px 0 8px;
-  color: #7edfff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-}
-
-.auth-card input {
+.teams-name {
   width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
-  outline: none;
-  color: #f0f8ff;
-  background: #08111c;
-  border: 1px solid #28445c;
-  border-radius: 6px;
-  font-size: 16px;
-  transition: 0.2s;
-}
-
-.auth-card input:focus {
-  border-color: #00cfff;
-  box-shadow: 0 0 12px #00bfff22;
-}
-
-.auth-card input::placeholder {
-  color: #62788c;
-}
-
-.auth-submit {
-  width: 100%;
-  min-height: 49px;
-  margin-top: 25px;
-  border: 1px solid #00d9ff;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #00cfff, #0876bb);
-  color: #06111b;
-  font-weight: 900;
-  letter-spacing: 2px;
-  transition: 0.2s;
-}
-
-.auth-submit:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px #00bfff55;
-}
-
-.auth-links {
-  margin-top: 22px;
-  text-align: center;
-  color: #9bb0c2;
-  font-size: 15px;
-}
-
-.auth-links p {
-  margin-top: 16px;
-}
-
-.auth-links button {
-  border: none;
-  background: transparent;
-  color: #00cfff;
-  font-weight: 700;
-}
-
-.auth-links button:hover {
-  text-decoration: underline;
-}
-
-.auth-message {
-  margin-top: 16px;
-  padding: 11px;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-/* ========================================
-   PIE DE PÁGINA
-======================================== */
-
-footer {
-  padding: 28px 15px;
-  text-align: center;
-  border-top: 1px solid #1b354a;
-  color: #dcecff;
+  max-width: 100%;
+  padding: 5px 4px 0;
+  color: #FFFFFF;
   font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  letter-spacing: 2px;
-}
-
-footer p {
-  margin-top: 9px;
-  color: #00bce8;
-  font-family: 'Rajdhani', sans-serif;
   font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0.025em;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ========================================
-   ANIMACIONES
-======================================== */
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+.teams-card:nth-child(4) .teams-name,
+.teams-card:nth-child(5) .teams-name,
+.teams-card:nth-child(6) .teams-name {
+  font-size: 12px;
 }
 
-@keyframes slideUp {
+.teams-card:nth-child(2) .teams-name,
+.teams-card:nth-child(3) .teams-name {
+  font-size: 16px;
+}
+
+.teams-toggle-button {
+  min-height: 31px;
+  margin: 5px 5px 9px;
+  padding: 5px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgb(0, 150, 255);
+  border-radius: 9px;
+  background: rgb(3, 17, 30);
+  color: rgb(0, 205, 255);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.teams-toggle-button strong {
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.teams-card.expanded .teams-toggle-button strong {
+  transform: rotate(45deg);
+}
+
+.teams-roster {
+  width: 100%;
+  padding: 11px 10px 12px;
+  background: linear-gradient(
+    180deg,
+    rgb(4, 13, 24),
+    rgb(2, 8, 16)
+  );
+  animation: teamsRosterOpen 230ms ease;
+}
+
+@keyframes teamsRosterOpen {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-7px);
   }
 
   to {
@@ -1460,321 +181,351 @@ footer p {
   }
 }
 
-@keyframes pulseGreen {
-  0%, 100% {
-    opacity: 1;
-    box-shadow: 0 0 10px #00FF88;
-  }
+.teams-player-row {
+  width: 100%;
+  min-height: 36px;
+  margin-bottom: 6px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  border-radius: 8px;
+  background: rgb(10, 23, 38);
+  color: #FFFFFF;
+  text-align: left;
+  cursor: pointer;
+}
 
-  50% {
-    opacity: 0.55;
-    box-shadow: 0 0 3px #00FF88;
-  }
+button.teams-player-row {
+  font-family: inherit;
+}
+
+.teams-player-row:last-child {
+  margin-bottom: 0;
+}
+
+.teams-player-number {
+  width: 27px;
+  min-width: 27px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.teams-player-name {
+  min-width: 0;
+  flex: 1;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.teams-captain-label {
+  flex-shrink: 0;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.teams-empty-roster {
+  margin: 8px 0;
+  color: rgb(145, 165, 185);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.teams-loading {
+  min-height: 180px;
+  padding: 35px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.teams-loading p {
+  color: rgb(0, 205, 255);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.teams-load-error {
+  width: 100%;
+  min-height: 150px;
+  padding: 25px 15px;
+  border: none;
+  background: transparent;
+  color: rgb(150, 175, 195);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.teams-load-error span {
+  display: block;
+  margin-top: 10px;
+  color: #00D9FF;
+  font-size: 10px;
 }
 
 /* ========================================
-   TABLET
+   MENÚ DEL PERFIL DEL JUGADOR
 ======================================== */
 
-@media (min-width: 701px) {
-  .competition-menu {
-    padding-top: 35px;
-  }
+.player-profile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 5, 12, 0.86);
+  backdrop-filter: blur(7px);
+  animation: fadeIn 180ms ease;
+}
 
-  .competition-grid {
-    gap: 16px;
-  }
+.player-profile-modal {
+  width: 100%;
+  max-width: 370px;
+  padding: 17px 17px 13px;
+  border: 1px solid rgb(0, 150, 255);
+  border-radius: 16px;
+  background: rgb(5, 13, 25);
+  box-shadow:
+    0 0 25px #00aaff22,
+    0 15px 45px #000000aa;
+  animation: slideUp 230ms ease;
+}
 
-  .competition-card {
-    min-height: 175px;
-  }
+.player-profile-heading {
+  margin-bottom: 17px;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
 
-  .competition-card-icon {
-    font-size: 40px;
-  }
+.player-profile-avatar {
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid #00D9FF;
+  border-radius: 50%;
+  background: rgb(9, 29, 47);
+  box-shadow: 0 0 15px #00D9FF25;
+}
 
-  .android-welcome {
-    padding-top: 35px;
-  }
+.player-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-profile-avatar span {
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 37px;
+  font-weight: 900;
+}
+
+.player-profile-photo-status {
+  min-height: 15px;
+  margin: 4px 0 8px;
+  color: #91A5B9;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.player-profile-name {
+  margin: 9px 0 15px;
+  color: #FFFFFF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.player-profile-divider {
+  width: 100%;
+  height: 1px;
+  margin: 12px 0;
+  background: rgb(0, 100, 155);
+}
+
+.player-profile-option {
+  width: 100%;
+  min-height: 55px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgb(0, 105, 155);
+  border-radius: 10px;
+  background: rgb(7, 23, 39);
+  color: #FFFFFF;
+  text-align: left;
+}
+
+.player-profile-option-icon {
+  width: 25px;
+  color: #00D9FF;
+  font-size: 21px;
+  text-align: center;
+}
+
+.player-profile-option > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.player-profile-option strong {
+  color: #FFFFFF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.player-profile-option small {
+  color: #91A5B9;
+  font-size: 10px;
+}
+
+.player-profile-option b {
+  color: #00D9FF;
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.player-profile-close {
+  width: 100%;
+  min-height: 35px;
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: #91A5B9;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 /* ========================================
-   MÓVILES
+   AJUSTES MÓVILES DE EQUIPOS
 ======================================== */
 
 @media (max-width: 700px) {
-  .header,
-  .logged-header,
-  .welcome-header {
-    min-height: 70px;
-    padding: 12px 14px;
-  }
-
-  .brand {
-    gap: 9px;
-  }
-
-  .brand-icon {
-    width: 42px;
-    height: 42px;
-  }
-
-  .brand h1 {
-    font-size: 15px;
-  }
-
-  .brand p {
-    font-size: 9px;
-    letter-spacing: 2px;
-  }
-
-  .header-actions {
-    gap: 6px;
-  }
-
-  .login-button {
-    padding: 10px 12px;
-    font-size: 10px;
-  }
-
-  .user-email {
-    display: none;
-  }
-
-  .android-welcome {
-    min-height: calc(100vh - 70px);
-    padding: 20px 14px 32px;
-  }
-
-  .welcome-logo-panel {
-    min-height: 170px;
-  }
-
-  .welcome-matches-heading {
-    margin-top: 22px;
-  }
-
-  .welcome-matches-heading h2 {
-    font-size: 12px;
-  }
-
-  .welcome-matches-panel {
-    padding: 10px;
-  }
-
-  .match-shield-button {
-    width: 68px;
-    height: 68px;
-  }
-
-  .match-shield {
-    width: 44px;
-    height: 44px;
-    max-width: 44px;
-    max-height: 44px;
-  }
-
-  .match-vs {
-    font-size: 18px;
-  }
-
-  .match-pending {
-    font-size: 6px;
-  }
-
-  .welcome-enter-button {
-    min-height: 49px;
-    font-size: 11px;
-  }
-
   .teams-screen {
-    padding: 24px 12px 110px;
+    padding: 13px 11px 85px;
+  }
+
+  .teams-grid {
+    column-gap: 12px;
+    row-gap: 13px;
+  }
+
+  .teams-shield-wrap {
+    height: 137px;
+    min-height: 137px;
   }
 
   .teams-screen img,
+  .teams-screen .teams-shield,
   .teams-screen .team-card img,
   .teams-screen .team-shield,
   .teams-screen .team-card-shield {
-    width: 68px !important;
-    height: 68px !important;
-    max-width: 68px !important;
-    max-height: 68px !important;
+    width: 116px !important;
+    height: 116px !important;
+    max-width: 116px !important;
+    max-height: 116px !important;
+    flex-basis: 116px;
   }
 
-  .teams-screen .teams-shield-wrap,
-  .teams-screen .team-card .teams-shield-wrap,
-  .teams-screen .team-card .team-shield-wrap {
-    width: 74px;
-    height: 74px;
-    min-width: 74px;
-    max-width: 74px;
-    min-height: 74px;
-    max-height: 74px;
-  }
-
-  /* Menú principal móvil */
-
-  .competition-menu {
-    min-height: calc(100vh - 70px);
-    padding: 18px 16px 110px;
-  }
-
-  .menu-top {
-    min-height: 85px;
-    margin-bottom: 20px;
-  }
-
-  .menu-sponsor > span {
-    font-size: 8px;
-  }
-
-  .menu-sponsor h2 {
-    font-size: 25px;
-  }
-
-  .menu-notifications {
-    width: 42px;
-    height: 42px;
-    font-size: 21px;
-  }
-
-  .menu-section-heading {
-    margin-bottom: 12px;
-    font-size: 9px;
-  }
-
-  .competition-grid {
-    gap: 10px;
-    grid-template-rows: repeat(3, minmax(130px, 1fr));
-  }
-
-  .competition-card {
-    min-height: 130px;
-    padding: 16px 7px 10px;
-    gap: 11px;
-  }
-
-  .competition-card-icon {
-    font-size: 31px;
-  }
-
-  .competition-card-title {
-    font-size: 9px;
-  }
-
-  .championship-status {
-    min-height: 42px;
-    font-size: 9px;
-  }
-
-  .menu-footer {
-    font-size: 8px;
-  }
-
-  .menu-notifications-panel {
-    top: 67px;
-    right: 0;
-  }
-
-  .web-section-placeholder {
-    min-height: calc(100vh - 138px);
-    padding: 70px 20px 110px;
-  }
-
-  /* Navegación inferior */
-
-  .web-bottom-navigation {
-    min-height: 65px;
-  }
-
-  .web-bottom-navigation button > span {
-    font-size: 18px;
-  }
-
-  .web-bottom-navigation button small {
-    font-size: 6px;
-  }
-
-  .auth-card {
-    padding: 35px 22px;
-  }
-
-  .auth-card h2 {
-    font-size: 18px;
-  }
-
-  .global-message {
-    margin: 0 15px 25px;
-  }
-}
-
-/* ========================================
-   MÓVILES PEQUEÑOS
-======================================== */
-
-@media (max-width: 360px) {
-  .brand h1 {
+  .teams-name {
     font-size: 13px;
   }
 
-  .brand p {
-    letter-spacing: 1px;
+  .teams-card:nth-child(4) .teams-name,
+  .teams-card:nth-child(5) .teams-name,
+  .teams-card:nth-child(6) .teams-name {
+    font-size: 12px;
   }
 
-  .login-button {
-    padding: 9px 8px;
-    font-size: 9px;
+  .teams-card:nth-child(2) .teams-name,
+  .teams-card:nth-child(3) .teams-name {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .teams-screen {
+    padding-left: 9px;
+    padding-right: 9px;
   }
 
-  .competition-menu {
-    padding-left: 11px;
-    padding-right: 11px;
+  .teams-grid {
+    column-gap: 9px;
+    row-gap: 11px;
   }
 
-  .competition-grid {
-    gap: 8px;
-  }
-
-  .competition-card {
-    min-height: 120px;
-  }
-
-  .competition-card-title {
-    font-size: 8px;
-  }
-
-  .web-bottom-navigation button small {
-    font-size: 5px;
-  }
-
-  .welcome-match-card {
-    grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
-    padding: 10px 5px;
-  }
-
-  .match-shield-button {
-    width: 58px;
-    height: 58px;
-  }
-
-  .match-shield {
-    width: 40px;
-    height: 40px;
-    max-width: 40px;
-    max-height: 40px;
-  }
-
-  .match-team strong {
-    font-size: 8px;
+  .teams-shield-wrap {
+    height: 125px;
+    min-height: 125px;
   }
 
   .teams-screen img,
+  .teams-screen .teams-shield,
   .teams-screen .team-card img,
   .teams-screen .team-shield,
   .teams-screen .team-card-shield {
-    width: 60px !important;
-    height: 60px !important;
-    max-width: 60px !important;
-    max-height: 60px !important;
+    width: 106px !important;
+    height: 106px !important;
+    max-width: 106px !important;
+    max-height: 106px !important;
+    flex-basis: 106px;
+  }
+
+  .teams-toggle-button {
+    font-size: 8px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .teams-player-row {
+    gap: 5px;
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .teams-captain-label {
+    font-size: 7px;
   }
 }
