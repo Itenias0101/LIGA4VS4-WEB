@@ -1,10 +1,7 @@
 
 /* ========================================
-   ESTILOS DE EQUIPOS
-   LIGA 4VS4
+   PANTALLA DE EQUIPOS
 ======================================== */
-
-/* PANTALLA DE EQUIPOS */
 
 .teams-screen {
   width: 100%;
@@ -74,8 +71,6 @@
   );
 }
 
-/* ESCUDOS */
-
 .teams-screen img,
 .teams-screen .teams-shield,
 .teams-screen .team-card img,
@@ -106,8 +101,6 @@
   text-shadow: 0 0 15px #00D9FF55;
 }
 
-/* NOMBRES DE EQUIPOS */
-
 .teams-name {
   width: 100%;
   max-width: 100%;
@@ -134,8 +127,6 @@
 .teams-card:nth-child(3) .teams-name {
   font-size: 16px;
 }
-
-/* BOTÓN PARA DESPLEGAR PLANTILLA */
 
 .teams-toggle-button {
   min-height: 31px;
@@ -255,7 +246,7 @@ button.teams-player-row {
   line-height: 1.6;
 }
 
-/* CARGA Y ERRORES DE EQUIPOS */
+/* ESTADOS DE CARGA Y ERROR */
 
 .teams-loading {
   min-height: 180px;
@@ -297,7 +288,7 @@ button.teams-player-row {
 }
 
 /* ========================================
-   PERFIL DEL JUGADOR
+   MENÚ DEL PERFIL DEL JUGADOR
 ======================================== */
 
 .player-profile-overlay {
