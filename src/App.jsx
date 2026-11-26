@@ -190,40 +190,69 @@ const formatPostDate = (timestamp) => {
 // =========================================
 
 const detectCSVSeparator = (text) => {
-  const firstLine = String(text || "").split(/\r?\n/)[0] || "";
-  const separators = [",", ";", "\t"];
+  const lines = String(text || "")
+    .replace(/^\uFEFF/, "")
+    .split(/\r\n|\n|\r/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 20);
 
-  let selected = ",";
-  let highest = -1;
+  const separators = [",", ";", "\t"];
+  let bestSeparator = ",";
+  let bestScore = -1;
 
   separators.forEach((separator) => {
-    let count = 0;
-    let quoted = false;
+    const counts = lines.map((line) => {
+      let count = 0;
+      let insideQuotes = false;
 
-    for (let i = 0; i < firstLine.length; i += 1) {
-      if (firstLine[i] === '"') quoted = !quoted;
-      else if (firstLine[i] === separator && !quoted) count += 1;
-    }
+      for (let i = 0; i < line.length; i += 1) {
+        const char = line[i];
+        const next = line[i + 1];
 
-    if (count > highest) {
-      highest = count;
-      selected = separator;
+        if (char === '"' && insideQuotes && next === '"') {
+          i += 1;
+        } else if (char === '"') {
+          insideQuotes = !insideQuotes;
+        } else if (char === separator && !insideQuotes) {
+          count += 1;
+        }
+      }
+
+      return count;
+    }).filter((count) => count > 0);
+
+    if (counts.length === 0) return;
+
+    const frequency = new Map();
+    counts.forEach((count) => {
+      frequency.set(count, (frequency.get(count) || 0) + 1);
+    });
+
+    const mostCommonCount = Math.max(...frequency.keys());
+    const consistency = frequency.get(mostCommonCount) / counts.length;
+    const score = mostCommonCount * consistency;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestSeparator = separator;
     }
   });
 
-  return selected;
+  return bestSeparator;
 };
 
 const parseCSV = (text, separator = null) => {
+  const source = String(text || "").replace(/^\uFEFF/, "");
   const rows = [];
   let row = [];
   let value = "";
   let insideQuotes = false;
-  const delimiter = separator || detectCSVSeparator(text);
+  const delimiter = separator || detectCSVSeparator(source);
 
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
-    const next = text[i + 1];
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i];
+    const next = source[i + 1];
 
     if (char === '"' && insideQuotes && next === '"') {
       value += '"';
@@ -236,7 +265,11 @@ const parseCSV = (text, separator = null) => {
     } else if ((char === "\n" || char === "\r") && !insideQuotes) {
       if (char === "\r" && next === "\n") i += 1;
       row.push(value.trim());
-      if (row.some((cell) => cell !== "")) rows.push(row);
+
+      if (row.some((cell) => cell !== "")) {
+        rows.push(row);
+      }
+
       row = [];
       value = "";
     } else {
@@ -245,7 +278,9 @@ const parseCSV = (text, separator = null) => {
   }
 
   row.push(value.trim());
-  if (row.some((cell) => cell !== "")) rows.push(row);
+  if (row.some((cell) => cell !== "")) {
+    rows.push(row);
+  }
 
   return rows;
 };
@@ -340,27 +375,79 @@ const getCurrentMatchday = (matches) => {
 // =========================================
 
 const parsePlayersCSV = (csvText) => {
-  const rows = parseCSV(csvText);
-  if (rows.length < 2) return [];
+  const separator = detectCSVSeparator(csvText);
+  const rows = parseCSV(csvText, separator);
 
-  const headers = rows[0];
-  const teamIndex = findHeaderIndex(headers, ["EQUIPO", "TEAM", "CLUB"]);
-  const playerIndex = findHeaderIndex(headers, [
-    "JUGADOR", "NICK", "NOMBRE", "PLAYER", "USUARIO"
-  ]);
+  if (rows.length === 0) {
+    console.warn("[LIGA4VS4] El CSV de jugadores llegó vacío.");
+    return [];
+  }
 
-  if (teamIndex < 0 || playerIndex < 0) return [];
+  const playerHeaders = [
+    "JUGADOR",
+    "NICK",
+    "NOMBRE",
+    "PLAYER",
+    "USUARIO"
+  ];
+  const teamHeaders = ["EQUIPO", "TEAM", "CLUB"];
 
-  return rows.slice(1)
-    .map((row) => ({
-      team: normalizeTeam(row[teamIndex]),
-      player: String(row[playerIndex] || "").trim()
-    }))
-    .filter((player) =>
-      player.team &&
-      player.player &&
-      normalizeText(player.player) !== "VACANTE"
+  // Igual que Android: localizar la fila real de encabezados en cualquier posición.
+  const headerIndex = rows.findIndex((row) => {
+    const headers = row.map(normalizeHeader);
+    return (
+      headers.some((header) => playerHeaders.includes(header)) &&
+      headers.some((header) => teamHeaders.includes(header))
     );
+  });
+
+  let playerIndex = 0;
+  let teamIndex = 1;
+  let dataStartIndex = 0;
+  let headerFound = false;
+
+  if (headerIndex >= 0) {
+    const headers = rows[headerIndex].map(normalizeHeader);
+    playerIndex = headers.findIndex((header) => playerHeaders.includes(header));
+    teamIndex = headers.findIndex((header) => teamHeaders.includes(header));
+    dataStartIndex = headerIndex + 1;
+    headerFound = true;
+  }
+
+  const parsedPlayers = rows.slice(dataStartIndex)
+    .map((row) => {
+      const rawPlayer = String(row[playerIndex] || "").trim();
+      const rawTeam = String(row[teamIndex] || "").trim();
+
+      return {
+        team: normalizeTeam(rawTeam),
+        player: rawPlayer
+      };
+    })
+    .filter((item) => {
+      const normalizedPlayer = normalizeHeader(item.player);
+      const normalizedTeam = normalizeHeader(item.team);
+
+      return (
+        item.player.length > 0 &&
+        item.team.length > 0 &&
+        !["VACANTE", "PORDEFINIR", "JUGADOR", "NICK", "NOMBRE", "PLAYER", "USUARIO"].includes(normalizedPlayer) &&
+        !["EQUIPO", "TEAM", "CLUB"].includes(normalizedTeam)
+      );
+    });
+
+  console.info("[LIGA4VS4] Diagnóstico CSV de jugadores:", {
+    separador: separator === "\t" ? "TAB" : separator,
+    filasDetectadas: rows.length,
+    encabezadoEncontrado: headerFound,
+    filaEncabezado: headerFound ? headerIndex + 1 : "No encontrado, usando columnas 1 y 2",
+    columnaJugador: playerIndex + 1,
+    columnaEquipo: teamIndex + 1,
+    jugadoresDetectados: parsedPlayers.length,
+    equiposDetectados: [...new Set(parsedPlayers.map((item) => item.team))]
+  });
+
+  return parsedPlayers;
 };
 
 // =========================================
@@ -508,6 +595,8 @@ export default function App() {
   const [players, setPlayers] = useState([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [matchesError, setMatchesError] = useState("");
+  const [playersLoading, setPlayersLoading] = useState(true);
+  const [playersError, setPlayersError] = useState("");
 
   const [expandedTeams, setExpandedTeams] = useState({});
   const [expandedTeam, setExpandedTeam] = useState(null);
@@ -561,51 +650,87 @@ export default function App() {
   }, []);
 
   // =========================================
-  // CARGAR PARTIDOS Y JUGADORES
+  // CARGAR PARTIDOS Y JUGADORES POR SEPARADO
   // =========================================
 
   useEffect(() => {
     let mounted = true;
 
-    const loadCompetitionData = async () => {
+    const loadMatches = async () => {
       try {
-        const [matchesResponse, playersResponse] = await Promise.all([
-          fetch(MATCHES_CSV_URL, { cache: "no-store" }),
-          fetch(PLAYERS_CSV_URL, { cache: "no-store" })
-        ]);
+        const response = await fetch(MATCHES_CSV_URL, { cache: "no-store" });
 
-        if (!matchesResponse.ok) {
-          throw new Error(`No se pudo descargar el CSV de enfrentamientos (${matchesResponse.status}).`);
+        if (!response.ok) {
+          throw new Error(`Google Sheets respondió ${response.status} al cargar enfrentamientos.`);
         }
 
-        if (!playersResponse.ok) {
-          throw new Error(`No se pudo descargar el CSV de jugadores (${playersResponse.status}).`);
-        }
-
-        const [matchesText, playersText] = await Promise.all([
-          matchesResponse.text(),
-          playersResponse.text()
-        ]);
+        const csvText = await response.text();
+        const parsedMatches = parseMatchesCSV(csvText);
 
         if (!mounted) return;
 
-        setMatches(parseMatchesCSV(matchesText));
-        setPlayers(parsePlayersCSV(playersText));
+        setMatches(parsedMatches);
         setMatchesError("");
-        setMatchesLoading(false);
+        console.info("[LIGA4VS4] Enfrentamientos cargados:", parsedMatches.length);
       } catch (err) {
-        console.error("Error cargando datos de competición:", err);
+        console.error("[LIGA4VS4] Error cargando enfrentamientos:", err);
+
         if (!mounted) return;
 
         setMatchesError(
-          "No se pudieron cargar los enfrentamientos. Comprueba la conexión con Google Sheets."
+          err.message || "No se pudieron cargar los enfrentamientos desde Google Sheets."
         );
-        setMatchesLoading(false);
+      } finally {
+        if (mounted) setMatchesLoading(false);
       }
     };
 
-    loadCompetitionData();
-    const interval = window.setInterval(loadCompetitionData, REFRESH_INTERVAL);
+    const loadPlayers = async () => {
+      try {
+        const response = await fetch(PLAYERS_CSV_URL, { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error(`Google Sheets respondió ${response.status} al cargar jugadores.`);
+        }
+
+        const csvText = await response.text();
+
+        if (!csvText.trim()) {
+          throw new Error("Google Sheets entregó un CSV de jugadores vacío.");
+        }
+
+        const parsedPlayers = parsePlayersCSV(csvText);
+
+        if (!mounted) return;
+
+        setPlayers(parsedPlayers);
+        setPlayersError(
+          parsedPlayers.length === 0
+            ? "El CSV se descargó, pero no se reconocieron jugadores. Revisa que las columnas sean JUGADOR y EQUIPO o que los datos estén en las columnas 1 y 2."
+            : ""
+        );
+
+        console.info("[LIGA4VS4] Plantilla de jugadores cargada:", parsedPlayers.length);
+      } catch (err) {
+        console.error("[LIGA4VS4] Error cargando jugadores:", err);
+
+        if (!mounted) return;
+
+        setPlayersError(
+          err.message || "No se pudieron cargar los jugadores desde Google Sheets."
+        );
+      } finally {
+        if (mounted) setPlayersLoading(false);
+      }
+    };
+
+    const loadAll = () => {
+      loadMatches();
+      loadPlayers();
+    };
+
+    loadAll();
+    const interval = window.setInterval(loadAll, REFRESH_INTERVAL);
 
     return () => {
       mounted = false;
@@ -1872,13 +1997,15 @@ export default function App() {
                             JUGADORES · {match.team1}
                           </div>
 
-                          {getPlayersForTeam(match.team1).length > 0
+                          {playersLoading && players.length === 0
+                            ? <p>Cargando jugadores...</p>
+                            : getPlayersForTeam(match.team1).length > 0
                             ? getPlayersForTeam(match.team1).map((player, playerIndex) => (
                                 <div className="team-roster-player" key={`${player.player}-${playerIndex}`}>
                                   <span>{playerIndex + 1}</span>{player.player}
                                 </div>
                               ))
-                            : <p>No se encontraron jugadores para este equipo.</p>}
+                            : <p>{playersError || "No se encontraron jugadores para este equipo."}</p>}
                         </div>
                       )}
 
@@ -1888,13 +2015,15 @@ export default function App() {
                             JUGADORES · {match.team2}
                           </div>
 
-                          {getPlayersForTeam(match.team2).length > 0
+                          {playersLoading && players.length === 0
+                            ? <p>Cargando jugadores...</p>
+                            : getPlayersForTeam(match.team2).length > 0
                             ? getPlayersForTeam(match.team2).map((player, playerIndex) => (
                                 <div className="team-roster-player" key={`${player.player}-${playerIndex}`}>
                                   <span>{playerIndex + 1}</span>{player.player}
                                 </div>
                               ))
-                            : <p>No se encontraron jugadores para este equipo.</p>}
+                            : <p>{playersError || "No se encontraron jugadores para este equipo."}</p>}
                         </div>
                       )}
                     </article>
@@ -1994,24 +2123,45 @@ export default function App() {
 
   const renderTeams = () => (
     <section className="teams-screen">
-      {matchesLoading && players.length === 0 ? (
+      {playersLoading && players.length === 0 ? (
         <div className="teams-loading">
           <span className="matches-spinner" />
           <p>CARGANDO PLANTILLAS...</p>
         </div>
-      ) : matchesError && players.length === 0 ? (
-        <button
-          type="button"
-          className="teams-load-error"
-          onClick={() => window.location.reload()}
-        >
-          NO SE PUDIERON CARGAR LAS PLANTILLAS
-          <span>TOCA AQUÍ PARA REINTENTAR</span>
-        </button>
       ) : (
-        <div className="teams-grid">
-          {TEAMS.map((team) => renderTeamRoster(team))}
-        </div>
+        <>
+          {playersError && (
+            <div className="matches-state matches-error" style={{ marginBottom: "14px" }}>
+              <p>{playersError}</p>
+              <small style={{ display: "block", marginTop: "8px", color: "#AABBCB" }}>
+                Revisa la consola del navegador para ver el diagnóstico del CSV.
+              </small>
+              <button
+                type="button"
+                className="primary-button"
+                style={{ marginTop: "12px" }}
+                onClick={() => window.location.reload()}
+              >
+                REINTENTAR CARGA
+              </button>
+            </div>
+          )}
+
+          {!playersError && players.length > 0 && (
+            <p style={{
+              color: "#8EA6BA",
+              fontSize: "11px",
+              textAlign: "center",
+              margin: "0 0 12px"
+            }}>
+              {players.length} JUGADORES REGISTRADOS
+            </p>
+          )}
+
+          <div className="teams-grid">
+            {TEAMS.map((team) => renderTeamRoster(team))}
+          </div>
+        </>
       )}
     </section>
   );
