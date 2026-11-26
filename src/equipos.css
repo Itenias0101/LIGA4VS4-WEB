@@ -1,0 +1,543 @@
+
+/* ========================================
+   ESTILOS DE EQUIPOS
+   LIGA 4VS4
+======================================== */
+
+/* PANTALLA DE EQUIPOS */
+
+.teams-screen {
+  width: 100%;
+  max-width: 760px;
+  min-height: calc(100vh - 150px);
+  margin: 0 auto;
+  padding: 13px 11px 85px;
+  background: #03070E;
+}
+
+.teams-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  row-gap: 13px;
+  align-items: start;
+}
+
+.teams-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(0, 155, 220);
+  border-radius: 15px;
+  background: rgb(5, 15, 28);
+  box-shadow: 0 5px 12px #00000055;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.teams-card.expanded {
+  transform: scale(1.015);
+  box-shadow:
+    0 0 15px #00bfff28,
+    0 7px 16px #00000070;
+}
+
+.teams-card-top {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(
+    135deg,
+    rgb(5, 19, 36),
+    rgb(3, 10, 21),
+    rgb(8, 24, 43)
+  );
+}
+
+.teams-shield-wrap {
+  width: 100%;
+  height: 137px;
+  min-height: 137px;
+  margin: 0;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgb(5, 19, 36),
+    rgb(3, 10, 21),
+    rgb(8, 24, 43)
+  );
+}
+
+/* ESCUDOS */
+
+.teams-screen img,
+.teams-screen .teams-shield,
+.teams-screen .team-card img,
+.teams-screen .team-shield,
+.teams-screen .team-card-shield {
+  display: block;
+  width: 116px !important;
+  height: 116px !important;
+  min-width: 0;
+  min-height: 0;
+  max-width: 116px !important;
+  max-height: 116px !important;
+  padding: 3px;
+  flex: 0 0 116px;
+  object-fit: contain;
+}
+
+.teams-shield-fallback {
+  width: 116px;
+  height: 116px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 30px;
+  font-weight: 900;
+  text-shadow: 0 0 15px #00D9FF55;
+}
+
+/* NOMBRES DE EQUIPOS */
+
+.teams-name {
+  width: 100%;
+  max-width: 100%;
+  padding: 5px 4px 0;
+  color: #FFFFFF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0.025em;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teams-card:nth-child(4) .teams-name,
+.teams-card:nth-child(5) .teams-name,
+.teams-card:nth-child(6) .teams-name {
+  font-size: 12px;
+}
+
+.teams-card:nth-child(2) .teams-name,
+.teams-card:nth-child(3) .teams-name {
+  font-size: 16px;
+}
+
+/* BOTÓN PARA DESPLEGAR PLANTILLA */
+
+.teams-toggle-button {
+  min-height: 31px;
+  margin: 5px 5px 9px;
+  padding: 5px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgb(0, 150, 255);
+  border-radius: 9px;
+  background: rgb(3, 17, 30);
+  color: rgb(0, 205, 255);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.teams-toggle-button strong {
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.teams-card.expanded .teams-toggle-button strong {
+  transform: rotate(45deg);
+}
+
+/* PLANTILLA DESPLEGABLE */
+
+.teams-roster {
+  width: 100%;
+  padding: 11px 10px 12px;
+  background: linear-gradient(
+    180deg,
+    rgb(4, 13, 24),
+    rgb(2, 8, 16)
+  );
+  animation: teamsRosterOpen 230ms ease;
+}
+
+@keyframes teamsRosterOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.teams-player-row {
+  width: 100%;
+  min-height: 36px;
+  margin-bottom: 6px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  border-radius: 8px;
+  background: rgb(10, 23, 38);
+  color: #FFFFFF;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.teams-player-row {
+  font-family: inherit;
+}
+
+.teams-player-row:last-child {
+  margin-bottom: 0;
+}
+
+.teams-player-number {
+  width: 27px;
+  min-width: 27px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.teams-player-name {
+  min-width: 0;
+  flex: 1;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.teams-captain-label {
+  flex-shrink: 0;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.teams-empty-roster {
+  margin: 8px 0;
+  color: rgb(145, 165, 185);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* CARGA Y ERRORES DE EQUIPOS */
+
+.teams-loading {
+  min-height: 180px;
+  padding: 35px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.teams-loading p {
+  color: rgb(0, 205, 255);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.teams-load-error {
+  width: 100%;
+  min-height: 150px;
+  padding: 25px 15px;
+  border: none;
+  background: transparent;
+  color: rgb(150, 175, 195);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.teams-load-error span {
+  display: block;
+  margin-top: 10px;
+  color: #00D9FF;
+  font-size: 10px;
+}
+
+/* ========================================
+   PERFIL DEL JUGADOR
+======================================== */
+
+.player-profile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 5, 12, 0.86);
+  backdrop-filter: blur(7px);
+  animation: fadeIn 180ms ease;
+}
+
+.player-profile-modal {
+  width: 100%;
+  max-width: 370px;
+  padding: 17px 17px 13px;
+  border: 1px solid rgb(0, 150, 255);
+  border-radius: 16px;
+  background: rgb(5, 13, 25);
+  box-shadow:
+    0 0 25px #00aaff22,
+    0 15px 45px #000000aa;
+  animation: slideUp 230ms ease;
+}
+
+.player-profile-heading {
+  margin-bottom: 17px;
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.player-profile-avatar {
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid #00D9FF;
+  border-radius: 50%;
+  background: rgb(9, 29, 47);
+  box-shadow: 0 0 15px #00D9FF25;
+}
+
+.player-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-profile-avatar span {
+  color: #00D9FF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 37px;
+  font-weight: 900;
+}
+
+.player-profile-photo-status {
+  min-height: 15px;
+  margin: 4px 0 8px;
+  color: #91A5B9;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.player-profile-name {
+  margin: 9px 0 15px;
+  color: #FFFFFF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.player-profile-divider {
+  width: 100%;
+  height: 1px;
+  margin: 12px 0;
+  background: rgb(0, 100, 155);
+}
+
+.player-profile-option {
+  width: 100%;
+  min-height: 55px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgb(0, 105, 155);
+  border-radius: 10px;
+  background: rgb(7, 23, 39);
+  color: #FFFFFF;
+  text-align: left;
+}
+
+.player-profile-option-icon {
+  width: 25px;
+  color: #00D9FF;
+  font-size: 21px;
+  text-align: center;
+}
+
+.player-profile-option > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.player-profile-option strong {
+  color: #FFFFFF;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.player-profile-option small {
+  color: #91A5B9;
+  font-size: 10px;
+}
+
+.player-profile-option b {
+  color: #00D9FF;
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.player-profile-close {
+  width: 100%;
+  min-height: 35px;
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: #91A5B9;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ========================================
+   AJUSTES MÓVILES DE EQUIPOS
+======================================== */
+
+@media (max-width: 700px) {
+  .teams-screen {
+    padding: 13px 11px 85px;
+  }
+
+  .teams-grid {
+    column-gap: 12px;
+    row-gap: 13px;
+  }
+
+  .teams-shield-wrap {
+    height: 137px;
+    min-height: 137px;
+  }
+
+  .teams-screen img,
+  .teams-screen .teams-shield,
+  .teams-screen .team-card img,
+  .teams-screen .team-shield,
+  .teams-screen .team-card-shield {
+    width: 116px !important;
+    height: 116px !important;
+    max-width: 116px !important;
+    max-height: 116px !important;
+    flex-basis: 116px;
+  }
+
+  .teams-name {
+    font-size: 13px;
+  }
+
+  .teams-card:nth-child(4) .teams-name,
+  .teams-card:nth-child(5) .teams-name,
+  .teams-card:nth-child(6) .teams-name {
+    font-size: 12px;
+  }
+
+  .teams-card:nth-child(2) .teams-name,
+  .teams-card:nth-child(3) .teams-name {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .teams-screen {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .teams-grid {
+    column-gap: 9px;
+    row-gap: 11px;
+  }
+
+  .teams-shield-wrap {
+    height: 125px;
+    min-height: 125px;
+  }
+
+  .teams-screen img,
+  .teams-screen .teams-shield,
+  .teams-screen .team-card img,
+  .teams-screen .team-shield,
+  .teams-screen .team-card-shield {
+    width: 106px !important;
+    height: 106px !important;
+    max-width: 106px !important;
+    max-height: 106px !important;
+    flex-basis: 106px;
+  }
+
+  .teams-toggle-button {
+    font-size: 8px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .teams-player-row {
+    gap: 5px;
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .teams-captain-label {
+    font-size: 7px;
+  }
+}
