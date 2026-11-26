@@ -16,6 +16,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  setDoc,
   writeBatch,
   getDocs,
   where,
@@ -607,6 +608,10 @@ export default function App() {
   const [playerPhotoLoading, setPlayerPhotoLoading] = useState(false);
   const [playerPhotoStatus, setPlayerPhotoStatus] = useState("");
   const [selectedPlayerProfile, setSelectedPlayerProfile] = useState(null);
+  const [biographyLikes, setBiographyLikes] = useState(0);
+  const [biographyLiked, setBiographyLiked] = useState(false);
+  const [biographyLikeBusy, setBiographyLikeBusy] = useState(false);
+  const [expandedProfilePhoto, setExpandedProfilePhoto] = useState(false);
 
   // Vistas individuales
   const [playerView, setPlayerView] = useState("");
@@ -766,6 +771,7 @@ export default function App() {
     setPlayerPhotoLoading(false);
     setPlayerPhotoStatus("");
     setSelectedPlayerProfile(null);
+    setExpandedProfilePhoto(false);
   };
 
   const openPlayerMenu = async (playerName) => {
@@ -893,6 +899,63 @@ export default function App() {
       );
     } finally {
       setStatsLoading(false);
+    }
+  };
+
+  // =========================================
+  // ME GUSTA DE LA BIOGRAFÍA DEL JUGADOR
+  // =========================================
+
+  useEffect(() => {
+    const profileUid = selectedPlayerProfile?.uid;
+    if (!profileUid) {
+      setBiographyLikes(0);
+      setBiographyLiked(false);
+      return;
+    }
+
+    const likesRef = collection(db, "perfiles_publicos", profileUid, "likes_biografia");
+    const unsubscribe = onSnapshot(
+      likesRef,
+      (snapshot) => {
+        setBiographyLikes(snapshot.size);
+        setBiographyLiked(Boolean(user?.uid) && snapshot.docs.some((likeDoc) => likeDoc.id === user.uid));
+      },
+      (firebaseError) => {
+        console.error("Error cargando los me gusta de la biografía:", firebaseError);
+        setBiographyLikes(0);
+        setBiographyLiked(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [selectedPlayerProfile?.uid, user?.uid]);
+
+  const toggleBiographyLike = async () => {
+    const profileUid = selectedPlayerProfile?.uid;
+    if (!profileUid || biographyLikeBusy) return;
+
+    if (!user?.uid) {
+      openMode("login");
+      return;
+    }
+
+    setBiographyLikeBusy(true);
+    try {
+      const likeRef = doc(db, "perfiles_publicos", profileUid, "likes_biografia", user.uid);
+      if (biographyLiked) {
+        await deleteDoc(likeRef);
+      } else {
+        await setDoc(likeRef, {
+          uid: user.uid,
+          createdAt: new Date().toISOString()
+        });
+      }
+    } catch (firebaseError) {
+      console.error("Error actualizando el me gusta de la biografía:", firebaseError);
+      setError("NO SE PUDO REGISTRAR TU ME GUSTA. COMPRUEBA LOS PERMISOS DE FIRESTORE.");
+    } finally {
+      setBiographyLikeBusy(false);
     }
   };
 
@@ -1447,6 +1510,79 @@ export default function App() {
   };
 
   // =========================================
+  // FOTO DE PERFIL AMPLIADA
+  // =========================================
+
+  const renderExpandedProfilePhoto = () => {
+    if (!expandedProfilePhoto || !selectedPlayerProfile?.fotoPerfil) return null;
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Foto de ${selectedPlayerProfile.nick || selectedPlayer}`}
+        onClick={() => setExpandedProfilePhoto(false)}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 10050,
+          display: "grid",
+          placeItems: "center",
+          padding: "24px",
+          background: "rgba(0,0,0,.94)",
+          cursor: "zoom-out"
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setExpandedProfilePhoto(false)}
+          aria-label="Cerrar foto ampliada"
+          style={{
+            position: "absolute",
+            top: "max(18px, env(safe-area-inset-top))",
+            right: "18px",
+            width: "42px",
+            height: "42px",
+            border: "1px solid rgba(0,217,255,.45)",
+            borderRadius: "50%",
+            background: "rgba(5,20,35,.9)",
+            color: "#fff",
+            fontSize: "27px",
+            cursor: "pointer"
+          }}
+        >×</button>
+        <img
+          src={selectedPlayerProfile.fotoPerfil}
+          alt={selectedPlayerProfile.nick || selectedPlayer}
+          onClick={(event) => event.stopPropagation()}
+          style={{
+            display: "block",
+            maxWidth: "min(92vw, 720px)",
+            maxHeight: "82vh",
+            width: "auto",
+            height: "auto",
+            objectFit: "contain",
+            borderRadius: "14px",
+            border: "1px solid rgba(0,217,255,.45)",
+            boxShadow: "0 0 35px rgba(0,217,255,.18)"
+          }}
+        />
+        <p style={{
+          position: "absolute",
+          bottom: "max(18px, env(safe-area-inset-bottom))",
+          left: "16px",
+          right: "16px",
+          margin: 0,
+          color: "#D5E0EA",
+          textAlign: "center",
+          fontWeight: 800,
+          letterSpacing: "1px"
+        }}>{selectedPlayerProfile.nick || selectedPlayer}</p>
+      </div>
+    );
+  };
+
+  // =========================================
   // VENTANA PERFIL DEL JUGADOR
   // =========================================
 
@@ -1464,10 +1600,16 @@ export default function App() {
         >
           <div className="player-profile-heading">PERFIL DEL JUGADOR</div>
 
-          <div
+          <button
+            type="button"
             className="player-profile-avatar"
+            onClick={() => selectedPlayerPhoto && setExpandedProfilePhoto(true)}
+            aria-label="Ampliar foto de perfil"
             style={{
-              background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`
+              background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
+              cursor: selectedPlayerPhoto ? "zoom-in" : "default",
+              padding: 0,
+              border: 0
             }}
           >
             {selectedPlayerPhoto ? (
@@ -1475,7 +1617,7 @@ export default function App() {
             ) : (
               <span>{selectedPlayer.slice(0, 1).toUpperCase()}</span>
             )}
-          </div>
+          </button>
 
           {playerPhotoLoading ? (
             <p className="player-profile-photo-status">BUSCANDO JUGADOR...</p>
@@ -1624,17 +1766,29 @@ export default function App() {
       margin: "15px 0 8px"
     }}>
       {selectedPlayerProfile?.fotoPerfil ? (
-        <img
-          src={selectedPlayerProfile.fotoPerfil}
-          alt={selectedPlayerProfile.nick || selectedPlayer}
+        <button
+          type="button"
+          onClick={() => setExpandedProfilePhoto(true)}
+          aria-label="Ampliar foto de perfil"
+          title="Ampliar foto"
           style={{
-            width: "58px",
-            height: "58px",
+            width: "62px",
+            height: "62px",
+            padding: 0,
+            border: "2px solid #00D9FF",
             borderRadius: "50%",
-            objectFit: "cover",
-            border: "2px solid #00D9FF"
+            overflow: "hidden",
+            background: "transparent",
+            cursor: "zoom-in",
+            flex: "0 0 auto"
           }}
-        />
+        >
+          <img
+            src={selectedPlayerProfile.fotoPerfil}
+            alt={selectedPlayerProfile.nick || selectedPlayer}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        </button>
       ) : (
         <div style={{
           width: "58px",
@@ -1686,6 +1840,43 @@ export default function App() {
         }}>
           {selectedPlayerProfile?.biografia || "Este jugador todavía no ha añadido una biografía."}
         </p>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          marginTop: "18px",
+          paddingTop: "14px",
+          borderTop: "1px solid rgba(0,217,255,.13)"
+        }}>
+          <span style={{ color: "#91A8BA", fontSize: "12px", fontWeight: 700 }}>
+            {biographyLikes} {biographyLikes === 1 ? "ME GUSTA" : "ME GUSTA"}
+          </span>
+          <button
+            type="button"
+            onClick={toggleBiographyLike}
+            disabled={biographyLikeBusy}
+            aria-pressed={biographyLiked}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              padding: "10px 16px",
+              borderRadius: "999px",
+              border: biographyLiked ? "1px solid rgba(255,75,112,.75)" : "1px solid rgba(0,217,255,.4)",
+              background: biographyLiked ? "rgba(255,55,100,.14)" : "rgba(0,217,255,.08)",
+              color: biographyLiked ? "#FF6B91" : "#00D9FF",
+              fontSize: "12px",
+              fontWeight: 900,
+              cursor: biographyLikeBusy ? "wait" : "pointer",
+              opacity: biographyLikeBusy ? .65 : 1
+            }}
+          >
+            <span style={{ fontSize: "17px", lineHeight: 1 }}>{biographyLiked ? "♥" : "♡"}</span>
+            {biographyLikeBusy ? "GUARDANDO..." : biographyLiked ? "TE GUSTA" : "ME GUSTA"}
+          </button>
+        </div>
       </div>
 
       <button className="primary-button" onClick={closePlayerView} style={{ marginTop: "20px" }}>
@@ -2380,6 +2571,7 @@ export default function App() {
       )}
 
       {renderPlayerMenu()}
+      {renderExpandedProfilePhoto()}
 
       {mode !== "home" && !user && (
         <div className="auth-overlay" onClick={() => openMode("home")}>
