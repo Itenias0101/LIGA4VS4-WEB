@@ -1597,6 +1597,14 @@ export default function App() {
         <section
           className="player-profile-modal"
           onClick={(event) => event.stopPropagation()}
+          style={{
+            width: "min(94vw, 520px)",
+            maxWidth: "520px",
+            maxHeight: "92vh",
+            overflowY: "auto",
+            boxSizing: "border-box",
+            padding: "24px 22px"
+          }}
         >
           <div className="player-profile-heading">PERFIL DEL JUGADOR</div>
 
@@ -1608,8 +1616,15 @@ export default function App() {
             style={{
               background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
               cursor: selectedPlayerPhoto ? "zoom-in" : "default",
+              width: "clamp(116px, 31vw, 142px)",
+              height: "clamp(116px, 31vw, 142px)",
+              minWidth: "116px",
+              minHeight: "116px",
               padding: 0,
-              border: 0
+              border: "2px solid rgba(0,217,255,.85)",
+              borderRadius: "50%",
+              overflow: "hidden",
+              boxShadow: "0 0 26px rgba(0,217,255,.2)"
             }}
           >
             {selectedPlayerPhoto ? (
@@ -1659,7 +1674,7 @@ export default function App() {
             className="player-profile-option"
             onClick={openPlayerProfile}
           >
-            <span className="player-profile-option-icon">◉</span>
+            <span className="player-profile-option-icon" style={{ fontSize: "29px", width: "42px", minWidth: "42px", textAlign: "center" }}>◉</span>
             <span>
               <strong>VER PERFIL</strong>
               <small>Información y biografía del jugador</small>
@@ -1672,7 +1687,7 @@ export default function App() {
             className="player-profile-option"
             onClick={openPlayerStats}
           >
-            <span className="player-profile-option-icon">◈</span>
+            <span className="player-profile-option-icon" style={{ fontSize: "29px", width: "42px", minWidth: "42px", textAlign: "center" }}>◈</span>
             <span>
               <strong>VER STATS</strong>
               <small>Estadísticas individuales del jugador</small>
@@ -1685,7 +1700,7 @@ export default function App() {
             className="player-profile-option"
             onClick={openPlayerPosts}
           >
-            <span className="player-profile-option-icon">▣</span>
+            <span className="player-profile-option-icon" style={{ fontSize: "29px", width: "42px", minWidth: "42px", textAlign: "center" }}>▣</span>
             <span>
               <strong>VER PUBLICACIONES</strong>
               <small>Jugadas destacadas de este jugador</small>
@@ -1713,9 +1728,9 @@ export default function App() {
     <div style={{
       display: "grid",
       gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-      gap: "6px",
+      gap: "9px",
       width: "100%",
-      margin: "18px 0 22px",
+      margin: "20px 0 24px",
       padding: "5px",
       borderRadius: "12px",
       background: "rgba(3,12,22,.9)",
@@ -1740,12 +1755,12 @@ export default function App() {
           }}
           style={{
             minWidth: 0,
-            padding: "12px 4px",
+            padding: "15px 5px",
             border: playerView === tab ? "1px solid rgba(0,217,255,.7)" : "1px solid transparent",
             borderRadius: "8px",
             background: playerView === tab ? "linear-gradient(135deg,rgba(0,217,255,.2),rgba(0,91,140,.18))" : "transparent",
             color: playerView === tab ? "#00D9FF" : "#8197AA",
-            fontSize: "clamp(9px, 2.5vw, 11px)",
+            fontSize: "clamp(11px, 2.8vw, 13px)",
             fontWeight: 900,
             letterSpacing: ".35px",
             cursor: "pointer"
@@ -1762,8 +1777,10 @@ export default function App() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: "12px",
-      margin: "15px 0 8px"
+      gap: "16px",
+      margin: "18px 0 12px",
+      width: "100%",
+      boxSizing: "border-box"
     }}>
       {selectedPlayerProfile?.fotoPerfil ? (
         <button
@@ -1772,8 +1789,8 @@ export default function App() {
           aria-label="Ampliar foto de perfil"
           title="Ampliar foto"
           style={{
-            width: "62px",
-            height: "62px",
+            width: "clamp(82px, 22vw, 104px)",
+            height: "clamp(82px, 22vw, 104px)",
             padding: 0,
             border: "2px solid #00D9FF",
             borderRadius: "50%",
@@ -1791,21 +1808,21 @@ export default function App() {
         </button>
       ) : (
         <div style={{
-          width: "58px",
-          height: "58px",
+          width: "clamp(82px, 22vw, 104px)",
+          height: "clamp(82px, 22vw, 104px)",
           borderRadius: "50%",
           display: "grid",
           placeItems: "center",
           background: "#123D59",
           color: "#fff",
-          fontSize: "24px",
+          fontSize: "34px",
           fontWeight: "800"
         }}>
           {(selectedPlayerProfile?.nick || selectedPlayer || "?").slice(0, 1).toUpperCase()}
         </div>
       )}
       <div style={{ textAlign: "left" }}>
-        <strong style={{ color: "#fff", display: "block", fontSize: "17px" }}>
+        <strong style={{ color: "#fff", display: "block", fontSize: "clamp(19px, 4vw, 23px)" }}>
           {selectedPlayerProfile?.nick || selectedPlayer}
         </strong>
         <small style={{ color: "#00D9FF", fontWeight: 700 }}>
@@ -1816,7 +1833,13 @@ export default function App() {
   );
 
   const renderPlayerProfile = () => (
-    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
+    <section className="web-section-placeholder" style={{
+      width: "100%",
+      maxWidth: "1100px",
+      margin: "0 auto",
+      padding: "22px 16px 110px",
+      boxSizing: "border-box"
+    }}>
       <span className="placeholder-label">JUGADOR</span>
       <h2>PERFIL</h2>
       {renderPlayerIdentity()}
@@ -1832,9 +1855,9 @@ export default function App() {
         <small style={{ color: "#00D9FF", fontWeight: 800, letterSpacing: "1px" }}>BIOGRAFÍA</small>
         <p style={{
           color: selectedPlayerProfile?.biografia ? "#D5E0EA" : "#71899D",
-          fontSize: "13px",
-          lineHeight: 1.65,
-          margin: "10px 0 0",
+          fontSize: "15px",
+          lineHeight: 1.75,
+          margin: "12px 0 0",
           whiteSpace: "pre-wrap",
           overflowWrap: "anywhere"
         }}>
@@ -1867,13 +1890,13 @@ export default function App() {
               border: biographyLiked ? "1px solid rgba(255,75,112,.75)" : "1px solid rgba(0,217,255,.4)",
               background: biographyLiked ? "rgba(255,55,100,.14)" : "rgba(0,217,255,.08)",
               color: biographyLiked ? "#FF6B91" : "#00D9FF",
-              fontSize: "12px",
+              fontSize: "14px",
               fontWeight: 900,
               cursor: biographyLikeBusy ? "wait" : "pointer",
               opacity: biographyLikeBusy ? .65 : 1
             }}
           >
-            <span style={{ fontSize: "17px", lineHeight: 1 }}>{biographyLiked ? "♥" : "♡"}</span>
+            <span style={{ fontSize: "21px", lineHeight: 1 }}>{biographyLiked ? "♥" : "♡"}</span>
             {biographyLikeBusy ? "GUARDANDO..." : biographyLiked ? "TE GUSTA" : "ME GUSTA"}
           </button>
         </div>
@@ -1890,7 +1913,13 @@ export default function App() {
   // =========================================
 
   const renderPlayerStats = () => (
-    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
+    <section className="web-section-placeholder" style={{
+      width: "100%",
+      maxWidth: "1100px",
+      margin: "0 auto",
+      padding: "22px 16px 110px",
+      boxSizing: "border-box"
+    }}>
       <span className="placeholder-label">PERFIL DEL JUGADOR</span>
       <h2>ESTADÍSTICAS</h2>
 
@@ -1914,40 +1943,49 @@ export default function App() {
         <>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: "10px",
-            margin: "15px 0"
+            gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
+            gap: "13px",
+            margin: "18px 0"
           }}>
             {[
-              ["RANKING", `#${playerStats.ranking}`],
-              ["BAJAS", formatNumber(playerStats.kills)],
-              ["MUERTES", formatNumber(playerStats.deaths)],
-              ["ASISTENCIAS", formatNumber(playerStats.assists)],
-              ["K/D GLOBAL", formatNumber(playerStats.kd, 2)],
-              ["MAPAS JUGADOS", formatNumber(playerStats.maps)]
-            ].map(([label, value]) => (
+              ["🏆", "RANKING", `#${playerStats.ranking}`],
+              ["🎯", "BAJAS", formatNumber(playerStats.kills)],
+              ["💀", "MUERTES", formatNumber(playerStats.deaths)],
+              ["🤝", "ASISTENCIAS", formatNumber(playerStats.assists)],
+              ["⚔️", "K/D GLOBAL", formatNumber(playerStats.kd, 2)],
+              ["🗺️", "MAPAS JUGADOS", formatNumber(playerStats.maps)]
+            ].map(([icon, label, value]) => (
               <div
                 key={label}
                 style={{
-                  padding: "18px 10px",
-                  border: "1px solid rgba(0,217,255,.25)",
-                  borderRadius: "10px",
+                  padding: "22px 13px",
+                  minHeight: "112px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  border: "1px solid rgba(0,217,255,.3)",
+                  borderRadius: "12px",
                   background: "rgba(5,20,35,.75)"
                 }}
               >
-                <small style={{
-                  display: "block",
-                  color: "#8EA6BA",
-                  fontSize: "10px",
-                  fontWeight: "700"
-                }}>
-                  {label}
-                </small>
+                <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                  <span aria-hidden="true" style={{ fontSize: "25px", lineHeight: 1 }}>{icon}</span>
+                  <small style={{
+                    display: "block",
+                    color: "#8EA6BA",
+                    fontSize: "12px",
+                    fontWeight: "800",
+                    letterSpacing: ".45px"
+                  }}>
+                    {label}
+                  </small>
+                </div>
                 <strong style={{
                   display: "block",
                   color: "#00D9FF",
-                  fontSize: "23px",
-                  marginTop: "7px"
+                  fontSize: "clamp(27px, 5vw, 34px)",
+                  marginTop: "9px",
+                  lineHeight: 1.1
                 }}>
                   {value}
                 </strong>
@@ -1957,37 +1995,39 @@ export default function App() {
 
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gap: "8px",
-            margin: "12px 0"
+            gridTemplateColumns: "repeat(auto-fit, minmax(105px, 1fr))",
+            gap: "10px",
+            margin: "15px 0"
           }}>
             {[
-              ["GANADOS", playerStats.hasWins ? formatNumber(playerStats.wins) : "—"],
-              ["PERDIDOS", playerStats.hasLosses ? formatNumber(playerStats.losses) : "—"],
-              ["VICTORIAS", playerStats.hasMaps
+              ["🟢", "GANADOS", playerStats.hasWins ? formatNumber(playerStats.wins) : "—"],
+              ["🔴", "PERDIDOS", playerStats.hasLosses ? formatNumber(playerStats.losses) : "—"],
+              ["📈", "VICTORIAS", playerStats.hasMaps
                 ? `${formatNumber(playerStats.winRate, 1)}%`
                 : "—"]
-            ].map(([label, value]) => (
+            ].map(([icon, label, value]) => (
               <div
                 key={label}
                 style={{
-                  padding: "14px 5px",
-                  borderRadius: "8px",
+                  padding: "17px 8px",
+                  minHeight: "78px",
+                  borderRadius: "10px",
                   background: "rgba(255,255,255,.04)",
                   border: "1px solid rgba(255,255,255,.1)"
                 }}
               >
-                <small style={{ display: "block", color: "#8EA6BA", fontSize: "9px" }}>
+                <small style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "#8EA6BA", fontSize: "11px", fontWeight: 800 }}>
+                  <span aria-hidden="true" style={{ fontSize: "18px" }}>{icon}</span>
                   {label}
                 </small>
-                <strong style={{ color: "#fff", fontSize: "17px" }}>{value}</strong>
+                <strong style={{ color: "#fff", fontSize: "clamp(19px, 3.8vw, 23px)", display: "block", marginTop: "5px" }}>{value}</strong>
               </div>
             ))}
           </div>
 
           <p style={{
             color: "#71899D",
-            fontSize: "10px",
+            fontSize: "12px",
             textAlign: "center",
             marginTop: "15px"
           }}>
@@ -2007,7 +2047,13 @@ export default function App() {
   // =========================================
 
   const renderPlayerPosts = () => (
-    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
+    <section className="web-section-placeholder" style={{
+      width: "100%",
+      maxWidth: "1100px",
+      margin: "0 auto",
+      padding: "22px 16px 110px",
+      boxSizing: "border-box"
+    }}>
       <span className="placeholder-label">PERFIL DEL JUGADOR</span>
       <h2>JUGADAS DESTACADAS</h2>
 
