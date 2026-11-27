@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
@@ -15,6 +15,14 @@ import { auth, db } from "./firebase";
 import "./Publicaciones.css";
 
 const MAX_PUBLICACIONES = 50;
+const WORKER_URL = "https://liga4vs4-media-api.itenias01.workers.dev";
+
+const TIPOS_PERMITIDOS = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "video/mp4"
+];
 
 function obtenerIniciales(nombre = "") {
   const partes = nombre.trim().split(/\s+/).filter(Boolean);
@@ -43,6 +51,37 @@ function formatearFecha(fecha) {
   }).format(date);
 }
 
+function formatearTamano(bytes = 0) {
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function llamarWorker(body, token) {
+  const response = await fetch(WORKER_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const resultado = await response.json().catch(() => ({}));
+
+  if (!response.ok || !resultado.success) {
+    throw new Error(
+      resultado.error ||
+      resultado.message ||
+      "No se pudo completar la operación."
+    );
+  }
+
+  return resultado;
+}
+
 function AvatarJugador({ nombre, foto }) {
   const [fotoError, setFotoError] = useState(false);
 
@@ -68,14 +107,19 @@ function AvatarJugador({ nombre, foto }) {
   );
 }
 
-function TarjetaPublicacion({ publicacion, perfil }) {
+function TarjetaPublicacion({
+  publicacion,
+  perfil,
+  puedeEliminar,
+  eliminando,
+  onEliminar
+}) {
   const nombre =
     publicacion.nick ||
     publicacion.nombre ||
     "JUGADOR";
 
   const equipo = publicacion.equipo || "SIN EQUIPO";
-
   const esVideo = publicacion.mediaType === "video/mp4";
 
   return (
@@ -138,6 +182,21 @@ function TarjetaPublicacion({ publicacion, perfil }) {
         <span className="publicacion-footer-brand">LIGA4VS4</span>
       </div>
 
+      {puedeEliminar && (
+        <div className="publicacion-acciones">
+
+          <button
+            type="button"
+            className="publicacion-btn-eliminar"
+            disabled={eliminando}
+            onClick={() => onEliminar(publicacion)}
+          >
+            {eliminando ? "ELIMINANDO..." : "ELIMINAR PUBLICACIÓN"}
+          </button>
+
+        </div>
+      )}
+
     </article>
   );
 }
@@ -145,10 +204,26 @@ function TarjetaPublicacion({ publicacion, perfil }) {
 export default function Publicaciones() {
 
   const [usuario, setUsuario] = useState(auth.currentUser);
+
   const [publicaciones, setPublicaciones] = useState([]);
   const [perfiles, setPerfiles] = useState({});
+
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+
+  const [jugadorAsignado, setJugadorAsignado] = useState(false);
+  const [esAdmin, setEsAdmin] = useState(false);
+  const [cargandoPermisos, setCargandoPermisos] = useState(true);
+
+  const [descripcion, setDescripcion] = useState("");
+  const [archivo, setArchivo] = useState(null);
+
+  const [publicando, setPublicando] = useState(false);
+  const [eliminandoId, setEliminandoId] = useState("");
+  const [mensajeAccion, setMensajeAccion] = useState("");
+  const [errorAccion, setErrorAccion] = useState("");
+
+  const archivoRef = useRef(null);
 
   // =========================================
   // ESCUCHAR SESIÓN DE FIREBASE
@@ -161,6 +236,82 @@ export default function Publicaciones() {
 
     return () => unsubscribe();
   }, []);
+
+  // =========================================
+  // COMPROBAR PERMISOS DEL USUARIO
+  // =========================================
+
+  useEffect(() => {
+
+    let activo = true;
+
+    async function comprobarPermisos() {
+
+      setJugadorAsignado(false);
+      setEsAdmin(false);
+      setCargandoPermisos(true);
+
+      if (!usuario) {
+        setCargandoPermisos(false);
+        return;
+      }
+
+      try {
+
+        const jugadorRef = doc(db, "jugadores", usuario.uid);
+        const adminRef = doc(db, "administradores", usuario.uid);
+
+        const [jugadorSnapshot, adminSnapshot] = await Promise.all([
+          getDoc(jugadorRef),
+          getDoc(adminRef)
+        ]);
+
+        if (!activo) return;
+
+        if (jugadorSnapshot.exists()) {
+          const jugador = jugadorSnapshot.data();
+
+          setJugadorAsignado(
+            jugador.estado === "ASIGNADO" &&
+            Boolean(jugador.nick?.trim()) &&
+            Boolean(jugador.equipo?.trim())
+          );
+        }
+
+        if (adminSnapshot.exists()) {
+          const administrador = adminSnapshot.data();
+
+          setEsAdmin(administrador.activo === true);
+        }
+
+      } catch (permisoError) {
+
+        console.error(
+          "Error al comprobar permisos:",
+          permisoError
+        );
+
+        if (activo) {
+          setJugadorAsignado(false);
+          setEsAdmin(false);
+        }
+
+      } finally {
+
+        if (activo) {
+          setCargandoPermisos(false);
+        }
+
+      }
+    }
+
+    comprobarPermisos();
+
+    return () => {
+      activo = false;
+    };
+
+  }, [usuario]);
 
   // =========================================
   // CARGAR PUBLICACIONES EN TIEMPO REAL
@@ -205,10 +356,6 @@ export default function Publicaciones() {
         setCargando(false);
         setError("");
 
-        // =====================================
-        // CARGAR PERFILES PÚBLICOS
-        // =====================================
-
         const uids = [
           ...new Set(
             lista
@@ -223,12 +370,7 @@ export default function Publicaciones() {
           uids.map(async (uid) => {
 
             try {
-              const perfilRef = doc(
-                db,
-                "perfiles_publicos",
-                uid
-              );
-
+              const perfilRef = doc(db, "perfiles_publicos", uid);
               const perfilSnapshot = await getDoc(perfilRef);
 
               if (perfilSnapshot.exists()) {
@@ -286,6 +428,221 @@ export default function Publicaciones() {
   }, [usuario]);
 
   // =========================================
+  // SELECCIONAR ARCHIVO
+  // =========================================
+
+  const seleccionarArchivo = (event) => {
+
+    const seleccionado = event.target.files?.[0];
+
+    setErrorAccion("");
+    setMensajeAccion("");
+
+    if (!seleccionado) {
+      setArchivo(null);
+      return;
+    }
+
+    if (!TIPOS_PERMITIDOS.includes(seleccionado.type)) {
+      setArchivo(null);
+      event.target.value = "";
+
+      setErrorAccion(
+        "Formato no permitido. Selecciona JPEG, PNG, WEBP o MP4."
+      );
+
+      return;
+    }
+
+    const esVideo = seleccionado.type === "video/mp4";
+    const limite = esVideo
+      ? 80 * 1024 * 1024
+      : 15 * 1024 * 1024;
+
+    if (seleccionado.size <= 0 || seleccionado.size > limite) {
+      setArchivo(null);
+      event.target.value = "";
+
+      setErrorAccion(
+        esVideo
+          ? "El video no puede superar los 80 MB."
+          : "La imagen no puede superar los 15 MB."
+      );
+
+      return;
+    }
+
+    setArchivo(seleccionado);
+  };
+
+  // =========================================
+  // PUBLICAR JUGADA DESTACADA
+  // =========================================
+
+  const publicarJugada = async (event) => {
+
+    event.preventDefault();
+
+    setErrorAccion("");
+    setMensajeAccion("");
+
+    if (!usuario) {
+      setErrorAccion("Debes iniciar sesión para publicar.");
+      return;
+    }
+
+    if (!jugadorAsignado) {
+      setErrorAccion(
+        "Solo los jugadores asignados pueden publicar jugadas."
+      );
+      return;
+    }
+
+    if (!archivo) {
+      setErrorAccion("Selecciona una imagen o un video.");
+      return;
+    }
+
+    if (descripcion.trim().length > 500) {
+      setErrorAccion(
+        "La descripción no puede superar los 500 caracteres."
+      );
+      return;
+    }
+
+    setPublicando(true);
+
+    try {
+
+      const token = await usuario.getIdToken();
+
+      // Primero se sube el archivo a R2.
+
+      const subidaResponse = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": archivo.type
+        },
+        body: archivo
+      });
+
+      const subida = await subidaResponse.json().catch(() => ({}));
+
+      if (!subidaResponse.ok || !subida.success) {
+        throw new Error(
+          subida.error ||
+          subida.message ||
+          "No se pudo subir el archivo."
+        );
+      }
+
+      // Después se registra la publicación en Firestore
+      // mediante el Worker.
+
+      await llamarWorker(
+        {
+          action: "createPublication",
+          descripcion: descripcion.trim(),
+          mediaUrl: subida.url,
+          mediaType: subida.type
+        },
+        token
+      );
+
+      setDescripcion("");
+      setArchivo(null);
+
+      if (archivoRef.current) {
+        archivoRef.current.value = "";
+      }
+
+      setMensajeAccion(
+        "¡Tu jugada destacada se publicó correctamente!"
+      );
+
+    } catch (publicacionError) {
+
+      console.error(
+        "Error al publicar jugada:",
+        publicacionError
+      );
+
+      setErrorAccion(
+        publicacionError.message ||
+        "No se pudo publicar la jugada."
+      );
+
+    } finally {
+
+      setPublicando(false);
+
+    }
+  };
+
+  // =========================================
+  // ELIMINAR PUBLICACIÓN
+  // =========================================
+
+  const eliminarPublicacion = async (publicacion) => {
+
+    if (!usuario || !publicacion?.id) return;
+
+    const esPropietario = publicacion.uid === usuario.uid;
+
+    if (!esPropietario && !esAdmin) {
+      setErrorAccion(
+        "No tienes permiso para eliminar esta publicación."
+      );
+      return;
+    }
+
+    const confirmar = window.confirm(
+      "¿Estás seguro de eliminar esta jugada destacada? También se eliminarán sus comentarios y reacciones."
+    );
+
+    if (!confirmar) return;
+
+    setErrorAccion("");
+    setMensajeAccion("");
+    setEliminandoId(publicacion.id);
+
+    try {
+
+      const token = await usuario.getIdToken();
+
+      await llamarWorker(
+        {
+          action: "deletePublication",
+          publicationId: publicacion.id
+        },
+        token
+      );
+
+      setMensajeAccion(
+        "La publicación y su contenido asociado fueron eliminados."
+      );
+
+    } catch (eliminacionError) {
+
+      console.error(
+        "Error al eliminar publicación:",
+        eliminacionError
+      );
+
+      setErrorAccion(
+        eliminacionError.message ||
+        "No se pudo eliminar la publicación."
+      );
+
+    } finally {
+
+      setEliminandoId("");
+
+    }
+  };
+
+  // =========================================
   // PANTALLA PRINCIPAL
   // =========================================
 
@@ -308,6 +665,138 @@ export default function Publicaciones() {
         </p>
 
       </section>
+
+      {/* =====================================
+          FORMULARIO DE PUBLICACIÓN
+      ===================================== */}
+
+      {usuario && jugadorAsignado && (
+
+        <section className="publicaciones-composer">
+
+          <div className="publicaciones-composer-header">
+            <span>🎥</span>
+            <div>
+              <h2>COMPARTE TU JUGADA</h2>
+              <p>Publica tu mejor momento en la competición.</p>
+            </div>
+          </div>
+
+          <form onSubmit={publicarJugada}>
+
+            <textarea
+              className="publicaciones-descripcion-input"
+              value={descripcion}
+              onChange={(event) => setDescripcion(event.target.value)}
+              placeholder="Describe tu jugada... (opcional)"
+              maxLength={500}
+              rows={3}
+              disabled={publicando}
+            />
+
+            <div className="publicaciones-contador">
+              {descripcion.length}/500
+            </div>
+
+            <input
+              ref={archivoRef}
+              className="publicaciones-archivo-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,video/mp4"
+              onChange={seleccionarArchivo}
+              disabled={publicando}
+            />
+
+            <div className="publicaciones-composer-actions">
+
+              <label
+                className="publicaciones-seleccionar-archivo"
+                htmlFor="archivo-jugada"
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (!publicando) {
+                    archivoRef.current?.click();
+                  }
+                }}
+              >
+                <span>＋</span>
+                SELECCIONAR ARCHIVO
+              </label>
+
+              <button
+                type="submit"
+                className="publicaciones-btn-publicar"
+                disabled={publicando || !archivo}
+              >
+                {publicando ? "PUBLICANDO..." : "PUBLICAR JUGADA"}
+              </button>
+
+            </div>
+
+            {archivo && (
+              <div className="publicaciones-archivo-seleccionado">
+                <span>📎</span>
+                <span>{archivo.name}</span>
+                <span>{formatearTamano(archivo.size)}</span>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setArchivo(null);
+                    if (archivoRef.current) {
+                      archivoRef.current.value = "";
+                    }
+                  }}
+                  disabled={publicando}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            <p className="publicaciones-limites">
+              IMÁGENES: MÁX. 15 MB · VIDEOS MP4: MÁX. 80 MB
+            </p>
+
+          </form>
+
+        </section>
+
+      )}
+
+      {usuario && !cargandoPermisos && !jugadorAsignado && (
+        <div className="publicaciones-aviso-permisos">
+          <span>🔒</span>
+          <p>
+            La publicación está habilitada únicamente para jugadores asignados.
+          </p>
+        </div>
+      )}
+
+      {!usuario && (
+        <div className="publicaciones-aviso-permisos">
+          <span>🔒</span>
+          <p>
+            Inicia sesión para acceder a las opciones de publicación.
+          </p>
+        </div>
+      )}
+
+      {mensajeAccion && (
+        <div className="publicaciones-mensaje-exito">
+          {mensajeAccion}
+        </div>
+      )}
+
+      {errorAccion && (
+        <div className="publicaciones-mensaje-error">
+          {errorAccion}
+        </div>
+      )}
+
+      {/* =====================================
+          FEED DE PUBLICACIONES
+      ===================================== */}
 
       <section className="publicaciones-feed">
 
@@ -345,13 +834,25 @@ export default function Publicaciones() {
           </div>
         )}
 
-        {!cargando && !error && publicaciones.map((publicacion) => (
-          <TarjetaPublicacion
-            key={publicacion.id}
-            publicacion={publicacion}
-            perfil={perfiles[publicacion.uid]}
-          />
-        ))}
+        {!cargando && !error && publicaciones.map((publicacion) => {
+
+          const esPropietario =
+            usuario && publicacion.uid === usuario.uid;
+
+          const puedeEliminar =
+            Boolean(esPropietario || esAdmin);
+
+          return (
+            <TarjetaPublicacion
+              key={publicacion.id}
+              publicacion={publicacion}
+              perfil={perfiles[publicacion.uid]}
+              puedeEliminar={puedeEliminar}
+              eliminando={eliminandoId === publicacion.id}
+              onEliminar={eliminarPublicacion}
+            />
+          );
+        })}
 
       </section>
 
