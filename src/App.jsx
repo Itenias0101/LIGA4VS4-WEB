@@ -1,12 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  signOut
-} from "firebase/auth";
+import { signOut } from "firebase/auth";
 
 import {
   collection,
@@ -16,16 +10,12 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  setDoc,
-  writeBatch,
-  getDocs,
-  getDoc,
-  where,
-  limit
+  writeBatch
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
 import Clasificacion from "./Clasificacion.jsx";
+import InicioSesion from "./InicioSesion.jsx";
 import useActividadPerfil from "./Actividadperfil.jsx";
 
 // =========================================
@@ -128,21 +118,6 @@ const formatNumber = (value, decimals = 0) =>
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   });
-
-const getFirebaseError = (error) => {
-  const errors = {
-    "auth/invalid-email": "El correo electrónico no es válido.",
-    "auth/user-not-found": "No existe una cuenta con ese correo.",
-    "auth/wrong-password": "La contraseña es incorrecta.",
-    "auth/invalid-credential": "Correo o contraseña incorrectos.",
-    "auth/email-already-in-use": "Este correo ya está registrado.",
-    "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
-    "auth/too-many-requests": "Demasiados intentos. Inténtalo más tarde.",
-    "auth/network-request-failed": "Error de conexión. Comprueba tu internet."
-  };
-
-  return errors[error.code] || "Ha ocurrido un error. Inténtalo nuevamente.";
-};
 
 const formatNotificationDate = (timestamp) => {
   if (!timestamp) return "";
@@ -385,7 +360,6 @@ const parsePlayersCSV = (csvText) => {
   ];
   const teamHeaders = ["EQUIPO", "TEAM", "CLUB"];
 
-  // Igual que Android: localizar la fila real de encabezados en cualquier posición.
   const headerIndex = rows.findIndex((row) => {
     const headers = row.map(normalizeHeader);
     return (
@@ -451,7 +425,6 @@ const parsePlayerStatsCSV = (csvText) => {
   const rows = parseCSV(csvText);
   if (!rows.length) return [];
 
-  // Android busca la fila real de encabezados, no presupone que sea la primera.
   const headerIndex = rows.findIndex((row) => {
     const normalized = row.map(normalizeHeader);
     return normalized.includes("JUGADOR") && normalized.includes("EQUIPO");
@@ -470,7 +443,7 @@ const parsePlayerStatsCSV = (csvText) => {
     kills: findHeaderIndex(headers, ["BAJAS", "KILLS"]),
     deaths: findHeaderIndex(headers, ["MUERTES", "DEATHS"]),
     assists: findHeaderIndex(headers, ["ASISTENCIAS", "ASSISTS"]),
-    kd: findHeaderIndex(headers, ["KDGLOBAL", "KDGLOBAL", "KD", "KDR"]),
+    kd: findHeaderIndex(headers, ["KDGLOBAL", "KD", "KDR"]),
     wins: findHeaderIndex(headers, ["MAPASGANADOS", "GANADOS"]),
     losses: findHeaderIndex(headers, ["MAPASPERDIDOS", "PERDIDOS"])
   };
@@ -479,9 +452,9 @@ const parsePlayerStatsCSV = (csvText) => {
     .map((row) => {
       const player = String(row[indexes.player] || "").trim();
       const team = String(row[indexes.team] || "").trim();
-      const kills = parseNumber(row[indexes.kills] >= 0 ? row[indexes.kills] : 0);
-      const deaths = parseNumber(row[indexes.deaths] >= 0 ? row[indexes.deaths] : 0);
-      const assists = parseNumber(row[indexes.assists] >= 0 ? row[indexes.assists] : 0);
+      const kills = parseNumber(indexes.kills >= 0 ? row[indexes.kills] : 0);
+      const deaths = parseNumber(indexes.deaths >= 0 ? row[indexes.deaths] : 0);
+      const assists = parseNumber(indexes.assists >= 0 ? row[indexes.assists] : 0);
       const kdValue = indexes.kd >= 0 ? row[indexes.kd] : "";
       const maps = indexes.maps >= 0 ? parseNumber(row[indexes.maps]) : 0;
       const wins = indexes.wins >= 0 ? parseNumber(row[indexes.wins]) : 0;
@@ -570,15 +543,11 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [mode, setMode] = useState("home");
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // null = ventana de autenticación cerrada
+  const [mode, setMode] = useState(null);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [processing, setProcessing] = useState(false);
 
   const [activeSection, setActiveSection] = useState("inicio");
   const [showCompetitionMenu, setShowCompetitionMenu] = useState(false);
@@ -628,7 +597,7 @@ export default function App() {
   }, []);
 
   // =========================================
-  // CARGAR PARTIDOS Y JUGADORES POR SEPARADO
+  // CARGAR PARTIDOS Y JUGADORES
   // =========================================
 
   useEffect(() => {
@@ -862,28 +831,23 @@ export default function App() {
   };
 
   // =========================================
-  // AUTENTICACIÓN
+  // CONTROL DE AUTENTICACIÓN
   // =========================================
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-      if (!currentUser) {
-        resetOwnProfile();
-      }
-    });
-
-    return unsubscribe;
-  }, []);
 
   const openMode = (newMode) => {
     setMode(newMode);
     setMessage("");
     setError("");
-    setPassword("");
-    setConfirmPassword("");
   };
+
+  const handleAuthUserChange = React.useCallback((currentUser) => {
+    setUser(currentUser);
+    setLoading(false);
+  }, []);
+
+  // =========================================
+  // PERFILES Y ACTIVIDAD
+  // =========================================
 
   const perfil = useActividadPerfil({
     user,
@@ -912,92 +876,25 @@ export default function App() {
     renderPlayerMenu, renderPlayerProfile, renderPlayerStats, renderPlayerPosts
   } = perfil;
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-    setProcessing(true);
-
-    try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      setMode("home");
-      setActiveSection("inicio");
-      setShowCompetitionMenu(false);
-      setPassword("");
-    } catch (err) {
-      setError(getFirebaseError(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleRegister = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
-
-    setProcessing(true);
-
-    try {
-      await createUserWithEmailAndPassword(auth, email.trim(), password);
-      setMode("home");
-      setActiveSection("inicio");
-      setShowCompetitionMenu(false);
-      setPassword("");
-      setConfirmPassword("");
-      setMessage("¡Tu cuenta se creó correctamente!");
-    } catch (err) {
-      setError(getFirebaseError(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handlePasswordReset = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (!email.trim()) {
-      setError("Escribe tu correo electrónico.");
-      return;
-    }
-
-    setProcessing(true);
-
-    try {
-      await sendPasswordResetEmail(auth, email.trim());
-      setMessage(
-        "Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña."
-      );
-    } catch (err) {
-      setError(getFirebaseError(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
+  // =========================================
+  // CERRAR SESIÓN
+  // =========================================
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setMode("home");
+
+      setMode(null);
       setActiveSection("inicio");
       setShowCompetitionMenu(false);
       setNotificationsOpen(false);
       setNotifications([]);
       setMessage("Has cerrado sesión correctamente.");
       setError("");
-    } catch {
+
+      resetOwnProfile();
+    } catch (err) {
+      console.error("Error al cerrar sesión:", err);
       setError("No se pudo cerrar la sesión. Inténtalo nuevamente.");
     }
   };
@@ -1556,6 +1453,14 @@ export default function App() {
 
   return (
     <main className="app">
+
+      {/* La autenticación permanece montada incluso durante la carga inicial */}
+      <InicioSesion
+        mode={mode}
+        onModeChange={setMode}
+        onUserChange={handleAuthUserChange}
+      />
+
       {loading ? (
         <div className="loading-screen">
           <span className="brand-icon">L4</span>
@@ -1639,7 +1544,15 @@ export default function App() {
                     : activeSection === "equipos"
                       ? renderTeams()
                       : activeSection === "clasificacion"
-                        ? <Clasificacion teams={TEAMS} matches={matches} loading={matchesLoading} error={matchesError} getTeamShield={getTeamShield} />
+                        ? (
+                          <Clasificacion
+                            teams={TEAMS}
+                            matches={matches}
+                            loading={matchesLoading}
+                            error={matchesError}
+                            getTeamShield={getTeamShield}
+                          />
+                        )
                         : renderSectionPlaceholder()}
 
               <nav className="web-bottom-navigation">
@@ -1664,127 +1577,6 @@ export default function App() {
       {renderOwnFloatingAvatar()}
       {renderOwnProfile()}
 
-      {mode !== "home" && !user && (
-        <div className="auth-overlay" onClick={() => openMode("home")}>
-          <section className="auth-card" onClick={(event) => event.stopPropagation()}>
-            <button
-              className="auth-close"
-              onClick={() => openMode("home")}
-              aria-label="Cerrar"
-            >
-              ×
-            </button>
-
-            <div className="auth-logo">L4</div>
-
-            <h2>
-              {mode === "login" && "INICIAR SESIÓN"}
-              {mode === "register" && "CREAR CUENTA"}
-              {mode === "forgot" && "RECUPERAR CONTRASEÑA"}
-            </h2>
-
-            <p className="auth-description">
-              {mode === "login" && "Accede a tu cuenta de LIGA4VS4."}
-              {mode === "register" && "Únete a la comunidad oficial."}
-              {mode === "forgot" && "Te enviaremos instrucciones a tu correo."}
-            </p>
-
-            <form
-              onSubmit={
-                mode === "login"
-                  ? handleLogin
-                  : mode === "register"
-                    ? handleRegister
-                    : handlePasswordReset
-              }
-            >
-              <label htmlFor="auth-email">CORREO ELECTRÓNICO</label>
-
-              <input
-                id="auth-email"
-                type="email"
-                placeholder="tu correo electrónico"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                required
-              />
-
-              {mode !== "forgot" && (
-                <>
-                  <label htmlFor="auth-password">CONTRASEÑA</label>
-                  <input
-                    id="auth-password"
-                    type="password"
-                    placeholder="Tu contraseña"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    autoComplete={mode === "login" ? "current-password" : "new-password"}
-                    required
-                  />
-                </>
-              )}
-
-              {mode === "register" && (
-                <>
-                  <label htmlFor="auth-confirm">CONFIRMAR CONTRASEÑA</label>
-                  <input
-                    id="auth-confirm"
-                    type="password"
-                    placeholder="Repite tu contraseña"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
-                </>
-              )}
-
-              {error && <div className="auth-message error-message">{error}</div>}
-              {message && <div className="auth-message success-message">{message}</div>}
-
-              <button className="auth-submit" type="submit" disabled={processing}>
-                {processing
-                  ? "PROCESANDO..."
-                  : mode === "login"
-                    ? "ENTRAR"
-                    : mode === "register"
-                      ? "REGISTRARME"
-                      : "ENVIAR INSTRUCCIONES"}
-              </button>
-            </form>
-
-            <div className="auth-links">
-              {mode === "login" && (
-                <>
-                  <button onClick={() => openMode("forgot")}>
-                    ¿Olvidaste tu contraseña?
-                  </button>
-                  <p>
-                    ¿No tienes cuenta?{" "}
-                    <button onClick={() => openMode("register")}>Regístrate</button>
-                  </p>
-                </>
-              )}
-
-              {mode === "register" && (
-                <p>
-                  ¿Ya tienes cuenta?{" "}
-                  <button onClick={() => openMode("login")}>Inicia sesión</button>
-                </p>
-              )}
-
-              {mode === "forgot" && (
-                <p>
-                  <button onClick={() => openMode("login")}>
-                    Volver al inicio de sesión
-                  </button>
-                </p>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
     </main>
   );
 }
