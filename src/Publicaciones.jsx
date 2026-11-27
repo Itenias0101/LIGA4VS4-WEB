@@ -13,6 +13,7 @@ import {
 
 import { auth, db } from "./firebase";
 import "./Publicaciones.css";
+import Publicaciones from "./Publicaciones.jsx";
 
 const MAX_PUBLICACIONES = 50;
 
