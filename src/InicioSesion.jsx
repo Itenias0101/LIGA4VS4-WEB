@@ -7,10 +7,18 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  getAdditionalUserInfo
 } from "firebase/auth";
 
-import { auth } from "./firebase";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} from "firebase/firestore";
+
+import { auth, db } from "./firebase";
 
 export default function InicioSesion({
   mode,
@@ -34,6 +42,51 @@ export default function InicioSesion({
 
     return () => unsubscribe();
   }, [onUserChange]);
+
+  // =========================================
+  // CREAR PERFIL DEL JUGADOR EN FIRESTORE
+  // =========================================
+
+  const createPlayerDocument = async (user) => {
+    if (!user) {
+      throw new Error("No se encontró el usuario de Firebase.");
+    }
+
+    const playerRef = doc(db, "jugadores", user.uid);
+
+    // No sobrescribir perfiles que ya existen.
+    const playerSnapshot = await getDoc(playerRef);
+
+    if (playerSnapshot.exists()) {
+      console.info(
+        "[LIGA4VS4] El perfil del jugador ya existe:",
+        user.uid
+      );
+      return;
+    }
+
+    const originalName =
+      user.displayName?.trim() ||
+      user.email?.split("@")[0] ||
+      "NUEVO JUGADOR";
+
+    await setDoc(playerRef, {
+      uid: user.uid,
+      correo: user.email || "",
+      nombre: originalName,
+      nombreOriginal: originalName,
+      nick: "",
+      equipo: "",
+      estado: "PENDIENTE",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    console.info(
+      "[LIGA4VS4] Perfil de jugador creado correctamente:",
+      user.uid
+    );
+  };
 
   const resetForm = () => {
     setEmail("");
@@ -60,6 +113,10 @@ export default function InicioSesion({
     }
   };
 
+  // =========================================
+  // ERRORES FIREBASE
+  // =========================================
+
   const getFirebaseError = (errorCode) => {
     const errors = {
       "auth/invalid-email": "El correo electrónico no es válido.",
@@ -74,11 +131,17 @@ export default function InicioSesion({
       "auth/popup-closed-by-user": "Cerraste la ventana de Google antes de terminar.",
       "auth/popup-blocked": "El navegador bloqueó la ventana de Google. Permite las ventanas emergentes.",
       "auth/account-exists-with-different-credential": "Ya existe una cuenta con este correo usando otro método de acceso.",
-      "auth/operation-not-allowed": "Este método de acceso todavía no está habilitado en Firebase."
+      "auth/operation-not-allowed": "Este método de acceso todavía no está habilitado en Firebase.",
+      "permission-denied": "Firebase no permite crear el perfil del jugador. Revisa las reglas de Firestore.",
+      "firestore/permission-denied": "Firebase no permite crear el perfil del jugador. Revisa las reglas de Firestore."
     };
 
     return errors[errorCode] || "Ocurrió un error. Inténtalo nuevamente.";
   };
+
+  // =========================================
+  // INICIAR SESIÓN
+  // =========================================
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -102,11 +165,16 @@ export default function InicioSesion({
 
       closeModal();
     } catch (error) {
+      console.error("[LIGA4VS4] Error al iniciar sesión:", error);
       setError(getFirebaseError(error.code));
     } finally {
       setProcessing(false);
     }
   };
+
+  // =========================================
+  // REGISTRO CON CORREO Y CONTRASEÑA
+  // =========================================
 
   const handleRegister = async (event) => {
     event.preventDefault();
@@ -132,19 +200,37 @@ export default function InicioSesion({
     try {
       setProcessing(true);
 
-      await createUserWithEmailAndPassword(
+      const credential = await createUserWithEmailAndPassword(
         auth,
         email.trim(),
         password
       );
 
+      // Crear también el documento en Firestore.
+      await createPlayerDocument(credential.user);
+
       closeModal();
     } catch (error) {
-      setError(getFirebaseError(error.code));
+      console.error("[LIGA4VS4] Error durante el registro:", error);
+
+      if (
+        error.code === "permission-denied" ||
+        error.code === "firestore/permission-denied"
+      ) {
+        setError(
+          "Tu cuenta se creó, pero no se pudo guardar tu perfil en Firestore. Contacta con el administrador."
+        );
+      } else {
+        setError(getFirebaseError(error.code));
+      }
     } finally {
       setProcessing(false);
     }
   };
+
+  // =========================================
+  // RECUPERAR CONTRASEÑA
+  // =========================================
 
   const handlePasswordReset = async (event) => {
     event.preventDefault();
@@ -169,11 +255,16 @@ export default function InicioSesion({
         "Te enviamos un correo con las instrucciones para recuperar tu contraseña."
       );
     } catch (error) {
+      console.error("[LIGA4VS4] Error al recuperar contraseña:", error);
       setError(getFirebaseError(error.code));
     } finally {
       setProcessing(false);
     }
   };
+
+  // =========================================
+  // INICIAR SESIÓN / REGISTRARSE CON GOOGLE
+  // =========================================
 
   const handleGoogleLogin = async () => {
     setError("");
@@ -188,11 +279,30 @@ export default function InicioSesion({
         prompt: "select_account"
       });
 
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+
+      // Crear perfil solamente si Google acaba de crear
+      // una cuenta nueva. No alterar perfiles existentes.
+      const additionalInfo = getAdditionalUserInfo(result);
+
+      if (additionalInfo?.isNewUser) {
+        await createPlayerDocument(result.user);
+      }
 
       closeModal();
     } catch (error) {
-      setError(getFirebaseError(error.code));
+      console.error("[LIGA4VS4] Error con Google:", error);
+
+      if (
+        error.code === "permission-denied" ||
+        error.code === "firestore/permission-denied"
+      ) {
+        setError(
+          "Tu cuenta de Google se creó, pero no se pudo guardar tu perfil en Firestore. Contacta con el administrador."
+        );
+      } else {
+        setError(getFirebaseError(error.code));
+      }
     } finally {
       setProcessing(false);
     }
