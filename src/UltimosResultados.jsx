@@ -12,15 +12,6 @@ const MAPAS = [
   { tipo: "BYD", mapa: "STANDOFF" },
 ];
 
-const EQUIPOS_OFICIALES = [
-  "ETERNITY",
-  "2D",
-  "KINGS",
-  "Lycoris",
-  "The Butchers",
-  "NoMercy",
-];
-
 const COLORES = {
   fondo: "#05080F",
   tarjeta: "#0E1C2D",
@@ -84,6 +75,8 @@ function leerCSV(texto) {
   let campo = "";
   let dentroComillas = false;
 
+  texto = String(texto ?? "").replace(/^\uFEFF/, "");
+
   for (let i = 0; i < texto.length; i++) {
     const caracter = texto[i];
     const siguiente = texto[i + 1];
@@ -115,10 +108,12 @@ function leerCSV(texto) {
     }
   }
 
-  fila.push(campo);
+  if (campo.length > 0 || fila.length > 0) {
+    fila.push(campo);
 
-  if (fila.some((celda) => limpiarTexto(celda) !== "")) {
-    filas.push(fila);
+    if (fila.some((celda) => limpiarTexto(celda) !== "")) {
+      filas.push(fila);
+    }
   }
 
   return filas;
@@ -137,20 +132,22 @@ function convertirDetalles(texto) {
 
   const datos = tieneEncabezado ? filas.slice(1) : filas;
 
-  return datos.map((fila) => ({
-    fecha: limpiarTexto(fila[0]),
-    jornada: extraerNumero(fila[1]),
-    partido: extraerNumero(fila[2]),
-    mapa: limpiarTexto(fila[3]),
-    jugador: limpiarTexto(fila[4]),
-    equipo: normalizarEquipo(fila[5]),
-    bajas: numeroEntero(fila[6]),
-    muertes: numeroEntero(fila[7]),
-    asistencias: numeroEntero(fila[8]),
-    kd: numero(fila[9]),
-    resultado: limpiarTexto(fila[10]),
-    ganadorMapa: normalizarEquipo(fila[11]),
-  }));
+  return datos
+    .filter((fila) => fila.length >= 12)
+    .map((fila) => ({
+      fecha: limpiarTexto(fila[0]),
+      jornada: extraerNumero(fila[1]),
+      partido: extraerNumero(fila[2]),
+      mapa: limpiarTexto(fila[3]),
+      jugador: limpiarTexto(fila[4]),
+      equipo: normalizarEquipo(fila[5]),
+      bajas: numeroEntero(fila[6]),
+      muertes: numeroEntero(fila[7]),
+      asistencias: numeroEntero(fila[8]),
+      kd: numero(fila[9]),
+      resultado: limpiarTexto(fila[10]),
+      ganadorMapa: normalizarEquipo(fila[11]),
+    }));
 }
 
 function obtenerJornada(partido) {
@@ -202,18 +199,6 @@ function partidoFinalizado(partido) {
   );
 }
 
-function indiceMapa(nombre) {
-  const mapa = normalizar(nombre);
-
-  if (mapa.includes("combine")) return 0;
-  if (mapa.includes("slum")) return 1;
-  if (mapa.includes("raid")) return 2;
-  if (mapa.includes("takeoff")) return 3;
-  if (mapa.includes("standoff")) return 4;
-
-  return -1;
-}
-
 function formatoKD(bajas, muertes) {
   if (muertes === 0) return bajas.toFixed(2);
   return (bajas / muertes).toFixed(2);
@@ -248,7 +233,8 @@ function calcularEstadisticasJugador(detalles, nombre) {
   });
 
   const equipoPrincipal =
-    Object.entries(equipos).sort((a, b) => b[1] - a[1])[0]?.[0] || "Sin equipo";
+    Object.entries(equipos).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+    "Sin equipo";
 
   const mapasJugados = registros.length;
 
@@ -352,11 +338,13 @@ export default function UltimosResultados({
   );
 
   const jornadaInicial = useMemo(() => {
-    const jornadas = [...new Set(
-      partidosPreparados
-        .map((partido) => partido._jornada)
-        .filter(Number.isFinite)
-    )].sort((a, b) => b - a);
+    const jornadas = [
+      ...new Set(
+        partidosPreparados
+          .map((partido) => partido._jornada)
+          .filter(Number.isFinite)
+      ),
+    ].sort((a, b) => b - a);
 
     const jornadaCompleta = jornadas.find((jornada) => {
       const partidos = partidosPreparados.filter(
@@ -393,19 +381,37 @@ export default function UltimosResultados({
     return Array.from({ length: 15 }, (_, i) => i + 1);
   }, []);
 
+  // =========================================
+  // CORRECCIÓN: ENCUENTRO POR JORNADA Y EQUIPOS
+  // =========================================
+
   const detallesDelPartido = useMemo(() => {
     if (!partidoSeleccionado) return [];
 
-    return detalles.filter(
-      (dato) =>
+    const equiposDelEncuentro = [
+      normalizarEquipo(partidoSeleccionado._equipo1),
+      normalizarEquipo(partidoSeleccionado._equipo2),
+    ].filter(Boolean);
+
+    return detalles.filter((dato) => {
+      const equipoDetalle = normalizarEquipo(dato.equipo);
+
+      return (
         dato.jornada === partidoSeleccionado._jornada &&
-        dato.partido === partidoSeleccionado._numeroPartido
-    );
+        equiposDelEncuentro.includes(equipoDetalle)
+      );
+    });
   }, [detalles, partidoSeleccionado]);
 
+  // =========================================
+  // CORRECCIÓN: PARTIDO EN EL CSV = NÚMERO DE MAPA
+  // =========================================
+
   const detallesDelMapa = useMemo(() => {
+    const numeroMapa = mapaActivo + 1;
+
     return detallesDelPartido.filter(
-      (dato) => indiceMapa(dato.mapa) === mapaActivo
+      (dato) => dato.partido === numeroMapa
     );
   }, [detallesDelPartido, mapaActivo]);
 
@@ -1151,9 +1157,7 @@ export default function UltimosResultados({
 
                         <tbody>
                           {jugadores.map((dato, indice) => (
-                            <tr
-                              key={`${dato.jugador}-${indice}`}
-                            >
+                            <tr key={`${dato.jugador}-${indice}`}>
                               <td>
                                 <button
                                   className="ur-jugador-boton"
