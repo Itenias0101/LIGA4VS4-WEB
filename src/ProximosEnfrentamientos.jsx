@@ -57,7 +57,7 @@ const getRankStyle = (position) => {
       background: "linear-gradient(145deg, #fff0a6, #d69b16)",
       color: "#503500",
       border: "2px solid #ffe28a",
-      boxShadow: "0 0 12px rgba(255, 193, 45, 0.55)"
+      boxShadow: "0 0 15px rgba(255, 193, 45, 0.65)"
     };
   }
 
@@ -66,7 +66,7 @@ const getRankStyle = (position) => {
       background: "linear-gradient(145deg, #ffffff, #9eabb9)",
       color: "#283441",
       border: "2px solid #e1e8ef",
-      boxShadow: "0 0 10px rgba(207, 220, 233, 0.4)"
+      boxShadow: "0 0 13px rgba(207, 220, 233, 0.5)"
     };
   }
 
@@ -75,7 +75,7 @@ const getRankStyle = (position) => {
       background: "linear-gradient(145deg, #ffd0a8, #a85a2b)",
       color: "#4d210c",
       border: "2px solid #e9a879",
-      boxShadow: "0 0 10px rgba(205, 120, 68, 0.45)"
+      boxShadow: "0 0 13px rgba(205, 120, 68, 0.55)"
     };
   }
 
@@ -83,7 +83,7 @@ const getRankStyle = (position) => {
     background: "linear-gradient(145deg, #183448, #0b1c2a)",
     color: "#b8eaff",
     border: "2px solid rgba(0, 217, 255, 0.65)",
-    boxShadow: "0 0 8px rgba(0, 217, 255, 0.15)"
+    boxShadow: "0 0 10px rgba(0, 217, 255, 0.18)"
   };
 };
 
@@ -101,10 +101,7 @@ export default function ProximosEnfrentamientos({
   const [expandedMatch, setExpandedMatch] = useState(null);
 
   /*
-   * CLASIFICACIÓN CALCULADA CON LOS RESULTADOS
-   *
-   * Cada ronda ganada equivale a 5 puntos.
-   * El orden es:
+   * CLASIFICACIÓN
    * 1. Puntos
    * 2. Victorias
    */
@@ -178,9 +175,8 @@ export default function ProximosEnfrentamientos({
     return positions;
   }, [matches]);
 
-  const getTeamPosition = (team) => {
-    return teamPositions.get(normalizeTeam(team)) || null;
-  };
+  const getTeamPosition = (team) =>
+    teamPositions.get(normalizeTeam(team)) || null;
 
   const renderRankBadge = (team) => {
     const position = getTeamPosition(team);
@@ -199,12 +195,11 @@ export default function ProximosEnfrentamientos({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: "29px",
-          height: "29px",
+          width: "34px",
+          height: "34px",
           borderRadius: "50%",
-          fontSize: "10px",
+          fontSize: "12px",
           fontWeight: 1000,
-          letterSpacing: "-0.3px",
           ...getRankStyle(position)
         }}
       >
@@ -264,12 +259,21 @@ export default function ProximosEnfrentamientos({
     );
   }, [pendingMatches, effectiveMatchday]);
 
+  const displayedMatchday =
+    effectiveMatchday === "TODAS"
+      ? "TODAS LAS JORNADAS"
+      : `JORNADA ${effectiveMatchday}`;
+
   const getPlayersForTeam = (team) => {
     const normalizedTeam = normalizeTeam(team);
 
     return players.filter(
       (player) => normalizeTeam(player.team) === normalizedTeam
     );
+  };
+
+  const closeRoster = () => {
+    setExpandedMatch(null);
   };
 
   const toggleMatch = (matchId) => {
@@ -327,9 +331,7 @@ export default function ProximosEnfrentamientos({
                   index === 0 ? "upcoming-player-captain" : ""
                 }`}
                 key={`${team}-${player.player}-${index}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-
+                onClick={() => {
                   if (typeof openPlayerMenu === "function") {
                     openPlayerMenu(player.player);
                   }
@@ -353,6 +355,11 @@ export default function ProximosEnfrentamientos({
       </div>
     );
   };
+
+  const selectedMatch = visibleMatches.find((match) => {
+    const matchId = getMatchId(match, match.originalIndex);
+    return matchId === expandedMatch;
+  });
 
   return (
     <section className="upcoming-screen">
@@ -379,13 +386,19 @@ export default function ProximosEnfrentamientos({
           </span>
         </div>
 
-        <span className="upcoming-live-indicator">
+        <span
+          className="upcoming-live-indicator"
+          style={{
+            fontSize: "11px",
+            textAlign: "right"
+          }}
+        >
           <i />
-          CAMPEONATO 2026
+          {displayedMatchday}
         </span>
       </div>
 
-      {/* TARJETAS DE ENFRENTAMIENTOS */}
+      {/* TARJETAS */}
 
       {loading && matches.length === 0 ? (
         <div className="upcoming-state">
@@ -420,18 +433,13 @@ export default function ProximosEnfrentamientos({
       ) : (
         <div
           className="upcoming-matches-list"
-          style={{
-            gap: "9px"
-          }}
+          style={{ gap: "9px" }}
         >
           {visibleMatches.map((match) => {
             const matchId = getMatchId(
               match,
               match.originalIndex
             );
-
-            const isExpanded = expandedMatch === matchId;
-            const jornada = getMatchdayNumber(match.jornada);
 
             const shield1 =
               typeof getTeamShield === "function"
@@ -445,40 +453,22 @@ export default function ProximosEnfrentamientos({
 
             return (
               <article
-                className={`upcoming-match-card ${
-                  isExpanded ? "upcoming-match-expanded" : ""
-                }`}
+                className="upcoming-match-card"
                 key={matchId}
               >
                 <button
                   type="button"
                   className="upcoming-match-main"
                   style={{
-                    padding: "9px 12px"
+                    padding: "12px 10px"
                   }}
                   onClick={() => toggleMatch(matchId)}
-                  aria-expanded={isExpanded}
+                  aria-expanded={expandedMatch === matchId}
                 >
-                  <div
-                    className="upcoming-match-topline"
-                    style={{
-                      marginBottom: "5px"
-                    }}
-                  >
-                    <span className="upcoming-matchday">
-                      JORNADA {jornada}
-                    </span>
-
-                    <span className="upcoming-pending">
-                      <i />
-                      PENDIENTE
-                    </span>
-                  </div>
-
                   <div
                     className="upcoming-versus"
                     style={{
-                      gap: "6px",
+                      gap: "8px",
                       alignItems: "center"
                     }}
                   >
@@ -487,16 +477,17 @@ export default function ProximosEnfrentamientos({
                     <div
                       className="upcoming-versus-team"
                       style={{
-                        gap: "4px"
+                        gap: "7px",
+                        flex: 1
                       }}
                     >
                       <div
                         className="upcoming-versus-shield"
                         style={{
                           position: "relative",
-                          width: "58px",
-                          height: "58px",
-                          minWidth: "58px"
+                          width: "92px",
+                          height: "92px",
+                          minWidth: "92px"
                         }}
                       >
                         {shield1 ? (
@@ -521,8 +512,9 @@ export default function ProximosEnfrentamientos({
 
                       <strong
                         style={{
-                          fontSize: "12px",
-                          lineHeight: 1.15
+                          fontSize: "13px",
+                          lineHeight: 1.2,
+                          textAlign: "center"
                         }}
                       >
                         {match.team1}
@@ -534,11 +526,12 @@ export default function ProximosEnfrentamientos({
                     <div
                       className="upcoming-versus-center"
                       style={{
-                        gap: "2px"
+                        gap: "3px",
+                        flex: "0 0 auto"
                       }}
                     >
-                      <span style={{ fontSize: "17px" }}>VS</span>
-                      <small style={{ fontSize: "9px" }}>BO5</small>
+                      <span style={{ fontSize: "21px" }}>VS</span>
+                      <small style={{ fontSize: "10px" }}>BO5</small>
                     </div>
 
                     {/* EQUIPO 2 */}
@@ -546,16 +539,17 @@ export default function ProximosEnfrentamientos({
                     <div
                       className="upcoming-versus-team"
                       style={{
-                        gap: "4px"
+                        gap: "7px",
+                        flex: 1
                       }}
                     >
                       <div
                         className="upcoming-versus-shield"
                         style={{
                           position: "relative",
-                          width: "58px",
-                          height: "58px",
-                          minWidth: "58px"
+                          width: "92px",
+                          height: "92px",
+                          minWidth: "92px"
                         }}
                       >
                         {shield2 ? (
@@ -580,8 +574,9 @@ export default function ProximosEnfrentamientos({
 
                       <strong
                         style={{
-                          fontSize: "12px",
-                          lineHeight: 1.15
+                          fontSize: "13px",
+                          lineHeight: 1.2,
+                          textAlign: "center"
                         }}
                       >
                         {match.team2}
@@ -592,68 +587,30 @@ export default function ProximosEnfrentamientos({
                   <div
                     className="upcoming-match-bottom"
                     style={{
-                      marginTop: "5px",
-                      paddingTop: "5px"
+                      marginTop: "8px",
+                      paddingTop: "6px"
                     }}
                   >
-                    <span style={{ fontSize: "9px" }}>
-                      {isExpanded
-                        ? "OCULTAR PLANTILLAS"
-                        : "VER PLANTILLAS"}
+                    <span>
+                      VER PLANTILLAS
                     </span>
 
-                    <span
-                      className={`upcoming-expand-icon ${
-                        isExpanded ? "rotated" : ""
-                      }`}
-                    >
+                    <span className="upcoming-expand-icon">
                       ⌄
                     </span>
                   </div>
                 </button>
-
-                {isExpanded && (
-                  <div className="upcoming-match-rosters">
-                    <div className="upcoming-rosters-title">
-                      <span />
-                      PLANTILLAS DEL ENCUENTRO
-                      <span />
-                    </div>
-
-                    {playersError && players.length === 0 && (
-                      <p className="upcoming-roster-error">
-                        {playersError}
-                      </p>
-                    )}
-
-                    <div className="upcoming-rosters-grid">
-                      {renderTeam(match.team1, "left")}
-
-                      <div className="upcoming-rosters-divider">
-                        <span>VS</span>
-                      </div>
-
-                      {renderTeam(match.team2, "right")}
-                    </div>
-
-                    <p className="upcoming-rosters-hint">
-                      TOCA UN JUGADOR PARA VER SU PERFIL
-                    </p>
-                  </div>
-                )}
               </article>
             );
           })}
         </div>
       )}
 
-      {/* FILTRO DE JORNADAS DEBAJO DE LAS TARJETAS */}
+      {/* FILTRO DE JORNADAS */}
 
       <div
         className="upcoming-filter-panel"
-        style={{
-          marginTop: "16px"
-        }}
+        style={{ marginTop: "16px" }}
       >
         <div className="upcoming-filter-title">
           <span>📅</span>
@@ -716,6 +673,120 @@ export default function ProximosEnfrentamientos({
           <small>UNA LIGA. UNA COMUNIDAD.</small>
         </div>
       </div>
+
+      {/* VENTANA CENTRAL DE PLANTILLAS */}
+
+      {selectedMatch && (
+        <div
+          role="presentation"
+          onClick={closeRoster}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            background: "rgba(0, 0, 0, 0.82)",
+            backdropFilter: "blur(7px)",
+            WebkitBackdropFilter: "blur(7px)"
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Plantillas de ${selectedMatch.team1} y ${selectedMatch.team2}`}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: "620px",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              overscrollBehavior: "contain",
+              border: "1px solid rgba(0, 217, 255, 0.55)",
+              borderRadius: "16px",
+              background: "linear-gradient(160deg, #101d2b, #05090f)",
+              boxShadow: "0 0 35px rgba(0, 195, 255, 0.2)",
+              padding: "18px 12px 14px"
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px",
+                marginBottom: "16px"
+              }}
+            >
+              <div>
+                <strong
+                  style={{
+                    display: "block",
+                    color: "#ffffff",
+                    fontSize: "15px",
+                    letterSpacing: "1px"
+                  }}
+                >
+                  PLANTILLAS DEL ENCUENTRO
+                </strong>
+
+                <small
+                  style={{
+                    display: "block",
+                    marginTop: "4px",
+                    color: "#8edff5",
+                    fontSize: "10px"
+                  }}
+                >
+                  {selectedMatch.team1} VS {selectedMatch.team2}
+                </small>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeRoster}
+                aria-label="Cerrar plantillas"
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  flex: "0 0 36px",
+                  borderRadius: "50%",
+                  border: "1px solid rgba(0, 217, 255, 0.5)",
+                  background: "#102b3a",
+                  color: "#ffffff",
+                  fontSize: "22px",
+                  cursor: "pointer"
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {playersError && players.length === 0 && (
+              <p className="upcoming-roster-error">
+                {playersError}
+              </p>
+            )}
+
+            <div className="upcoming-rosters-grid">
+              {renderTeam(selectedMatch.team1, "left")}
+
+              <div className="upcoming-rosters-divider">
+                <span>VS</span>
+              </div>
+
+              {renderTeam(selectedMatch.team2, "right")}
+            </div>
+
+            <p className="upcoming-rosters-hint">
+              TOCA UN JUGADOR PARA VER SU PERFIL
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
