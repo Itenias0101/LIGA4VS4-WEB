@@ -4,6 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 const DETALLES_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?gid=237931925&single=true&output=csv";
 
+const CSV_CLASIFICACION_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?gid=2025686865&single=true&output=csv";
+
 const MAPAS = [
   { tipo: "PTO CALIENTE", mapa: "COMBINE" },
   { tipo: "BYD", mapa: "SLUM" },
@@ -17,7 +20,7 @@ const COLORES = {
   tarjeta: "#0E1C2D",
   filtro: "#09111D",
   cian: "#00D9FF",
-  secundario: "#8CA5B9",
+  secundario: "#A9BDCC",
   verde: "#00E696",
   dorado: "#FFCD32",
   borde: "#143E55",
@@ -45,10 +48,16 @@ function normalizarEquipo(valor) {
     kings: "KINGS",
     lycoris: "Lycoris",
     "the butchers": "The Butchers",
+    "the butcher": "The Butchers",
     nomercy: "NoMercy",
   };
 
   return equipos[texto] || limpiarTexto(valor);
+}
+
+function claveEquipo(valor) {
+  return normalizar(normalizarEquipo(valor))
+    .replace(/[\s_-]/g, "");
 }
 
 function numero(valor) {
@@ -148,6 +157,37 @@ function convertirDetalles(texto) {
       resultado: limpiarTexto(fila[10]),
       ganadorMapa: normalizarEquipo(fila[11]),
     }));
+}
+
+/* =========================================
+   CLASIFICACIÓN OFICIAL
+   MISMA FUENTE Y MISMO ORDEN QUE CLASIFICACION.JSX
+========================================= */
+
+function convertirClasificacion(texto) {
+  const filas = leerCSV(texto);
+
+  if (!filas.length) return [];
+
+  return filas
+    .slice(1)
+    .filter((fila) => fila.length >= 5 && limpiarTexto(fila[0]))
+    .map((fila) => ({
+      equipo: normalizarEquipo(fila[0]),
+      pj: numeroEntero(fila[1]),
+      pg: numeroEntero(fila[2]),
+      pp: numeroEntero(fila[3]),
+      pts: numeroEntero(fila[4]),
+    }))
+    .sort(
+      (a, b) =>
+        b.pts - a.pts ||
+        b.pg - a.pg ||
+        b.pj - a.pj ||
+        a.equipo.localeCompare(b.equipo, undefined, {
+          sensitivity: "base",
+        })
+    );
 }
 
 function obtenerJornada(partido) {
@@ -253,6 +293,22 @@ function calcularEstadisticasJugador(detalles, nombre) {
   };
 }
 
+function obtenerMedalla(posicion) {
+  if (posicion === 1) {
+    return { texto: "1.º LUGAR", clase: "oro", simbolo: "🥇" };
+  }
+
+  if (posicion === 2) {
+    return { texto: "2.º LUGAR", clase: "plata", simbolo: "🥈" };
+  }
+
+  if (posicion === 3) {
+    return { texto: "3.º LUGAR", clase: "bronce", simbolo: "🥉" };
+  }
+
+  return null;
+}
+
 export default function UltimosResultados({
   matches = [],
   matchesLoading = false,
@@ -263,10 +319,16 @@ export default function UltimosResultados({
   const [detalles, setDetalles] = useState([]);
   const [detallesLoading, setDetallesLoading] = useState(true);
   const [detallesError, setDetallesError] = useState("");
+
+  const [clasificacion, setClasificacion] = useState([]);
+  const [clasificacionLoading, setClasificacionLoading] = useState(true);
+
   const [jornadaSeleccionada, setJornadaSeleccionada] = useState("TODAS");
   const [partidoSeleccionado, setPartidoSeleccionado] = useState(null);
   const [mapaActivo, setMapaActivo] = useState(0);
   const [jugadorSeleccionado, setJugadorSeleccionado] = useState(null);
+
+  /* CARGAR ESTADÍSTICAS DE MAPAS */
 
   useEffect(() => {
     let activo = true;
@@ -308,6 +370,60 @@ export default function UltimosResultados({
       clearInterval(intervalo);
     };
   }, []);
+
+  /* CARGAR CLASIFICACIÓN OFICIAL */
+
+  useEffect(() => {
+    let activo = true;
+
+    const cargarClasificacion = async () => {
+      try {
+        const respuesta = await fetch(CSV_CLASIFICACION_URL, {
+          cache: "no-store",
+        });
+
+        if (!respuesta.ok) {
+          throw new Error("No se pudo cargar la clasificación.");
+        }
+
+        const texto = await respuesta.text();
+        const datos = convertirClasificacion(texto);
+
+        if (activo) {
+          setClasificacion(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando clasificación para resultados:", error);
+      } finally {
+        if (activo) setClasificacionLoading(false);
+      }
+    };
+
+    cargarClasificacion();
+
+    const intervalo = setInterval(cargarClasificacion, 60000);
+
+    return () => {
+      activo = false;
+      clearInterval(intervalo);
+    };
+  }, []);
+
+  /* POSICIONES DE LOS EQUIPOS */
+
+  const posicionesEquipos = useMemo(() => {
+    const posiciones = {};
+
+    clasificacion.forEach((equipo, indice) => {
+      posiciones[claveEquipo(equipo.equipo)] = indice + 1;
+    });
+
+    return posiciones;
+  }, [clasificacion]);
+
+  const obtenerPosicionEquipo = (equipo) => {
+    return posicionesEquipos[claveEquipo(equipo)] || null;
+  };
 
   const partidosPreparados = useMemo(() => {
     const contadores = {};
@@ -377,13 +493,12 @@ export default function UltimosResultados({
     });
   }, [partidosFinalizados, jornadaSeleccionada]);
 
-  const jornadasDisponibles = useMemo(() => {
-    return Array.from({ length: 15 }, (_, i) => i + 1);
-  }, []);
+  const jornadasDisponibles = useMemo(
+    () => Array.from({ length: 15 }, (_, i) => i + 1),
+    []
+  );
 
-  // =========================================
-  // CORRECCIÓN: ENCUENTRO POR JORNADA Y EQUIPOS
-  // =========================================
+  /* DETALLES DEL ENCUENTRO */
 
   const detallesDelPartido = useMemo(() => {
     if (!partidoSeleccionado) return [];
@@ -398,14 +513,14 @@ export default function UltimosResultados({
 
       return (
         dato.jornada === partidoSeleccionado._jornada &&
-        equiposDelEncuentro.includes(equipoDetalle)
+        equiposDelEncuentro.some(
+          (equipo) => claveEquipo(equipo) === claveEquipo(equipoDetalle)
+        )
       );
     });
   }, [detalles, partidoSeleccionado]);
 
-  // =========================================
-  // CORRECCIÓN: PARTIDO EN EL CSV = NÚMERO DE MAPA
-  // =========================================
+  /* LA COLUMNA PARTIDO DEL CSV REPRESENTA EL NÚMERO DE MAPA */
 
   const detallesDelMapa = useMemo(() => {
     const numeroMapa = mapaActivo + 1;
@@ -418,12 +533,10 @@ export default function UltimosResultados({
   const equiposDelMapa = useMemo(() => {
     if (!partidoSeleccionado) return [];
 
-    const equipos = [
+    return [
       partidoSeleccionado._equipo1,
       partidoSeleccionado._equipo2,
-    ];
-
-    return equipos.filter(Boolean);
+    ].filter(Boolean);
   }, [partidoSeleccionado]);
 
   const ganadorDelMapa = useMemo(() => {
@@ -465,9 +578,11 @@ export default function UltimosResultados({
     }
   };
 
+  /* ESCUDOS AUMENTADOS */
+
   const estiloEscudo = {
-    width: 58,
-    height: 58,
+    width: 110,
+    height: 110,
     objectFit: "contain",
     flexShrink: 0,
   };
@@ -495,13 +610,43 @@ export default function UltimosResultados({
     );
   };
 
+  /* ESCUDO CON POSICIÓN DE CLASIFICACIÓN */
+
+  const renderEquipoConPosicion = (equipo) => {
+    const posicion = obtenerPosicionEquipo(equipo);
+    const medalla = posicion ? obtenerMedalla(posicion) : null;
+
+    return (
+      <div className="ur-equipo-visual">
+        {medalla ? (
+          <div className={`ur-posicion-equipo ${medalla.clase}`}>
+            <span className="ur-posicion-simbolo">
+              {medalla.simbolo}
+            </span>
+            <span>{medalla.texto}</span>
+          </div>
+        ) : posicion ? (
+          <div className="ur-posicion-equipo ur-otras-posiciones">
+            {posicion}.º LUGAR
+          </div>
+        ) : (
+          <div className="ur-posicion-equipo ur-posicion-pendiente">
+            {clasificacionLoading ? "CARGANDO..." : "SIN POSICIÓN"}
+          </div>
+        )}
+
+        {renderEscudo(equipo)}
+      </div>
+    );
+  };
+
   const estilos = `
     .ur-contenedor {
       width: 100%;
       min-height: 300px;
       color: #ffffff;
       background: ${COLORES.fondo};
-      padding: 18px 12px 30px;
+      padding: 20px 12px 30px;
       box-sizing: border-box;
       font-family: inherit;
     }
@@ -512,20 +657,22 @@ export default function UltimosResultados({
 
     .ur-titulo {
       color: ${COLORES.cian};
-      font-size: 22px;
-      font-weight: 900;
+      font-size: 27px;
+      font-weight: 1000;
       text-align: center;
-      letter-spacing: 1.5px;
-      margin: 5px 0 22px;
-      text-shadow: 0 0 14px rgba(0,217,255,.25);
+      letter-spacing: 1.8px;
+      margin: 28px 0 8px;
+      padding: 18px 8px 8px;
+      border-top: 1px solid ${COLORES.borde};
+      text-shadow: 0 0 16px rgba(0,217,255,.3);
     }
 
     .ur-filtro {
       background: ${COLORES.filtro};
       border: 1px solid ${COLORES.borde};
-      border-radius: 13px;
-      padding: 14px;
-      margin-bottom: 18px;
+      border-radius: 14px;
+      padding: 17px;
+      margin-bottom: 20px;
     }
 
     .ur-filtro-superior {
@@ -533,48 +680,48 @@ export default function UltimosResultados({
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 13px;
     }
 
     .ur-filtro-titulo {
       color: #ffffff;
-      font-size: 12px;
-      font-weight: 900;
+      font-size: 15px;
+      font-weight: 1000;
       letter-spacing: .8px;
     }
 
     .ur-filtro-cantidad {
       color: ${COLORES.cian};
-      font-size: 10px;
-      font-weight: 800;
+      font-size: 13px;
+      font-weight: 900;
       letter-spacing: .5px;
     }
 
     .ur-select {
       width: 100%;
-      min-height: 43px;
+      min-height: 50px;
       background: #0E1C2D;
       color: white;
       border: 1px solid ${COLORES.borde};
-      border-radius: 8px;
-      padding: 0 12px;
+      border-radius: 9px;
+      padding: 0 13px;
       outline: none;
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 15px;
+      font-weight: 900;
     }
 
     .ur-lista {
       display: flex;
       flex-direction: column;
-      gap: 13px;
+      gap: 17px;
     }
 
     .ur-partido {
       width: 100%;
       text-align: left;
       border: 1px solid #17364B;
-      border-radius: 13px;
-      padding: 15px 13px;
+      border-radius: 15px;
+      padding: 18px 12px;
       background: linear-gradient(145deg, #102238, #0A1523);
       color: white;
       cursor: pointer;
@@ -588,17 +735,17 @@ export default function UltimosResultados({
 
     .ur-partido-jornada {
       color: ${COLORES.cian};
-      font-size: 10px;
-      font-weight: 900;
+      font-size: 14px;
+      font-weight: 1000;
       letter-spacing: 1px;
-      margin-bottom: 15px;
+      margin-bottom: 18px;
     }
 
     .ur-enfrentamiento {
       display: grid;
       grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
       align-items: center;
-      gap: 8px;
+      gap: 5px;
     }
 
     .ur-equipo {
@@ -606,16 +753,94 @@ export default function UltimosResultados({
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 7px;
+      gap: 9px;
       min-width: 0;
     }
 
+    .ur-equipo-visual {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      min-width: 0;
+      gap: 7px;
+    }
+
+    .ur-posicion-equipo {
+      min-height: 27px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 4px 8px;
+      border-radius: 7px;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 1000;
+      letter-spacing: .3px;
+      white-space: nowrap;
+    }
+
+    .ur-posicion-simbolo {
+      font-size: 17px;
+    }
+
+    .ur-posicion-equipo.oro {
+      color: #FFE58A;
+      background: linear-gradient(135deg, #76500A, #B8860B);
+      border: 1px solid #FFD700;
+      box-shadow: 0 0 12px rgba(255,215,0,.2);
+    }
+
+    .ur-posicion-equipo.plata {
+      color: #FFFFFF;
+      background: linear-gradient(135deg, #4A5662, #8996A3);
+      border: 1px solid #DCE4EC;
+      box-shadow: 0 0 10px rgba(220,228,236,.15);
+    }
+
+    .ur-posicion-equipo.bronce {
+      color: #FFE0C2;
+      background: linear-gradient(135deg, #75401F, #B87333);
+      border: 1px solid #CD7F32;
+      box-shadow: 0 0 10px rgba(205,127,50,.17);
+    }
+
+    .ur-otras-posiciones {
+      color: ${COLORES.secundario};
+      background: #142638;
+      border: 1px solid #29465B;
+    }
+
+    .ur-posicion-pendiente {
+      color: ${COLORES.secundario};
+      background: #142638;
+      border: 1px solid #29465B;
+    }
+
+    .ur-escudo-fallback {
+      width: 110px;
+      height: 110px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      border: 1px solid ${COLORES.borde};
+      background: #142638;
+      color: ${COLORES.cian};
+      font-size: 25px;
+      font-weight: 1000;
+    }
+
     .ur-equipo-nombre {
-      font-size: 11px;
-      line-height: 1.3;
-      font-weight: 900;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 1000;
       text-align: center;
       overflow-wrap: anywhere;
+      max-width: 100%;
     }
 
     .ur-ganador {
@@ -626,25 +851,25 @@ export default function UltimosResultados({
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 9px;
+      gap: 8px;
       color: white;
-      font-size: 27px;
+      font-size: 34px;
       font-weight: 1000;
       white-space: nowrap;
     }
 
     .ur-separador {
       color: ${COLORES.secundario};
-      font-size: 18px;
+      font-size: 23px;
     }
 
     .ur-etiqueta-resultado {
       text-align: center;
       color: ${COLORES.secundario};
-      font-size: 9px;
-      font-weight: 900;
-      letter-spacing: 1.5px;
-      margin-top: 7px;
+      font-size: 12px;
+      font-weight: 1000;
+      letter-spacing: 1.3px;
+      margin-top: 8px;
     }
 
     .ur-pie-partido {
@@ -652,64 +877,65 @@ export default function UltimosResultados({
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      border-top: 1px solid rgba(140,165,185,.13);
-      margin-top: 14px;
-      padding-top: 11px;
+      border-top: 1px solid rgba(140,165,185,.18);
+      margin-top: 17px;
+      padding-top: 13px;
     }
 
     .ur-estado {
       color: ${COLORES.verde};
-      font-size: 9px;
-      font-weight: 900;
+      font-size: 12px;
+      font-weight: 1000;
       letter-spacing: .5px;
     }
 
     .ur-detalle-link {
       color: ${COLORES.cian};
-      font-size: 9px;
-      font-weight: 900;
+      font-size: 12px;
+      font-weight: 1000;
       text-align: right;
     }
 
     .ur-victoria {
       color: ${COLORES.dorado};
-      font-size: 9px;
-      font-weight: 900;
-      margin-top: 3px;
+      font-size: 12px;
+      font-weight: 1000;
+      margin-top: 5px;
     }
 
     .ur-vacio {
       background: ${COLORES.tarjeta};
       border: 1px solid ${COLORES.borde};
-      border-radius: 12px;
+      border-radius: 13px;
       color: ${COLORES.secundario};
-      padding: 27px 15px;
+      padding: 30px 15px;
       text-align: center;
-      font-size: 12px;
-      font-weight: 800;
-      line-height: 1.6;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.7;
     }
 
     .ur-cargando {
       color: ${COLORES.cian};
       text-align: center;
-      padding: 25px 10px;
-      font-size: 12px;
-      font-weight: 800;
+      padding: 28px 10px;
+      font-size: 15px;
+      font-weight: 900;
     }
 
     .ur-error {
       color: #FF7777;
       text-align: center;
-      padding: 15px;
-      font-size: 12px;
+      padding: 17px;
+      font-size: 14px;
+      font-weight: 800;
     }
 
     .ur-detalle-cabecera {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 18px;
+      gap: 13px;
+      margin-bottom: 20px;
     }
 
     .ur-volver {
@@ -718,15 +944,15 @@ export default function UltimosResultados({
       border-radius: 9px;
       background: #0D1B2A;
       color: ${COLORES.cian};
-      padding: 10px 13px;
-      font-size: 12px;
-      font-weight: 900;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 1000;
       cursor: pointer;
     }
 
     .ur-detalle-titulo {
       color: ${COLORES.cian};
-      font-size: 16px;
+      font-size: 19px;
       font-weight: 1000;
       letter-spacing: .7px;
       margin: 0;
@@ -734,75 +960,71 @@ export default function UltimosResultados({
 
     .ur-detalle-subtitulo {
       color: ${COLORES.secundario};
-      font-size: 10px;
-      font-weight: 800;
-      margin-top: 4px;
+      font-size: 13px;
+      font-weight: 900;
+      margin-top: 5px;
     }
 
     .ur-resumen-detalle {
       background: ${COLORES.tarjeta};
       border: 1px solid ${COLORES.borde};
-      border-radius: 13px;
-      padding: 14px 10px;
-      margin-bottom: 17px;
+      border-radius: 14px;
+      padding: 17px 9px;
+      margin-bottom: 20px;
     }
 
     .ur-resumen-equipos {
       display: grid;
       grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .ur-resumen-equipos .ur-equipo img {
-      width: 43px;
-      height: 43px;
-    }
-
-    .ur-resumen-equipos .ur-equipo-nombre {
-      font-size: 10px;
+      width: 110px !important;
+      height: 110px !important;
     }
 
     .ur-resumen-marcador {
       color: white;
-      font-size: 22px;
+      font-size: 27px;
       font-weight: 1000;
       white-space: nowrap;
     }
 
     .ur-mapas-titulo {
       color: white;
-      font-size: 14px;
+      font-size: 19px;
       font-weight: 1000;
       letter-spacing: 1px;
-      margin: 0 0 5px;
+      margin: 0 0 7px;
     }
 
     .ur-deslizar {
       color: ${COLORES.secundario};
-      font-size: 10px;
-      margin-bottom: 12px;
+      font-size: 13px;
+      margin-bottom: 14px;
     }
 
     .ur-mapas-navegacion {
       display: flex;
-      gap: 7px;
+      gap: 8px;
       overflow-x: auto;
-      padding-bottom: 10px;
+      padding-bottom: 11px;
       scrollbar-width: thin;
       scrollbar-color: ${COLORES.cian} #102238;
     }
 
     .ur-mapa-boton {
       flex: 0 0 auto;
-      min-width: 62px;
+      min-width: 76px;
       border: 1px solid ${COLORES.borde};
-      border-radius: 8px;
+      border-radius: 9px;
       background: #0A1523;
       color: ${COLORES.secundario};
-      padding: 9px 10px;
-      font-size: 10px;
-      font-weight: 900;
+      padding: 12px 11px;
+      font-size: 13px;
+      font-weight: 1000;
       cursor: pointer;
     }
 
@@ -816,8 +1038,8 @@ export default function UltimosResultados({
     .ur-panel-mapa {
       background: ${COLORES.tarjeta};
       border: 1px solid ${COLORES.borde};
-      border-radius: 13px;
-      padding: 14px 10px;
+      border-radius: 14px;
+      padding: 17px 10px;
       animation: urEntrada .25s ease;
     }
 
@@ -828,45 +1050,45 @@ export default function UltimosResultados({
 
     .ur-mapa-tipo {
       color: ${COLORES.cian};
-      font-size: 10px;
-      font-weight: 900;
+      font-size: 13px;
+      font-weight: 1000;
       letter-spacing: 1.5px;
       text-align: center;
     }
 
     .ur-mapa-nombre {
       color: white;
-      font-size: 20px;
+      font-size: 25px;
       font-weight: 1000;
       text-align: center;
-      margin: 4px 0 8px;
+      margin: 5px 0 9px;
     }
 
     .ur-mapa-indicador {
       color: ${COLORES.secundario};
-      font-size: 9px;
-      font-weight: 800;
+      font-size: 12px;
+      font-weight: 900;
       text-align: center;
-      margin-bottom: 14px;
+      margin-bottom: 15px;
     }
 
     .ur-ganador-mapa {
       color: ${COLORES.verde};
       text-align: center;
-      font-size: 11px;
-      font-weight: 900;
-      margin: 8px 0 15px;
+      font-size: 14px;
+      font-weight: 1000;
+      margin: 10px 0 16px;
     }
 
     .ur-equipo-tabla {
-      margin-top: 14px;
+      margin-top: 16px;
     }
 
     .ur-equipo-tabla-titulo {
       color: ${COLORES.cian};
-      font-size: 11px;
+      font-size: 15px;
       font-weight: 1000;
-      padding: 8px 2px;
+      padding: 10px 2px;
       border-bottom: 1px solid ${COLORES.borde};
     }
 
@@ -877,16 +1099,16 @@ export default function UltimosResultados({
 
     .ur-tabla {
       width: 100%;
-      min-width: 310px;
+      min-width: 330px;
       border-collapse: collapse;
-      font-size: 10px;
+      font-size: 13px;
     }
 
     .ur-tabla th {
       color: ${COLORES.secundario};
-      font-size: 9px;
-      font-weight: 900;
-      padding: 10px 5px;
+      font-size: 12px;
+      font-weight: 1000;
+      padding: 12px 5px;
       text-align: center;
       white-space: nowrap;
     }
@@ -897,11 +1119,11 @@ export default function UltimosResultados({
     }
 
     .ur-tabla td {
-      border-top: 1px solid rgba(140,165,185,.12);
+      border-top: 1px solid rgba(140,165,185,.15);
       color: white;
-      padding: 10px 5px;
+      padding: 12px 5px;
       text-align: center;
-      font-weight: 800;
+      font-weight: 900;
     }
 
     .ur-jugador-boton {
@@ -909,22 +1131,22 @@ export default function UltimosResultados({
       border: 0;
       color: ${COLORES.cian};
       font: inherit;
-      font-size: 10px;
-      font-weight: 900;
+      font-size: 13px;
+      font-weight: 1000;
       padding: 0;
       text-align: left;
       cursor: pointer;
-      max-width: 115px;
+      max-width: 125px;
       overflow-wrap: anywhere;
     }
 
     .ur-sin-stats {
       color: ${COLORES.secundario};
       text-align: center;
-      font-size: 11px;
-      line-height: 1.6;
-      padding: 25px 8px;
-      font-weight: 800;
+      font-size: 14px;
+      line-height: 1.7;
+      padding: 28px 8px;
+      font-weight: 900;
     }
 
     .ur-modal-fondo {
@@ -940,99 +1162,130 @@ export default function UltimosResultados({
 
     .ur-modal {
       width: 100%;
-      max-width: 390px;
+      max-width: 410px;
       max-height: 85vh;
       overflow-y: auto;
       background: #0B1725;
       border: 1px solid ${COLORES.borde};
-      border-radius: 15px;
-      padding: 19px;
+      border-radius: 16px;
+      padding: 21px;
       box-shadow: 0 15px 55px rgba(0,0,0,.5);
     }
 
     .ur-modal-titulo {
       color: ${COLORES.cian};
       text-align: center;
-      font-size: 17px;
+      font-size: 21px;
       font-weight: 1000;
       overflow-wrap: anywhere;
-      margin: 0 0 5px;
+      margin: 0 0 6px;
     }
 
     .ur-modal-equipo {
       text-align: center;
       color: ${COLORES.secundario};
-      font-size: 10px;
-      font-weight: 800;
-      margin-bottom: 17px;
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 18px;
     }
 
     .ur-estadisticas-grid {
       display: grid;
       grid-template-columns: repeat(2,minmax(0,1fr));
-      gap: 9px;
+      gap: 10px;
     }
 
     .ur-estadistica {
       background: #102238;
       border: 1px solid #19374D;
-      border-radius: 9px;
-      padding: 12px 8px;
+      border-radius: 10px;
+      padding: 14px 8px;
       text-align: center;
     }
 
     .ur-estadistica-valor {
       color: ${COLORES.cian};
-      font-size: 20px;
+      font-size: 23px;
       font-weight: 1000;
     }
 
     .ur-estadistica-label {
       color: ${COLORES.secundario};
-      font-size: 9px;
-      font-weight: 900;
-      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 1000;
+      margin-top: 5px;
     }
 
     .ur-modal-cerrar {
       width: 100%;
-      margin-top: 17px;
-      padding: 12px;
+      margin-top: 18px;
+      padding: 14px;
       background: #0A3145;
       border: 1px solid ${COLORES.cian};
       color: ${COLORES.cian};
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: 900;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 1000;
       cursor: pointer;
     }
 
     .ur-modal-perfil {
       width: 100%;
-      margin-top: 9px;
-      padding: 11px;
+      margin-top: 10px;
+      padding: 13px;
       background: transparent;
       border: 1px solid ${COLORES.borde};
       color: white;
-      border-radius: 8px;
-      font-size: 10px;
-      font-weight: 900;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 1000;
       cursor: pointer;
+    }
+
+    @media (max-width: 380px) {
+      .ur-escudo-fallback {
+        width: 90px;
+        height: 90px;
+        font-size: 21px;
+      }
+
+      .ur-equipo-visual img {
+        width: 90px !important;
+        height: 90px !important;
+      }
+
+      .ur-posicion-equipo {
+        font-size: 10px;
+        padding: 4px 5px;
+      }
+
+      .ur-equipo-nombre {
+        font-size: 13px;
+      }
+
+      .ur-marcador {
+        font-size: 29px;
+      }
     }
 
     @media (min-width: 700px) {
       .ur-contenedor {
-        max-width: 850px;
+        max-width: 1000px;
         margin: 0 auto;
-        padding: 22px;
+        padding: 25px;
       }
 
       .ur-lista {
         display: grid;
         grid-template-columns: repeat(2,minmax(0,1fr));
+        gap: 18px;
       }
     }
   `;
+
+  /* =========================================
+     VISTA DETALLE DEL ENCUENTRO
+  ========================================= */
 
   if (partidoSeleccionado) {
     const partido = partidoSeleccionado;
@@ -1059,7 +1312,7 @@ export default function UltimosResultados({
         <div className="ur-resumen-detalle">
           <div className="ur-resumen-equipos">
             <div className="ur-equipo">
-              {renderEscudo(equipo1)}
+              {renderEquipoConPosicion(equipo1)}
               <div className="ur-equipo-nombre">{equipo1}</div>
             </div>
 
@@ -1068,13 +1321,14 @@ export default function UltimosResultados({
             </div>
 
             <div className="ur-equipo">
-              {renderEscudo(equipo2)}
+              {renderEquipoConPosicion(equipo2)}
               <div className="ur-equipo-nombre">{equipo2}</div>
             </div>
           </div>
         </div>
 
         <h3 className="ur-mapas-titulo">5 MAPAS</h3>
+
         <div className="ur-deslizar">
           Selecciona un mapa para consultar sus estadísticas.
         </div>
@@ -1132,7 +1386,7 @@ export default function UltimosResultados({
               {equiposDelMapa.map((equipo) => {
                 const jugadores = detallesDelMapa.filter(
                   (dato) =>
-                    normalizar(dato.equipo) === normalizar(equipo)
+                    claveEquipo(dato.equipo) === claveEquipo(equipo)
                 );
 
                 if (!jugadores.length) return null;
@@ -1161,9 +1415,7 @@ export default function UltimosResultados({
                               <td>
                                 <button
                                   className="ur-jugador-boton"
-                                  onClick={() =>
-                                    abrirJugador(dato.jugador)
-                                  }
+                                  onClick={() => abrirJugador(dato.jugador)}
                                 >
                                   {dato.jugador}
                                 </button>
@@ -1261,7 +1513,7 @@ export default function UltimosResultados({
                   <div className="ur-estadistica">
                     <div
                       className="ur-estadistica-valor"
-                      style={{ fontSize: 13, paddingTop: 4 }}
+                      style={{ fontSize: 15, paddingTop: 4 }}
                     >
                       {estadisticasJugador.equipoPrincipal}
                     </div>
@@ -1298,11 +1550,13 @@ export default function UltimosResultados({
     );
   }
 
+  /* =========================================
+     VISTA PRINCIPAL DE RESULTADOS
+  ========================================= */
+
   return (
     <div className="ur-contenedor">
       <style>{estilos}</style>
-
-      <h2 className="ur-titulo">ÚLTIMOS RESULTADOS</h2>
 
       <div className="ur-filtro">
         <div className="ur-filtro-superior">
@@ -1369,7 +1623,7 @@ export default function UltimosResultados({
 
                 <div className="ur-enfrentamiento">
                   <div className="ur-equipo">
-                    {renderEscudo(partido._equipo1)}
+                    {renderEquipoConPosicion(partido._equipo1)}
 
                     <div
                       className={`ur-equipo-nombre ${
@@ -1392,13 +1646,14 @@ export default function UltimosResultados({
                       <span className="ur-separador">-</span>
                       <span>{partido._marcador2}</span>
                     </div>
+
                     <div className="ur-etiqueta-resultado">
                       RESULTADO
                     </div>
                   </div>
 
                   <div className="ur-equipo">
-                    {renderEscudo(partido._equipo2)}
+                    {renderEquipoConPosicion(partido._equipo2)}
 
                     <div
                       className={`ur-equipo-nombre ${
@@ -1430,6 +1685,10 @@ export default function UltimosResultados({
           })}
         </div>
       )}
+
+      {/* EL ENCABEZADO AHORA QUEDA AL FINAL */}
+
+      <h2 className="ur-titulo">ÚLTIMOS RESULTADOS</h2>
     </div>
   );
 }
