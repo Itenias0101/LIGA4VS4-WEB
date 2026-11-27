@@ -1,3 +1,4 @@
+
 .upcoming-screen {
   width: 100%;
   max-width: 1050px;
@@ -22,7 +23,7 @@
   justify-content: center;
   gap: 9px;
   color: #00d9ff;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 2px;
 }
@@ -36,10 +37,10 @@
 
 .upcoming-header h2 {
   margin: 12px 0 7px;
-  font-size: clamp(22px, 5vw, 34px);
-  line-height: 1.15;
+  font-size: clamp(27px, 6vw, 38px);
+  line-height: 1.2;
   font-weight: 1000;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.5px;
   color: #f4fbff;
 }
 
@@ -51,9 +52,9 @@
 .upcoming-header > p {
   margin: 0;
   color: #8299aa;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
 }
 
 .upcoming-filter-panel {
@@ -61,7 +62,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 15px;
+  padding: 17px;
   margin-bottom: 16px;
   border: 1px solid rgba(0, 217, 255, 0.2);
   border-radius: 13px;
@@ -79,37 +80,37 @@
 }
 
 .upcoming-filter-title > span {
-  font-size: 22px;
+  font-size: 26px;
 }
 
 .upcoming-filter-title div {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .upcoming-filter-title strong {
   color: #eaf8ff;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.8px;
 }
 
 .upcoming-filter-title small {
-  color: #71899d;
-  font-size: 9px;
-  letter-spacing: 0.8px;
+  color: #8299aa;
+  font-size: 11px;
+  letter-spacing: 0.6px;
 }
 
 .upcoming-matchday-select {
-  width: min(210px, 52%);
-  min-height: 42px;
+  width: min(230px, 52%);
+  min-height: 48px;
   padding: 0 12px;
   border: 1px solid rgba(0, 217, 255, 0.4);
   border-radius: 8px;
   outline: none;
   background: #101f2d;
   color: #00d9ff;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.4px;
 }
@@ -140,33 +141,33 @@
 
 .upcoming-summary-number {
   color: #00d9ff;
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 1000;
   line-height: 1;
 }
 
 .upcoming-summary-label {
-  color: #91a7b8;
-  font-size: 9px;
+  color: #a9bdcc;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.7px;
+  letter-spacing: 0.5px;
 }
 
 .upcoming-live-indicator {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #71899d;
-  font-size: 9px;
+  color: #91a7b8;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
 }
 
 .upcoming-live-indicator i,
 .upcoming-pending i {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
   border-radius: 50%;
   background: #ffb547;
   box-shadow: 0 0 9px rgba(255, 181, 71, 0.65);
@@ -175,7 +176,7 @@
 .upcoming-matches-list {
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 15px;
 }
 
 .upcoming-match-card {
@@ -206,7 +207,7 @@
 .upcoming-match-main {
   display: block;
   width: 100%;
-  padding: 15px 15px 11px;
+  padding: 18px 15px 13px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -219,34 +220,34 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 17px;
+  margin-bottom: 19px;
 }
 
 .upcoming-matchday {
   color: #00d9ff;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 1000;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
 }
 
 .upcoming-pending {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 6px 9px;
+  padding: 7px 11px;
   border: 1px solid rgba(255, 181, 71, 0.2);
   border-radius: 20px;
   background: rgba(255, 181, 71, 0.07);
   color: #ffca7b;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 1000;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.7px;
 }
 
 .upcoming-pending i {
-  width: 6px;
-  height: 6px;
-  flex-basis: 6px;
+  width: 7px;
+  height: 7px;
+  flex-basis: 7px;
 }
 
 .upcoming-versus {
@@ -262,15 +263,15 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  gap: 9px;
+  gap: 10px;
 }
 
 .upcoming-versus-shield {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 66px;
-  height: 66px;
+  width: 76px;
+  height: 76px;
   padding: 5px;
   border: 1px solid rgba(0, 217, 255, 0.16);
   border-radius: 13px;
@@ -286,7 +287,7 @@
 
 .upcoming-versus-shield span {
   color: #00d9ff;
-  font-size: 21px;
+  font-size: 24px;
   font-weight: 1000;
 }
 
@@ -294,7 +295,7 @@
   width: 100%;
   overflow-wrap: anywhere;
   color: #e9f6ff;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 1000;
   text-align: center;
   letter-spacing: 0.3px;
@@ -310,15 +311,15 @@
 
 .upcoming-versus-center span {
   color: #00d9ff;
-  font-size: 20px;
+  font-size: 25px;
   font-weight: 1000;
   font-style: italic;
   text-shadow: 0 0 14px rgba(0, 217, 255, 0.25);
 }
 
 .upcoming-versus-center small {
-  color: #607b90;
-  font-size: 8px;
+  color: #8299aa;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 1px;
 }
@@ -328,20 +329,20 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 17px;
-  padding-top: 11px;
+  margin-top: 19px;
+  padding-top: 13px;
   border-top: 1px solid rgba(143, 180, 205, 0.1);
-  color: #829bad;
-  font-size: 9px;
+  color: #a2b8c8;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
 .upcoming-expand-icon {
   display: inline-block;
   color: #00d9ff;
-  font-size: 17px;
-  line-height: 10px;
+  font-size: 21px;
+  line-height: 12px;
   transition: transform 0.25s ease;
 }
 
@@ -350,7 +351,7 @@
 }
 
 .upcoming-match-rosters {
-  padding: 15px 13px 13px;
+  padding: 17px 13px 15px;
   border-top: 1px solid rgba(0, 217, 255, 0.2);
   background: rgba(2, 9, 16, 0.55);
   animation: upcomingReveal 0.25s ease both;
@@ -373,11 +374,11 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  margin-bottom: 14px;
+  margin-bottom: 15px;
   color: #00d9ff;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 1000;
-  letter-spacing: 1.1px;
+  letter-spacing: 1px;
   text-align: center;
 }
 
@@ -396,7 +397,7 @@
 
 .upcoming-team {
   min-width: 0;
-  padding: 10px 7px;
+  padding: 11px 7px;
   border: 1px solid rgba(0, 217, 255, 0.12);
   border-radius: 9px;
   background: rgba(12, 27, 40, 0.75);
@@ -406,9 +407,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
-  min-height: 85px;
-  padding-bottom: 9px;
+  gap: 8px;
+  min-height: 95px;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(0, 217, 255, 0.13);
 }
 
@@ -416,8 +417,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 43px;
-  height: 43px;
+  width: 49px;
+  height: 49px;
 }
 
 .upcoming-team-shield {
@@ -430,19 +431,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 1px solid rgba(0, 217, 255, 0.35);
   border-radius: 9px;
   color: #00d9ff;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 1000;
 }
 
 .upcoming-team-heading h3 {
   margin: 0;
   color: #eaf7ff;
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 1000;
   line-height: 1.3;
   text-align: center;
@@ -452,8 +453,8 @@
 .upcoming-roster {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding-top: 8px;
+  gap: 6px;
+  padding-top: 9px;
 }
 
 .upcoming-player {
@@ -461,8 +462,8 @@
   align-items: center;
   width: 100%;
   min-width: 0;
-  gap: 5px;
-  padding: 8px 5px;
+  gap: 6px;
+  padding: 10px 7px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.025);
@@ -479,19 +480,12 @@
   background: rgba(0, 217, 255, 0.08);
 }
 
-.upcoming-player-number {
-  flex: 0 0 auto;
-  color: #00b9df;
-  font-size: 8px;
-  font-weight: 1000;
-}
-
 .upcoming-player-name {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #dcebf5;
-  font-size: 9px;
+  color: #e5f2fb;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -503,42 +497,42 @@
 .upcoming-captain-label {
   flex: 0 0 auto;
   color: #00d9ff;
-  font-size: 6px;
+  font-size: 9px;
   font-weight: 1000;
 }
 
 .upcoming-player-arrow {
   flex: 0 0 auto;
   color: #00d9ff;
-  font-size: 15px;
+  font-size: 19px;
 }
 
 .upcoming-rosters-divider {
   display: flex;
   justify-content: center;
-  padding-top: 35px;
+  padding-top: 40px;
 }
 
 .upcoming-rosters-divider span {
   color: #00d9ff;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 1000;
   font-style: italic;
 }
 
 .upcoming-rosters-hint {
-  margin: 12px 0 0;
-  color: #607c91;
-  font-size: 8px;
+  margin: 13px 0 0;
+  color: #8299aa;
+  font-size: 10px;
   font-weight: 900;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.7px;
   text-align: center;
 }
 
 .upcoming-roster-message {
   margin: 10px 0;
-  color: #71899d;
-  font-size: 8px;
+  color: #91a7b8;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.5;
   text-align: center;
@@ -547,7 +541,7 @@
 .upcoming-roster-error {
   margin: 0 0 12px;
   color: #ff8791;
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -556,7 +550,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 210px;
+  min-height: 230px;
   padding: 25px 18px;
   border: 1px solid rgba(0, 217, 255, 0.15);
   border-radius: 13px;
@@ -567,39 +561,39 @@
 .upcoming-state > p {
   max-width: 440px;
   margin: 10px 0 0;
-  color: #8299aa;
-  font-size: 11px;
+  color: #a0b4c3;
+  font-size: 14px;
   line-height: 1.6;
 }
 
 .upcoming-state h3 {
   margin: 10px 0 0;
   color: #eaf7ff;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 1000;
   letter-spacing: 0.5px;
 }
 
 .upcoming-state-error > span,
 .upcoming-empty-icon {
-  font-size: 30px;
+  font-size: 36px;
 }
 
 .upcoming-state button {
   margin-top: 15px;
-  padding: 11px 18px;
+  padding: 12px 20px;
   border: 1px solid #00d9ff;
   border-radius: 7px;
   background: rgba(0, 217, 255, 0.1);
   color: #00d9ff;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 1000;
   cursor: pointer;
 }
 
 .upcoming-spinner {
-  width: 29px;
-  height: 29px;
+  width: 32px;
+  height: 32px;
   border: 3px solid rgba(0, 217, 255, 0.15);
   border-top-color: #00d9ff;
   border-radius: 50%;
@@ -626,30 +620,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 33px;
-  height: 33px;
+  width: 38px;
+  height: 38px;
   border: 1px solid rgba(0, 217, 255, 0.4);
   border-radius: 8px;
   color: #00d9ff;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 1000;
 }
 
 .upcoming-footer div {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .upcoming-footer strong {
   color: #a9c0d1;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1px;
 }
 
 .upcoming-footer small {
-  color: #60798d;
-  font-size: 8px;
+  color: #8299aa;
+  font-size: 10px;
   letter-spacing: 0.8px;
 }
 
@@ -665,12 +659,12 @@
   }
 
   .upcoming-match-main {
-    padding: 18px;
+    padding: 20px;
   }
 
   .upcoming-versus-shield {
-    width: 76px;
-    height: 76px;
+    width: 82px;
+    height: 82px;
   }
 }
 
@@ -690,19 +684,27 @@
   }
 
   .upcoming-team {
-    padding: 8px 5px;
+    padding: 9px 5px;
   }
 
   .upcoming-player {
-    gap: 4px;
-    padding: 7px 4px;
+    gap: 5px;
+    padding: 9px 5px;
   }
 
   .upcoming-player-name {
-    font-size: 8px;
+    font-size: 12px;
   }
 
   .upcoming-captain-label {
-    font-size: 5px;
+    font-size: 8px;
+  }
+
+  .upcoming-versus-team strong {
+    font-size: 13px;
+  }
+
+  .upcoming-summary-label {
+    font-size: 10px;
   }
 }
