@@ -652,23 +652,6 @@ export default function Publicaciones() {
   return (
     <main className="publicaciones-page">
 
-      <section className="publicaciones-heading">
-
-        <div className="publicaciones-heading-label">
-          <span className="publicaciones-heading-dot" />
-          COMUNIDAD OFICIAL
-        </div>
-
-        <h1>
-          JUGADAS <span>DESTACADAS</span>
-        </h1>
-
-        <p>
-          LOS MEJORES MOMENTOS DE NUESTRA COMPETICIÓN.
-        </p>
-
-      </section>
-
       {/* =====================================
           FORMULARIO DE PUBLICACIÓN
       ===================================== */}
