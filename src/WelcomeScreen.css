@@ -10,21 +10,28 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
-/* ENCABEZADO SUPERIOR MÁS COMPACTO */
+/* =========================================
+   ENCABEZADO SUPERIOR
+   ========================================= */
+
 .app:has(.android-welcome) .welcome-header {
   flex: 0 0 auto;
   height: auto;
   min-height: 0;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
   margin-top: 0;
   margin-bottom: 0;
   box-sizing: border-box;
 }
 
-/* CONTENEDOR PRINCIPAL */
+/* =========================================
+   CONTENEDOR PRINCIPAL
+   ========================================= */
+
 .app:has(.android-welcome) .android-welcome {
   flex: 1 1 auto;
   min-height: 0;
@@ -35,18 +42,26 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: clamp(5px, 1vh, 10px) 14px;
-  gap: clamp(5px, 1vh, 9px);
+  padding: 3px 14px;
+  gap: 3px;
 }
 
-/* LOGO */
+/* =========================================
+   LOGO SUPERIOR
+   ========================================= */
+
 .app:has(.android-welcome) .welcome-logo-panel {
   flex: 0 1 auto;
-  margin-top: 0;
-  margin-bottom: 0;
+  transform: scale(0.84);
+  transform-origin: center;
+  margin-top: -7px;
+  margin-bottom: -7px;
 }
 
-/* PANEL DE ENFRENTAMIENTOS */
+/* =========================================
+   PANEL DE ENFRENTAMIENTOS
+   ========================================= */
+
 .app:has(.android-welcome) .welcome-matches-panel {
   flex: 1 1 auto;
   min-height: 0;
@@ -63,18 +78,23 @@
   display: none;
 }
 
-/* ETIQUETA AZUL DE JORNADA */
+/* =========================================
+   ETIQUETA DE JORNADA
+   ========================================= */
+
 .app:has(.android-welcome) .matchday-label {
-  margin-top: 3px;
-  margin-bottom: 8px;
+  margin-top: 2px;
+  margin-bottom: 5px;
 }
 
 .app:has(.android-welcome) .matches-list {
-  padding-bottom: 4px;
+  padding-top: 0;
+  padding-bottom: 3px;
 }
 
 /* =========================================
    ESCUDOS: 110 x 110 PX
+   NO MODIFICAR TAMAÑO
    ========================================= */
 
 .app:has(.android-welcome) .match-team {
@@ -130,28 +150,40 @@
   flex: 0 0 110px !important;
 }
 
-/* NOMBRES DE EQUIPOS */
+/* =========================================
+   NOMBRES DE EQUIPOS
+   ========================================= */
+
 .app:has(.android-welcome) .match-team > strong {
   max-width: 100%;
   text-align: center;
   overflow-wrap: anywhere;
 }
 
-/* BOTÓN DE ENTRADA */
+/* =========================================
+   BOTÓN DE ENTRADA
+   ========================================= */
+
 .app:has(.android-welcome) .welcome-enter-button {
   flex: 0 0 auto;
   margin-top: 0;
   margin-bottom: 0;
 }
 
-/* REGISTRO */
+/* =========================================
+   REGISTRO
+   ========================================= */
+
 .app:has(.android-welcome) .welcome-register-link {
   flex: 0 0 auto;
   margin-top: 0;
   margin-bottom: 0;
 }
 
-/* OCULTAR FOOTER EN BIENVENIDA */
+/* =========================================
+   OCULTAR FOOTER EN BIENVENIDA
+   ========================================= */
+
 .app:has(.android-welcome) footer {
   display: none;
 }
@@ -162,26 +194,26 @@
 
 @media (max-height: 700px) {
   .app:has(.android-welcome) .android-welcome {
-    gap: 4px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-  }
-
-  .app:has(.android-welcome) .welcome-header {
+    gap: 2px;
     padding-top: 2px;
     padding-bottom: 2px;
   }
 
+  .app:has(.android-welcome) .welcome-header {
+    padding-top: 1px;
+    padding-bottom: 1px;
+  }
+
   .app:has(.android-welcome) .welcome-logo-panel {
-    transform: scale(0.78);
+    transform: scale(0.76);
     transform-origin: center;
-    margin-top: -4px;
-    margin-bottom: -4px;
+    margin-top: -10px;
+    margin-bottom: -10px;
   }
 
   .app:has(.android-welcome) .matchday-label {
-    margin-top: 2px;
-    margin-bottom: 5px;
+    margin-top: 1px;
+    margin-bottom: 4px;
   }
 
   .app:has(.android-welcome) .welcome-enter-button {
@@ -195,9 +227,9 @@
 
 @media (max-height: 580px) {
   .app:has(.android-welcome) .welcome-logo-panel {
-    transform: scale(0.68);
-    margin-top: -8px;
-    margin-bottom: -8px;
+    transform: scale(0.66);
+    margin-top: -13px;
+    margin-bottom: -13px;
   }
 
   .app:has(.android-welcome) .welcome-enter-button {
