@@ -13,7 +13,6 @@ import {
 
 import { auth, db } from "./firebase";
 import "./Publicaciones.css";
-import Publicaciones from "./Publicaciones.jsx";
 
 const MAX_PUBLICACIONES = 50;
 
@@ -81,7 +80,9 @@ function TarjetaPublicacion({ publicacion, perfil }) {
 
   return (
     <article className="publicacion-card">
+
       <div className="publicacion-card-header">
+
         <AvatarJugador
           nombre={nombre}
           foto={perfil?.fotoPerfil}
@@ -95,6 +96,7 @@ function TarjetaPublicacion({ publicacion, perfil }) {
         <div className="publicacion-fecha">
           {formatearFecha(publicacion.createdAt)}
         </div>
+
       </div>
 
       {publicacion.descripcion && (
@@ -104,6 +106,7 @@ function TarjetaPublicacion({ publicacion, perfil }) {
       )}
 
       <div className="publicacion-media">
+
         {esVideo ? (
           <video
             src={publicacion.mediaUrl}
@@ -126,6 +129,7 @@ function TarjetaPublicacion({ publicacion, perfil }) {
             VIDEO DESTACADO
           </span>
         )}
+
       </div>
 
       <div className="publicacion-card-footer">
@@ -133,11 +137,13 @@ function TarjetaPublicacion({ publicacion, perfil }) {
         <span>JUGADA DESTACADA</span>
         <span className="publicacion-footer-brand">LIGA4VS4</span>
       </div>
+
     </article>
   );
 }
 
 export default function Publicaciones() {
+
   const [usuario, setUsuario] = useState(auth.currentUser);
   const [publicaciones, setPublicaciones] = useState([]);
   const [perfiles, setPerfiles] = useState({});
@@ -161,6 +167,7 @@ export default function Publicaciones() {
   // =========================================
 
   useEffect(() => {
+
     if (!usuario) {
       setPublicaciones([]);
       setPerfiles({});
@@ -168,6 +175,8 @@ export default function Publicaciones() {
       setError("");
       return;
     }
+
+    let componenteActivo = true;
 
     setCargando(true);
     setError("");
@@ -182,18 +191,22 @@ export default function Publicaciones() {
 
     const unsubscribe = onSnapshot(
       publicacionesQuery,
+
       async (snapshot) => {
+
         const lista = snapshot.docs.map((documento) => ({
           id: documento.id,
           ...documento.data()
         }));
+
+        if (!componenteActivo) return;
 
         setPublicaciones(lista);
         setCargando(false);
         setError("");
 
         // =====================================
-        // CARGAR PERFILES PÚBLICOS DE AUTORES
+        // CARGAR PERFILES PÚBLICOS
         // =====================================
 
         const uids = [
@@ -208,30 +221,47 @@ export default function Publicaciones() {
 
         await Promise.all(
           uids.map(async (uid) => {
+
             try {
-              const perfilRef = doc(db, "perfiles_publicos", uid);
+              const perfilRef = doc(
+                db,
+                "perfiles_publicos",
+                uid
+              );
+
               const perfilSnapshot = await getDoc(perfilRef);
 
               if (perfilSnapshot.exists()) {
                 nuevosPerfiles[uid] = perfilSnapshot.data();
               }
+
             } catch (perfilError) {
+
               console.warn(
                 "No se pudo cargar el perfil público:",
                 uid,
                 perfilError
               );
+
             }
+
           })
         );
 
-        setPerfiles(nuevosPerfiles);
+        if (componenteActivo) {
+          setPerfiles(nuevosPerfiles);
+        }
+
       },
+
       (firebaseError) => {
+
         console.error(
           "Error al cargar publicaciones:",
           firebaseError
         );
+
+        if (!componenteActivo) return;
 
         setCargando(false);
 
@@ -244,20 +274,26 @@ export default function Publicaciones() {
             "No se pudieron cargar las jugadas destacadas. Comprueba tu conexión."
           );
         }
+
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      componenteActivo = false;
+      unsubscribe();
+    };
+
   }, [usuario]);
 
   // =========================================
-  // PANTALLA
+  // PANTALLA PRINCIPAL
   // =========================================
 
   return (
     <main className="publicaciones-page">
 
       <section className="publicaciones-heading">
+
         <div className="publicaciones-heading-label">
           <span className="publicaciones-heading-dot" />
           COMUNIDAD OFICIAL
@@ -270,6 +306,7 @@ export default function Publicaciones() {
         <p>
           LOS MEJORES MOMENTOS DE NUESTRA COMPETICIÓN.
         </p>
+
       </section>
 
       <section className="publicaciones-feed">
@@ -290,7 +327,10 @@ export default function Publicaciones() {
 
         {!cargando && !error && publicaciones.length === 0 && (
           <div className="publicaciones-vacio">
-            <div className="publicaciones-vacio-icon">🎥</div>
+
+            <div className="publicaciones-vacio-icon">
+              🎥
+            </div>
 
             <h2>EL FEED ESTÁ VACÍO</h2>
 
@@ -301,6 +341,7 @@ export default function Publicaciones() {
             </p>
 
             <span>PRÓXIMAMENTE · LIGA4VS4</span>
+
           </div>
         )}
 
