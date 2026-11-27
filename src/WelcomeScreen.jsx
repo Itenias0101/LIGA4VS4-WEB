@@ -7,29 +7,28 @@ export default function WelcomeScreen({
   matchesLoading,
   matchesError,
   currentMatchday,
-  expandedTeams,
-  playersLoading,
-  players,
-  playersError,
-  user,
+  isFinishedMatch,
   getTeamShield,
   normalizeText,
-  getPlayersForTeam,
-  isFinishedMatch,
+  expandedTeams,
   toggleTeamRoster,
+  playersLoading,
+  players,
+  getPlayersForTeam,
+  playersError,
+  user,
   enterChampionship,
   openMode
 }) {
   return (
-    <section className="android-welcome welcome-screen">
+    <section className="android-welcome">
       <div className="welcome-logo-panel">
         <div className="welcome-logo-mark">
           <span>LIGA</span>
           <strong>4VS4</strong>
         </div>
-        <div className="welcome-logo-caption">
-          COMPETICIÓN OFICIAL
-        </div>
+
+        <div className="welcome-logo-caption">COMPETICIÓN OFICIAL</div>
       </div>
 
       <div className="welcome-matches-heading">
@@ -101,6 +100,7 @@ export default function WelcomeScreen({
                             </span>
                           )}
                         </button>
+
                         <strong>{match.team1}</strong>
                       </div>
 
@@ -131,6 +131,7 @@ export default function WelcomeScreen({
                             </span>
                           )}
                         </button>
+
                         <strong>{match.team2}</strong>
                       </div>
 
@@ -140,23 +141,19 @@ export default function WelcomeScreen({
                             JUGADORES · {match.team1}
                           </div>
 
-                          {playersLoading && players.length === 0 ? (
-                            <p>Cargando jugadores...</p>
-                          ) : getPlayersForTeam(match.team1).length > 0 ? (
-                            getPlayersForTeam(match.team1).map((player, playerIndex) => (
-                              <div
-                                className="team-roster-player"
-                                key={`${player.player}-${playerIndex}`}
-                              >
-                                <span>{playerIndex + 1}</span>
-                                {player.player}
-                              </div>
-                            ))
-                          ) : (
-                            <p>
-                              {playersError || "No se encontraron jugadores para este equipo."}
-                            </p>
-                          )}
+                          {playersLoading && players.length === 0
+                            ? <p>Cargando jugadores...</p>
+                            : getPlayersForTeam(match.team1).length > 0
+                            ? getPlayersForTeam(match.team1).map((player, playerIndex) => (
+                                <div
+                                  className="team-roster-player"
+                                  key={`${player.player}-${playerIndex}`}
+                                >
+                                  <span>{playerIndex + 1}</span>
+                                  {player.player}
+                                </div>
+                              ))
+                            : <p>{playersError || "No se encontraron jugadores para este equipo."}</p>}
                         </div>
                       )}
 
@@ -166,23 +163,19 @@ export default function WelcomeScreen({
                             JUGADORES · {match.team2}
                           </div>
 
-                          {playersLoading && players.length === 0 ? (
-                            <p>Cargando jugadores...</p>
-                          ) : getPlayersForTeam(match.team2).length > 0 ? (
-                            getPlayersForTeam(match.team2).map((player, playerIndex) => (
-                              <div
-                                className="team-roster-player"
-                                key={`${player.player}-${playerIndex}`}
-                              >
-                                <span>{playerIndex + 1}</span>
-                                {player.player}
-                              </div>
-                            ))
-                          ) : (
-                            <p>
-                              {playersError || "No se encontraron jugadores para este equipo."}
-                            </p>
-                          )}
+                          {playersLoading && players.length === 0
+                            ? <p>Cargando jugadores...</p>
+                            : getPlayersForTeam(match.team2).length > 0
+                            ? getPlayersForTeam(match.team2).map((player, playerIndex) => (
+                                <div
+                                  className="team-roster-player"
+                                  key={`${player.player}-${playerIndex}`}
+                                >
+                                  <span>{playerIndex + 1}</span>
+                                  {player.player}
+                                </div>
+                              ))
+                            : <p>{playersError || "No se encontraron jugadores para este equipo."}</p>}
                         </div>
                       )}
                     </article>
