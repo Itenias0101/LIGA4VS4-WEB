@@ -48,9 +48,7 @@ function obtenerIniciales(nombre = "") {
 function formatearFecha(fecha) {
   if (!fecha) return "RECIENTE";
 
-  const date = fecha?.toDate
-    ? fecha.toDate()
-    : new Date(fecha);
+  const date = fecha?.toDate ? fecha.toDate() : new Date(fecha);
 
   if (Number.isNaN(date.getTime())) return "RECIENTE";
 
@@ -94,6 +92,60 @@ async function llamarWorker(body, token) {
   return resultado;
 }
 
+// =========================================
+// CREAR NOTIFICACIÓN INTERNA
+// =========================================
+
+async function crearNotificacionActividad({
+  publicacion,
+  usuario,
+  nombreJugador,
+  equipoJugador,
+  tipo,
+  interaccionId,
+  textoComentario = "",
+  nombreReaccion = ""
+}) {
+  if (!publicacion?.uid || !usuario?.uid) return;
+
+  // No notificar al autor por sus propias interacciones.
+  if (publicacion.uid === usuario.uid) return;
+
+  if (!nombreJugador || !equipoJugador) {
+    throw new Error("No se pudo identificar al jugador que interactuó.");
+  }
+
+  const esReaccion = tipo === "REACCION_PUBLICACION";
+
+  const titulo = esReaccion
+    ? "Nueva reacción en tu publicación"
+    : "Nuevo comentario en tu publicación";
+
+  const mensaje = esReaccion
+    ? `${nombreJugador} · ${equipoJugador} reaccionó a tu publicación: ${nombreReaccion}.`
+    : `${nombreJugador} · ${equipoJugador} comentó: "${textoComentario.slice(0, 180)}"`;
+
+  const notificacionesRef = collection(
+    db,
+    "jugadores",
+    publicacion.uid,
+    "notificaciones"
+  );
+
+  await addDoc(notificacionesRef, {
+    titulo,
+    mensaje,
+    createdAt: serverTimestamp(),
+    leida: false,
+    tipo,
+    actorUid: usuario.uid,
+    actorNick: nombreJugador,
+    actorEquipo: equipoJugador,
+    publicacionId: publicacion.id,
+    interaccionId
+  });
+}
+
 function AvatarJugador({ nombre, foto }) {
   const [fotoError, setFotoError] = useState(false);
 
@@ -128,26 +180,20 @@ function PublicacionInteracciones({
   usuario,
   jugadorAsignado,
   esAdmin,
-  nombreJugador
+  nombreJugador,
+  equipoJugador
 }) {
   const [reacciones, setReacciones] = useState([]);
   const [comentarios, setComentarios] = useState([]);
-
   const [textoComentario, setTextoComentario] = useState("");
   const [enviandoComentario, setEnviandoComentario] = useState(false);
   const [reaccionando, setReaccionando] = useState(false);
   const [eliminandoComentarioId, setEliminandoComentarioId] = useState("");
-
   const [errorInteraccion, setErrorInteraccion] = useState("");
   const [mensajeInteraccion, setMensajeInteraccion] = useState("");
-
   const [mostrarComentarios, setMostrarComentarios] = useState(false);
 
   const comentarioRef = useRef(null);
-
-  // =========================================
-  // ESCUCHAR REACCIONES EN TIEMPO REAL
-  // =========================================
 
   useEffect(() => {
     if (!usuario || !publicacion?.id) {
@@ -165,27 +211,21 @@ function PublicacionInteracciones({
     const unsubscribe = onSnapshot(
       reaccionesRef,
       (snapshot) => {
-        const lista = snapshot.docs.map((documento) => ({
-          id: documento.id,
-          ...documento.data()
-        }));
-
-        setReacciones(lista);
+        setReacciones(
+          snapshot.docs.map((documento) => ({
+            id: documento.id,
+            ...documento.data()
+          }))
+        );
       },
       (error) => {
         console.error("Error al escuchar reacciones:", error);
-        setErrorInteraccion(
-          "No se pudieron cargar las reacciones."
-        );
+        setErrorInteraccion("No se pudieron cargar las reacciones.");
       }
     );
 
     return () => unsubscribe();
   }, [usuario, publicacion.id]);
-
-  // =========================================
-  // ESCUCHAR COMENTARIOS EN TIEMPO REAL
-  // =========================================
 
   useEffect(() => {
     if (!usuario || !publicacion?.id) {
@@ -208,18 +248,16 @@ function PublicacionInteracciones({
     const unsubscribe = onSnapshot(
       comentariosQuery,
       (snapshot) => {
-        const lista = snapshot.docs.map((documento) => ({
-          id: documento.id,
-          ...documento.data()
-        }));
-
-        setComentarios(lista);
+        setComentarios(
+          snapshot.docs.map((documento) => ({
+            id: documento.id,
+            ...documento.data()
+          }))
+        );
       },
       (error) => {
         console.error("Error al escuchar comentarios:", error);
-        setErrorInteraccion(
-          "No se pudieron cargar los comentarios."
-        );
+        setErrorInteraccion("No se pudieron cargar los comentarios.");
       }
     );
 
@@ -255,6 +293,8 @@ function PublicacionInteracciones({
       if (miReaccion?.tipo === tipo) {
         await deleteDoc(reaccionRef);
       } else {
+        const eraPrimeraReaccion = !miReaccion;
+
         const datosReaccion = {
           uid: usuario.uid,
           nombre: nombreJugador || usuario.displayName || "JUGADOR",
@@ -262,11 +302,43 @@ function PublicacionInteracciones({
           updatedAt: serverTimestamp()
         };
 
-        if (!miReaccion) {
+        if (eraPrimeraReaccion) {
           datosReaccion.createdAt = serverTimestamp();
         }
 
         await setDoc(reaccionRef, datosReaccion, { merge: true });
+
+        // Solo se notifica al crear la primera reacción.
+        // Cambiar el tipo de reacción no genera otro aviso.
+        if (
+          eraPrimeraReaccion &&
+          publicacion.uid !== usuario.uid
+        ) {
+          const reaccionSeleccionada = TIPOS_REACCION.find(
+            (item) => item.tipo === tipo
+          );
+
+          try {
+            await crearNotificacionActividad({
+              publicacion,
+              usuario,
+              nombreJugador,
+              equipoJugador,
+              tipo: "REACCION_PUBLICACION",
+              interaccionId: usuario.uid,
+              nombreReaccion: reaccionSeleccionada?.nombre || tipo
+            });
+          } catch (errorNotificacion) {
+            console.error(
+              "La reacción se guardó, pero no se pudo crear la notificación:",
+              errorNotificacion
+            );
+
+            setMensajeInteraccion(
+              "Reacción guardada. No se pudo enviar el aviso al buzón."
+            );
+          }
+        }
       }
     } catch (error) {
       console.error("Error al guardar reacción:", error);
@@ -316,7 +388,7 @@ function PublicacionInteracciones({
         "comentarios"
       );
 
-      await addDoc(comentariosRef, {
+      const comentarioCreado = await addDoc(comentariosRef, {
         uid: usuario.uid,
         nombre: nombreJugador || usuario.displayName || "JUGADOR",
         texto,
@@ -326,6 +398,29 @@ function PublicacionInteracciones({
       setTextoComentario("");
       setMostrarComentarios(true);
       setMensajeInteraccion("Comentario publicado.");
+
+      if (publicacion.uid !== usuario.uid) {
+        try {
+          await crearNotificacionActividad({
+            publicacion,
+            usuario,
+            nombreJugador,
+            equipoJugador,
+            tipo: "COMENTARIO_PUBLICACION",
+            interaccionId: comentarioCreado.id,
+            textoComentario: texto
+          });
+        } catch (errorNotificacion) {
+          console.error(
+            "El comentario se guardó, pero no se pudo crear la notificación:",
+            errorNotificacion
+          );
+
+          setMensajeInteraccion(
+            "Comentario publicado. No se pudo enviar el aviso al buzón."
+          );
+        }
+      }
     } catch (error) {
       console.error("Error al publicar comentario:", error);
 
@@ -350,11 +445,7 @@ function PublicacionInteracciones({
 
     if (!esAutor && !esAdmin) return;
 
-    const confirmar = window.confirm(
-      "¿Deseas eliminar este comentario?"
-    );
-
-    if (!confirmar) return;
+    if (!window.confirm("¿Deseas eliminar este comentario?")) return;
 
     setErrorInteraccion("");
     setMensajeInteraccion("");
@@ -370,7 +461,6 @@ function PublicacionInteracciones({
       );
 
       await deleteDoc(comentarioRef);
-
       setMensajeInteraccion("Comentario eliminado.");
     } catch (error) {
       console.error("Error al eliminar comentario:", error);
@@ -396,22 +486,15 @@ function PublicacionInteracciones({
 
   return (
     <section className="publicacion-interacciones">
-
-      {/* RESUMEN DE REACCIONES */}
-
       <div className="publicacion-resumen-interacciones">
-
         <div className="publicacion-resumen-reacciones">
           {resumenReacciones.length > 0 ? (
             <>
               <span className="publicacion-reacciones-emojis">
                 {resumenReacciones.map((reaccion) => (
-                  <span key={reaccion.tipo}>
-                    {reaccion.emoji}
-                  </span>
+                  <span key={reaccion.tipo}>{reaccion.emoji}</span>
                 ))}
               </span>
-
               <span>
                 {totalReacciones}{" "}
                 {totalReacciones === 1 ? "reacción" : "reacciones"}
@@ -430,13 +513,9 @@ function PublicacionInteracciones({
           {comentarios.length}{" "}
           {comentarios.length === 1 ? "comentario" : "comentarios"}
         </button>
-
       </div>
 
-      {/* BOTONES DE REACCIÓN */}
-
       <div className="publicacion-reacciones">
-
         {TIPOS_REACCION.map((reaccion) => {
           const activa = miReaccion?.tipo === reaccion.tipo;
 
@@ -444,9 +523,7 @@ function PublicacionInteracciones({
             <button
               key={reaccion.tipo}
               type="button"
-              className={`publicacion-reaccion-btn ${
-                activa ? "activa" : ""
-              }`}
+              className={`publicacion-reaccion-btn ${activa ? "activa" : ""}`}
               onClick={() => gestionarReaccion(reaccion.tipo)}
               disabled={!puedeInteractuar || reaccionando}
               title={
@@ -461,7 +538,6 @@ function PublicacionInteracciones({
             </button>
           );
         })}
-
       </div>
 
       {!usuario && (
@@ -476,59 +552,43 @@ function PublicacionInteracciones({
         </p>
       )}
 
-      {/* BOTÓN PARA MOSTRAR COMENTARIOS */}
-
       <button
         type="button"
         className="publicacion-toggle-comentarios"
         onClick={() => setMostrarComentarios((actual) => !actual)}
       >
         <span>💬</span>
-        {mostrarComentarios
-          ? "OCULTAR COMENTARIOS"
-          : "VER COMENTARIOS"}
+        {mostrarComentarios ? "OCULTAR COMENTARIOS" : "VER COMENTARIOS"}
         <span className="publicacion-toggle-flecha">
           {mostrarComentarios ? "▲" : "▼"}
         </span>
       </button>
 
-      {/* SECCIÓN DE COMENTARIOS */}
-
       {mostrarComentarios && (
         <div className="publicacion-comentarios">
-
           {comentarios.length === 0 ? (
             <div className="publicacion-comentarios-vacio">
               Todavía no hay comentarios. ¡Inicia la conversación!
             </div>
           ) : (
             <div className="publicacion-lista-comentarios">
-
               {comentarios.map((comentario) => {
                 const esAutor = comentario.uid === usuario?.uid;
-                const puedeEliminarComentario =
-                  Boolean(esAutor || esAdmin);
+                const puedeEliminarComentario = Boolean(esAutor || esAdmin);
 
                 return (
                   <article
                     key={comentario.id}
                     className="publicacion-comentario"
                   >
-
                     <div className="publicacion-comentario-avatar">
                       {obtenerIniciales(comentario.nombre || "JUGADOR")}
                     </div>
 
                     <div className="publicacion-comentario-contenido">
-
                       <div className="publicacion-comentario-cabecera">
-                        <strong>
-                          {comentario.nombre || "JUGADOR"}
-                        </strong>
-
-                        <span>
-                          {formatearFecha(comentario.createdAt)}
-                        </span>
+                        <strong>{comentario.nombre || "JUGADOR"}</strong>
+                        <span>{formatearFecha(comentario.createdAt)}</span>
                       </div>
 
                       <p>{comentario.texto}</p>
@@ -537,9 +597,7 @@ function PublicacionInteracciones({
                         <button
                           type="button"
                           className="publicacion-comentario-eliminar"
-                          disabled={
-                            eliminandoComentarioId === comentario.id
-                          }
+                          disabled={eliminandoComentarioId === comentario.id}
                           onClick={() => eliminarComentario(comentario)}
                         >
                           {eliminandoComentarioId === comentario.id
@@ -547,24 +605,18 @@ function PublicacionInteracciones({
                             : "ELIMINAR"}
                         </button>
                       )}
-
                     </div>
-
                   </article>
                 );
               })}
-
             </div>
           )}
-
-          {/* FORMULARIO DE COMENTARIO */}
 
           {puedeInteractuar && (
             <form
               className="publicacion-comentario-form"
               onSubmit={publicarComentario}
             >
-
               <textarea
                 ref={comentarioRef}
                 value={textoComentario}
@@ -580,7 +632,6 @@ function PublicacionInteracciones({
               />
 
               <div className="publicacion-comentario-form-footer">
-
                 <span>
                   {textoComentario.length}/{MAX_COMENTARIO}
                 </span>
@@ -588,24 +639,18 @@ function PublicacionInteracciones({
                 <button
                   type="submit"
                   disabled={
-                    enviandoComentario ||
-                    !textoComentario.trim()
+                    enviandoComentario || !textoComentario.trim()
                   }
                 >
                   {enviandoComentario
                     ? "ENVIANDO..."
                     : "PUBLICAR COMENTARIO"}
                 </button>
-
               </div>
-
             </form>
           )}
-
         </div>
       )}
-
-      {/* MENSAJES DE ESTADO */}
 
       {mensajeInteraccion && (
         <p className="publicacion-interaccion-exito">
@@ -618,7 +663,6 @@ function PublicacionInteracciones({
           {errorInteraccion}
         </p>
       )}
-
     </section>
   );
 }
@@ -636,7 +680,9 @@ function TarjetaPublicacion({
   usuario,
   jugadorAsignado,
   esAdmin,
-  nombreJugador
+  nombreJugador,
+  equipoJugador,
+  onAmpliarImagen
 }) {
   const nombre =
     publicacion.nick ||
@@ -648,9 +694,7 @@ function TarjetaPublicacion({
 
   return (
     <article className="publicacion-card">
-
       <div className="publicacion-card-header">
-
         <AvatarJugador
           nombre={nombre}
           foto={perfil?.fotoPerfil}
@@ -664,7 +708,6 @@ function TarjetaPublicacion({
         <div className="publicacion-fecha">
           {formatearFecha(publicacion.createdAt)}
         </div>
-
       </div>
 
       {publicacion.descripcion && (
@@ -674,7 +717,6 @@ function TarjetaPublicacion({
       )}
 
       <div className="publicacion-media">
-
         {esVideo ? (
           <video
             src={publicacion.mediaUrl}
@@ -689,6 +731,22 @@ function TarjetaPublicacion({
             src={publicacion.mediaUrl}
             alt={`Jugada destacada de ${nombre}`}
             loading="lazy"
+            onClick={() => onAmpliarImagen({
+              url: publicacion.mediaUrl,
+              alt: `Jugada destacada de ${nombre}`
+            })}
+            role="button"
+            tabIndex={0}
+            title="Toca para ampliar la imagen"
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onAmpliarImagen({
+                  url: publicacion.mediaUrl,
+                  alt: `Jugada destacada de ${nombre}`
+                });
+              }
+            }}
           />
         )}
 
@@ -697,7 +755,6 @@ function TarjetaPublicacion({
             VIDEO DESTACADO
           </span>
         )}
-
       </div>
 
       <div className="publicacion-card-footer">
@@ -706,19 +763,17 @@ function TarjetaPublicacion({
         <span className="publicacion-footer-brand">LIGA4VS4</span>
       </div>
 
-      {/* REACCIONES Y COMENTARIOS */}
-
       <PublicacionInteracciones
         publicacion={publicacion}
         usuario={usuario}
         jugadorAsignado={jugadorAsignado}
         esAdmin={esAdmin}
         nombreJugador={nombreJugador}
+        equipoJugador={equipoJugador}
       />
 
       {puedeEliminar && (
         <div className="publicacion-acciones">
-
           <button
             type="button"
             className="publicacion-btn-eliminar"
@@ -730,10 +785,8 @@ function TarjetaPublicacion({
               {eliminando ? "ELIMINANDO..." : "ELIMINAR PUBLICACIÓN"}
             </span>
           </button>
-
         </div>
       )}
-
     </article>
   );
 }
@@ -743,12 +796,9 @@ function TarjetaPublicacion({
 // =========================================
 
 export default function Publicaciones() {
-
   const [usuario, setUsuario] = useState(auth.currentUser);
-
   const [publicaciones, setPublicaciones] = useState([]);
   const [perfiles, setPerfiles] = useState({});
-
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -756,16 +806,41 @@ export default function Publicaciones() {
   const [esAdmin, setEsAdmin] = useState(false);
   const [cargandoPermisos, setCargandoPermisos] = useState(true);
   const [nombreJugador, setNombreJugador] = useState("");
+  const [equipoJugador, setEquipoJugador] = useState("");
 
   const [descripcion, setDescripcion] = useState("");
   const [archivo, setArchivo] = useState(null);
-
   const [publicando, setPublicando] = useState(false);
   const [eliminandoId, setEliminandoId] = useState("");
   const [mensajeAccion, setMensajeAccion] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
+  const [imagenAmpliada, setImagenAmpliada] = useState(null);
 
   const archivoRef = useRef(null);
+
+  // =========================================
+  // CERRAR VISOR CON ESCAPE
+  // =========================================
+
+  useEffect(() => {
+    if (!imagenAmpliada) return;
+
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const manejarTecla = (event) => {
+      if (event.key === "Escape") {
+        setImagenAmpliada(null);
+      }
+    };
+
+    window.addEventListener("keydown", manejarTecla);
+
+    return () => {
+      document.body.style.overflow = overflowAnterior;
+      window.removeEventListener("keydown", manejarTecla);
+    };
+  }, [imagenAmpliada]);
 
   // =========================================
   // ESCUCHAR SESIÓN DE FIREBASE
@@ -784,14 +859,13 @@ export default function Publicaciones() {
   // =========================================
 
   useEffect(() => {
-
     let activo = true;
 
     async function comprobarPermisos() {
-
       setJugadorAsignado(false);
       setEsAdmin(false);
       setNombreJugador("");
+      setEquipoJugador("");
       setCargandoPermisos(true);
 
       if (!usuario) {
@@ -800,7 +874,6 @@ export default function Publicaciones() {
       }
 
       try {
-
         const jugadorRef = doc(db, "jugadores", usuario.uid);
         const adminRef = doc(db, "administradores", usuario.uid);
 
@@ -823,34 +896,24 @@ export default function Publicaciones() {
 
           if (asignado) {
             setNombreJugador(jugador.nick.trim());
+            setEquipoJugador(jugador.equipo.trim());
           }
         }
 
         if (adminSnapshot.exists()) {
-          const administrador = adminSnapshot.data();
-
-          setEsAdmin(administrador.activo === true);
+          setEsAdmin(adminSnapshot.data().activo === true);
         }
-
       } catch (permisoError) {
-
-        console.error(
-          "Error al comprobar permisos:",
-          permisoError
-        );
+        console.error("Error al comprobar permisos:", permisoError);
 
         if (activo) {
           setJugadorAsignado(false);
           setEsAdmin(false);
           setNombreJugador("");
+          setEquipoJugador("");
         }
-
       } finally {
-
-        if (activo) {
-          setCargandoPermisos(false);
-        }
-
+        if (activo) setCargandoPermisos(false);
       }
     }
 
@@ -859,7 +922,6 @@ export default function Publicaciones() {
     return () => {
       activo = false;
     };
-
   }, [usuario]);
 
   // =========================================
@@ -867,7 +929,6 @@ export default function Publicaciones() {
   // =========================================
 
   useEffect(() => {
-
     if (!usuario) {
       setPublicaciones([]);
       setPerfiles({});
@@ -891,9 +952,7 @@ export default function Publicaciones() {
 
     const unsubscribe = onSnapshot(
       publicacionesQuery,
-
       async (snapshot) => {
-
         const lista = snapshot.docs.map((documento) => ({
           id: documento.id,
           ...documento.data()
@@ -907,9 +966,7 @@ export default function Publicaciones() {
 
         const uids = [
           ...new Set(
-            lista
-              .map((publicacion) => publicacion.uid)
-              .filter(Boolean)
+            lista.map((publicacion) => publicacion.uid).filter(Boolean)
           )
         ];
 
@@ -917,7 +974,6 @@ export default function Publicaciones() {
 
         await Promise.all(
           uids.map(async (uid) => {
-
             try {
               const perfilRef = doc(db, "perfiles_publicos", uid);
               const perfilSnapshot = await getDoc(perfilRef);
@@ -925,47 +981,30 @@ export default function Publicaciones() {
               if (perfilSnapshot.exists()) {
                 nuevosPerfiles[uid] = perfilSnapshot.data();
               }
-
             } catch (perfilError) {
-
               console.warn(
                 "No se pudo cargar el perfil público:",
                 uid,
                 perfilError
               );
-
             }
-
           })
         );
 
-        if (componenteActivo) {
-          setPerfiles(nuevosPerfiles);
-        }
-
+        if (componenteActivo) setPerfiles(nuevosPerfiles);
       },
-
       (firebaseError) => {
-
-        console.error(
-          "Error al cargar publicaciones:",
-          firebaseError
-        );
+        console.error("Error al cargar publicaciones:", firebaseError);
 
         if (!componenteActivo) return;
 
         setCargando(false);
 
-        if (firebaseError.code === "permission-denied") {
-          setError(
-            "Firebase no permite consultar las publicaciones con esta sesión."
-          );
-        } else {
-          setError(
-            "No se pudieron cargar las jugadas destacadas. Comprueba tu conexión."
-          );
-        }
-
+        setError(
+          firebaseError.code === "permission-denied"
+            ? "Firebase no permite consultar las publicaciones con esta sesión."
+            : "No se pudieron cargar las jugadas destacadas. Comprueba tu conexión."
+        );
       }
     );
 
@@ -973,7 +1012,6 @@ export default function Publicaciones() {
       componenteActivo = false;
       unsubscribe();
     };
-
   }, [usuario]);
 
   // =========================================
@@ -981,7 +1019,6 @@ export default function Publicaciones() {
   // =========================================
 
   const seleccionarArchivo = (event) => {
-
     const seleccionado = event.target.files?.[0];
 
     setErrorAccion("");
@@ -995,11 +1032,9 @@ export default function Publicaciones() {
     if (!TIPOS_PERMITIDOS.includes(seleccionado.type)) {
       setArchivo(null);
       event.target.value = "";
-
       setErrorAccion(
         "Formato no permitido. Selecciona JPEG, PNG, WEBP o MP4."
       );
-
       return;
     }
 
@@ -1017,7 +1052,6 @@ export default function Publicaciones() {
           ? "El video no puede superar los 80 MB."
           : "La imagen no puede superar los 15 MB."
       );
-
       return;
     }
 
@@ -1029,7 +1063,6 @@ export default function Publicaciones() {
   // =========================================
 
   const publicarJugada = async (event) => {
-
     event.preventDefault();
 
     setErrorAccion("");
@@ -1062,10 +1095,7 @@ export default function Publicaciones() {
     setPublicando(true);
 
     try {
-
       const token = await usuario.getIdToken();
-
-      // Primero se sube el archivo a R2.
 
       const subidaResponse = await fetch(WORKER_URL, {
         method: "POST",
@@ -1085,9 +1115,6 @@ export default function Publicaciones() {
           "No se pudo subir el archivo."
         );
       }
-
-      // Después se registra la publicación en Firestore
-      // mediante el Worker.
 
       await llamarWorker(
         {
@@ -1109,23 +1136,15 @@ export default function Publicaciones() {
       setMensajeAccion(
         "¡Tu jugada destacada se publicó correctamente!"
       );
-
     } catch (publicacionError) {
-
-      console.error(
-        "Error al publicar jugada:",
-        publicacionError
-      );
+      console.error("Error al publicar jugada:", publicacionError);
 
       setErrorAccion(
         publicacionError.message ||
         "No se pudo publicar la jugada."
       );
-
     } finally {
-
       setPublicando(false);
-
     }
   };
 
@@ -1134,7 +1153,6 @@ export default function Publicaciones() {
   // =========================================
 
   const eliminarPublicacion = async (publicacion) => {
-
     if (!usuario || !publicacion?.id) return;
 
     const esPropietario = publicacion.uid === usuario.uid;
@@ -1157,7 +1175,6 @@ export default function Publicaciones() {
     setEliminandoId(publicacion.id);
 
     try {
-
       const token = await usuario.getIdToken();
 
       await llamarWorker(
@@ -1171,23 +1188,15 @@ export default function Publicaciones() {
       setMensajeAccion(
         "La publicación y su contenido asociado fueron eliminados."
       );
-
     } catch (eliminacionError) {
-
-      console.error(
-        "Error al eliminar publicación:",
-        eliminacionError
-      );
+      console.error("Error al eliminar publicación:", eliminacionError);
 
       setErrorAccion(
         eliminacionError.message ||
         "No se pudo eliminar la publicación."
       );
-
     } finally {
-
       setEliminandoId("");
-
     }
   };
 
@@ -1197,17 +1206,9 @@ export default function Publicaciones() {
 
   return (
     <main className="publicaciones-page">
-
-      {/* =====================================
-          FORMULARIO DE PUBLICACIÓN
-      ===================================== */}
-
       {usuario && jugadorAsignado && (
-
         <section className="publicaciones-composer">
-
           <div className="publicaciones-composer-header">
-
             <div className="publicaciones-composer-icon">
               <span>▶</span>
             </div>
@@ -1223,13 +1224,10 @@ export default function Publicaciones() {
                 Publica tu mejor momento en la competición.
               </p>
             </div>
-
           </div>
 
           <form onSubmit={publicarJugada}>
-
             <div className="publicaciones-textarea-contenedor">
-
               <textarea
                 className="publicaciones-descripcion-input"
                 value={descripcion}
@@ -1243,7 +1241,6 @@ export default function Publicaciones() {
               <div className="publicaciones-contador">
                 <span>{descripcion.length}</span>/500
               </div>
-
             </div>
 
             <input
@@ -1257,7 +1254,6 @@ export default function Publicaciones() {
             />
 
             <div className="publicaciones-composer-actions">
-
               <label
                 className="publicaciones-seleccionar-archivo"
                 htmlFor="archivo-jugada"
@@ -1290,12 +1286,10 @@ export default function Publicaciones() {
                   </>
                 )}
               </button>
-
             </div>
 
             {archivo && (
               <div className="publicaciones-archivo-seleccionado">
-
                 <div className="publicaciones-archivo-icono">
                   {archivo.type === "video/mp4" ? "▶" : "▧"}
                 </div>
@@ -1325,7 +1319,6 @@ export default function Publicaciones() {
                 >
                   ✕
                 </button>
-
               </div>
             )}
 
@@ -1335,11 +1328,8 @@ export default function Publicaciones() {
               <i />
               VIDEOS MP4: MÁX. 80 MB
             </div>
-
           </form>
-
         </section>
-
       )}
 
       {usuario && !cargandoPermisos && !jugadorAsignado && (
@@ -1374,12 +1364,7 @@ export default function Publicaciones() {
         </div>
       )}
 
-      {/* =====================================
-          FEED DE PUBLICACIONES
-      ===================================== */}
-
       <section className="publicaciones-feed">
-
         {cargando && (
           <div className="publicaciones-estado">
             <span className="publicaciones-spinner" />
@@ -1396,31 +1381,22 @@ export default function Publicaciones() {
 
         {!cargando && !error && publicaciones.length === 0 && (
           <div className="publicaciones-vacio">
-
-            <div className="publicaciones-vacio-icon">
-              🎥
-            </div>
-
+            <div className="publicaciones-vacio-icon">🎥</div>
             <h2>EL FEED ESTÁ VACÍO</h2>
-
             <p>
               Todavía no hay jugadas destacadas.
               Cuando los jugadores publiquen sus mejores
               momentos, aparecerán aquí.
             </p>
-
             <span>PRÓXIMAMENTE · LIGA4VS4</span>
-
           </div>
         )}
 
         {!cargando && !error && publicaciones.map((publicacion) => {
-
           const esPropietario =
             usuario && publicacion.uid === usuario.uid;
 
-          const puedeEliminar =
-            Boolean(esPropietario || esAdmin);
+          const puedeEliminar = Boolean(esPropietario || esAdmin);
 
           return (
             <TarjetaPublicacion
@@ -1434,10 +1410,11 @@ export default function Publicaciones() {
               jugadorAsignado={jugadorAsignado}
               esAdmin={esAdmin}
               nombreJugador={nombreJugador}
+              equipoJugador={equipoJugador}
+              onAmpliarImagen={setImagenAmpliada}
             />
           );
         })}
-
       </section>
 
       <footer className="publicaciones-footer">
@@ -1445,6 +1422,66 @@ export default function Publicaciones() {
         <span>UNA LIGA. UNA COMUNIDAD.</span>
       </footer>
 
+      {/* VISOR DE IMAGEN A PANTALLA COMPLETA */}
+
+      {imagenAmpliada && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Imagen ampliada"
+          onClick={() => setImagenAmpliada(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            background: "rgba(0, 0, 0, 0.94)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "52px 12px 18px",
+            cursor: "zoom-out"
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Cerrar imagen ampliada"
+            onClick={() => setImagenAmpliada(null)}
+            style={{
+              position: "absolute",
+              top: "14px",
+              right: "16px",
+              width: "42px",
+              height: "42px",
+              border: "1px solid rgba(0,220,255,.65)",
+              borderRadius: "50%",
+              background: "rgba(8,18,29,.9)",
+              color: "#00dcff",
+              fontSize: "26px",
+              lineHeight: 1,
+              cursor: "pointer"
+            }}
+          >
+            ×
+          </button>
+
+          <img
+            src={imagenAmpliada.url}
+            alt={imagenAmpliada.alt}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              display: "block",
+              maxWidth: "100%",
+              maxHeight: "100%",
+              width: "auto",
+              height: "auto",
+              objectFit: "contain",
+              borderRadius: "5px",
+              cursor: "default",
+              boxShadow: "0 0 35px rgba(0,220,255,.12)"
+            }}
+          />
+        </div>
+      )}
     </main>
   );
 }
