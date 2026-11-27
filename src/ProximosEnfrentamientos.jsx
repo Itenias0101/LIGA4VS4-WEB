@@ -332,10 +332,12 @@ export default function ProximosEnfrentamientos({
                 }`}
                 key={`${team}-${player.player}-${index}`}
                 onClick={() => {
-                  if (typeof openPlayerMenu === "function") {
-                    openPlayerMenu(player.player);
-                  }
-                }}
+  closeRoster();
+
+  if (typeof openPlayerMenu === "function") {
+    openPlayerMenu(player.player);
+  }
+}}
               >
                 <span className="upcoming-player-name">
                   {player.player}
