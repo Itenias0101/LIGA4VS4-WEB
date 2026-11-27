@@ -26,6 +26,74 @@ const COLORES = {
   borde: "#143E55",
 };
 
+/* =========================================
+   POSICIONES: MISMO DISEÑO DE WELCOME SCREEN
+========================================= */
+
+const medalColors = {
+  1: {
+    background: "linear-gradient(145deg, #fff4a8, #d99b16)",
+    color: "#583600",
+    border: "2px solid #ffe58a",
+    shadow: "0 0 12px rgba(255, 196, 35, 0.8)",
+  },
+  2: {
+    background: "linear-gradient(145deg, #ffffff, #929eae)",
+    color: "#263343",
+    border: "2px solid #e6edf5",
+    shadow: "0 0 12px rgba(210, 220, 235, 0.7)",
+  },
+  3: {
+    background: "linear-gradient(145deg, #f6bd86, #a65328)",
+    color: "#fff4e8",
+    border: "2px solid #e9a36c",
+    shadow: "0 0 12px rgba(205, 112, 55, 0.7)",
+  },
+};
+
+function TeamPosition({ position }) {
+  if (!position) return null;
+
+  const medal = medalColors[position];
+
+  return (
+    <span
+      aria-label={`Posición ${position}`}
+      title={`Posición ${position}`}
+      style={{
+        position: "absolute",
+        top: "-5px",
+        right: "-5px",
+        zIndex: 5,
+        width: "31px",
+        height: "31px",
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxSizing: "border-box",
+        fontSize: "14px",
+        fontWeight: 1000,
+        fontFamily: "Arial, sans-serif",
+        background: medal
+          ? medal.background
+          : "linear-gradient(145deg, #263b50, #071522)",
+        color: medal ? medal.color : "#ffffff",
+        border: medal ? medal.border : "2px solid #00d9ff",
+        boxShadow: medal
+          ? medal.shadow
+          : "0 0 10px rgba(0, 217, 255, 0.55)",
+      }}
+    >
+      {position}
+    </span>
+  );
+}
+
+/* =========================================
+   FUNCIONES GENERALES
+========================================= */
+
 function limpiarTexto(valor) {
   return String(valor ?? "").trim();
 }
@@ -128,6 +196,10 @@ function leerCSV(texto) {
   return filas;
 }
 
+/* =========================================
+   ESTADÍSTICAS DE MAPAS
+========================================= */
+
 function convertirDetalles(texto) {
   const filas = leerCSV(texto);
 
@@ -161,7 +233,6 @@ function convertirDetalles(texto) {
 
 /* =========================================
    CLASIFICACIÓN OFICIAL
-   MISMA FUENTE Y MISMO ORDEN QUE CLASIFICACION.JSX
 ========================================= */
 
 function convertirClasificacion(texto) {
@@ -294,36 +365,8 @@ function calcularEstadisticasJugador(detalles, nombre) {
 }
 
 /* =========================================
-   POSICIONES VISUALES
+   COMPONENTE PRINCIPAL
 ========================================= */
-
-function obtenerEstiloPosicion(posicion) {
-  if (posicion === 1) {
-    return {
-      clase: "oro",
-      texto: "#1 · ORO",
-    };
-  }
-
-  if (posicion === 2) {
-    return {
-      clase: "plata",
-      texto: "#2 · PLATA",
-    };
-  }
-
-  if (posicion === 3) {
-    return {
-      clase: "bronce",
-      texto: "#3 · BRONCE",
-    };
-  }
-
-  return {
-    clase: "normal",
-    texto: `#${posicion}`,
-  };
-}
 
 export default function UltimosResultados({
   matches = [],
@@ -536,8 +579,6 @@ export default function UltimosResultados({
     });
   }, [detalles, partidoSeleccionado]);
 
-  /* LA COLUMNA PARTIDO DEL CSV REPRESENTA EL NÚMERO DE MAPA */
-
   const detallesDelMapa = useMemo(() => {
     const numeroMapa = mapaActivo + 1;
 
@@ -595,46 +636,37 @@ export default function UltimosResultados({
   };
 
   /* =========================================
-     ESCUDOS Y POSICIONES
-     DISEÑO DE PRÓXIMOS ENCUENTROS
+     ESCUDOS CON POSICIÓN CIRCULAR
+     MISMO DISEÑO QUE WELCOME SCREEN
   ========================================= */
 
   const renderEquipoConPosicion = (equipo) => {
     const imagen = obtenerEscudo(equipo);
     const posicion = obtenerPosicionEquipo(equipo);
-    const estiloPosicion = posicion
-      ? obtenerEstiloPosicion(posicion)
-      : null;
 
     return (
       <div className="ur-equipo-visual">
-        {estiloPosicion ? (
-          <div
-            className={`ur-posicion-equipo ${estiloPosicion.clase}`}
-          >
-            {estiloPosicion.texto}
-          </div>
-        ) : (
-          <div className="ur-posicion-equipo ur-posicion-pendiente">
-            {clasificacionLoading ? "..." : "SIN POSICIÓN"}
-          </div>
-        )}
-
-        <div className="ur-escudo-marco">
+        <div className="ur-escudo-posicion">
           {imagen ? (
             <img
               src={imagen}
-              alt={equipo}
+              alt={`Escudo ${equipo}`}
               className="ur-escudo-imagen"
               onError={(event) => {
                 event.currentTarget.style.display = "none";
               }}
             />
           ) : (
-            <div className="ur-escudo-fallback">
-              {limpiarTexto(equipo).slice(0, 3).toUpperCase()}
-            </div>
+            <span className="ur-escudo-fallback">
+              {limpiarTexto(equipo).slice(0, 2).toUpperCase()}
+            </span>
           )}
+
+          {posicion ? (
+            <TeamPosition position={posicion} />
+          ) : clasificacionLoading ? (
+            <span className="ur-posicion-cargando">...</span>
+          ) : null}
         </div>
       </div>
     );
@@ -759,79 +791,23 @@ export default function UltimosResultados({
 
     .ur-equipo-visual {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      width: 100%;
-      min-width: 0;
-      gap: 10px;
-    }
-
-    /* ETIQUETAS DE POSICIÓN */
-
-    .ur-posicion-equipo {
-      min-height: 25px;
-      min-width: 70px;
-      display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 11px;
-      border-radius: 7px;
-      font-size: 11px;
-      line-height: 1;
-      font-weight: 1000;
-      letter-spacing: .6px;
-      white-space: nowrap;
-      background: rgba(0,217,255,.07);
-      color: ${COLORES.cian};
-      border: 1px solid rgba(0,217,255,.25);
+      width: 100%;
+      min-width: 0;
     }
 
-    .ur-posicion-equipo.oro {
-      color: #FFE08A;
-      background: rgba(255,205,50,.10);
-      border: 1px solid rgba(255,205,50,.55);
-      box-shadow: 0 0 10px rgba(255,205,50,.08);
-    }
+    /* ESCUDO Y CÍRCULO DE POSICIÓN */
 
-    .ur-posicion-equipo.plata {
-      color: #E1EAF2;
-      background: rgba(190,205,220,.09);
-      border: 1px solid rgba(190,205,220,.45);
-    }
-
-    .ur-posicion-equipo.bronce {
-      color: #E6B18A;
-      background: rgba(205,127,50,.10);
-      border: 1px solid rgba(205,127,50,.48);
-    }
-
-    .ur-posicion-equipo.normal {
-      color: ${COLORES.cian};
-      background: rgba(0,217,255,.06);
-      border: 1px solid rgba(0,217,255,.22);
-    }
-
-    .ur-posicion-pendiente {
-      color: ${COLORES.secundario};
-      background: rgba(140,165,185,.07);
-      border: 1px solid rgba(140,165,185,.18);
-    }
-
-    /* MARCO DEL ESCUDO, ESTILO PRÓXIMOS ENCUENTROS */
-
-    .ur-escudo-marco {
+    .ur-escudo-posicion {
+      position: relative;
+      overflow: visible;
+      flex-shrink: 0;
       width: 100px;
       height: 100px;
-      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 7px;
-      border: 1px solid rgba(0,217,255,.2);
-      border-radius: 17px;
-      background: rgba(0,217,255,.055);
-      overflow: hidden;
     }
 
     .ur-escudo-imagen {
@@ -851,6 +827,27 @@ export default function UltimosResultados({
       font-size: 23px;
       font-weight: 1000;
       text-align: center;
+    }
+
+    .ur-posicion-cargando {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      z-index: 5;
+      width: 31px;
+      height: 31px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      font-size: 13px;
+      font-weight: 1000;
+      font-family: Arial, sans-serif;
+      color: #ffffff;
+      background: linear-gradient(145deg, #263b50, #071522);
+      border: 2px solid #00d9ff;
+      box-shadow: 0 0 10px rgba(0, 217, 255, 0.55);
     }
 
     .ur-equipo-nombre {
@@ -997,11 +994,6 @@ export default function UltimosResultados({
       grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
       align-items: center;
       gap: 5px;
-    }
-
-    .ur-resumen-equipos .ur-escudo-marco {
-      width: 100px;
-      height: 100px;
     }
 
     .ur-resumen-marcador {
@@ -1262,21 +1254,9 @@ export default function UltimosResultados({
     }
 
     @media (max-width: 380px) {
-      .ur-escudo-marco {
+      .ur-escudo-posicion {
         width: 88px;
         height: 88px;
-        border-radius: 14px;
-        padding: 6px;
-      }
-
-      .ur-resumen-equipos .ur-escudo-marco {
-        width: 88px;
-        height: 88px;
-      }
-
-      .ur-posicion-equipo {
-        font-size: 10px;
-        padding: 5px 8px;
       }
 
       .ur-equipo-nombre {
@@ -1305,12 +1285,7 @@ export default function UltimosResultados({
         gap: 18px;
       }
 
-      .ur-escudo-marco {
-        width: 115px;
-        height: 115px;
-      }
-
-      .ur-resumen-equipos .ur-escudo-marco {
+      .ur-escudo-posicion {
         width: 115px;
         height: 115px;
       }
