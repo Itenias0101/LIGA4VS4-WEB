@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import "./WelcomeScreen.css";
 import { signOut } from "firebase/auth";
@@ -17,6 +16,7 @@ import {
 import { auth, db } from "./firebase";
 import AndroidBackHandler from "./AndroidBackHandler.jsx";
 import Clasificacion from "./Clasificacion.jsx";
+import ProximosEnfrentamientos from "./ProximosEnfrentamientos.jsx";
 import InicioSesion from "./InicioSesion.jsx";
 import WelcomeScreen from "./WelcomeScreen.jsx";
 import useActividadPerfil from "./Actividadperfil.jsx";
@@ -1273,16 +1273,16 @@ export default function App() {
   return (
     <main className="app">
 
-<AndroidBackHandler
-  showCompetitionMenu={showCompetitionMenu}
-  activeSection={activeSection}
-  playerView={playerView}
-  notificationsOpen={notificationsOpen}
-  closePlayerView={closePlayerView}
-  setActiveSection={setActiveSection}
-  setShowCompetitionMenu={setShowCompetitionMenu}
-  setNotificationsOpen={setNotificationsOpen}
-/>
+      <AndroidBackHandler
+        showCompetitionMenu={showCompetitionMenu}
+        activeSection={activeSection}
+        playerView={playerView}
+        notificationsOpen={notificationsOpen}
+        closePlayerView={closePlayerView}
+        setActiveSection={setActiveSection}
+        setShowCompetitionMenu={setShowCompetitionMenu}
+        setNotificationsOpen={setNotificationsOpen}
+      />
 
       <InicioSesion
         mode={mode}
@@ -1386,20 +1386,33 @@ export default function App() {
                   : playerView === "posts"
                     ? renderPlayerPosts()
                     : activeSection === "inicio"
-                    ? renderMenu()
-                    : activeSection === "equipos"
-                      ? renderTeams()
-                      : activeSection === "clasificacion"
-                        ? (
-                          <Clasificacion
-                            teams={TEAMS}
-                            matches={matches}
-                            loading={matchesLoading}
-                            error={matchesError}
-                            getTeamShield={getTeamShield}
-                          />
-                        )
-                        : renderSectionPlaceholder()}
+                      ? renderMenu()
+                      : activeSection === "equipos"
+                        ? renderTeams()
+                        : activeSection === "clasificacion"
+                          ? (
+                            <Clasificacion
+                              teams={TEAMS}
+                              matches={matches}
+                              loading={matchesLoading}
+                              error={matchesError}
+                              getTeamShield={getTeamShield}
+                            />
+                          )
+                          : activeSection === "proximos"
+                            ? (
+                              <ProximosEnfrentamientos
+                                matches={matches}
+                                players={players}
+                                loading={matchesLoading}
+                                error={matchesError}
+                                playersLoading={playersLoading}
+                                playersError={playersError}
+                                getTeamShield={getTeamShield}
+                                openPlayerMenu={openPlayerMenu}
+                              />
+                            )
+                            : renderSectionPlaceholder()}
 
               <nav className="web-bottom-navigation">
                 {bottomItems.map((item) => (
