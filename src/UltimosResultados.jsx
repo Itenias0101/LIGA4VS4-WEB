@@ -27,7 +27,7 @@ const COLORES = {
 };
 
 /* =========================================
-   POSICIONES: MISMO DISEÑO DE WELCOME SCREEN
+   POSICIONES DE CLASIFICACIÓN
 ========================================= */
 
 const medalColors = {
@@ -124,8 +124,7 @@ function normalizarEquipo(valor) {
 }
 
 function claveEquipo(valor) {
-  return normalizar(normalizarEquipo(valor))
-    .replace(/[\s_-]/g, "");
+  return normalizar(normalizarEquipo(valor)).replace(/[\s_-]/g, "");
 }
 
 function numero(valor) {
@@ -384,10 +383,9 @@ export default function UltimosResultados({
 
   const [jornadaSeleccionada, setJornadaSeleccionada] = useState("TODAS");
   const [partidoSeleccionado, setPartidoSeleccionado] = useState(null);
-  const [mapaActivo, setMapaActivo] = useState(0);
   const [jugadorSeleccionado, setJugadorSeleccionado] = useState(null);
 
-  /* CARGAR ESTADÍSTICAS DE MAPAS */
+  /* CARGAR ESTADÍSTICAS */
 
   useEffect(() => {
     let activo = true;
@@ -430,7 +428,7 @@ export default function UltimosResultados({
     };
   }, []);
 
-  /* CARGAR CLASIFICACIÓN OFICIAL */
+  /* CARGAR CLASIFICACIÓN */
 
   useEffect(() => {
     let activo = true;
@@ -468,7 +466,7 @@ export default function UltimosResultados({
     };
   }, []);
 
-  /* POSICIONES DE LOS EQUIPOS */
+  /* POSICIONES */
 
   const posicionesEquipos = useMemo(() => {
     const posiciones = {};
@@ -557,7 +555,7 @@ export default function UltimosResultados({
     []
   );
 
-  /* DETALLES DEL ENCUENTRO */
+  /* DETALLES DEL PARTIDO */
 
   const detallesDelPartido = useMemo(() => {
     if (!partidoSeleccionado) return [];
@@ -579,14 +577,6 @@ export default function UltimosResultados({
     });
   }, [detalles, partidoSeleccionado]);
 
-  const detallesDelMapa = useMemo(() => {
-    const numeroMapa = mapaActivo + 1;
-
-    return detallesDelPartido.filter(
-      (dato) => dato.partido === numeroMapa
-    );
-  }, [detallesDelPartido, mapaActivo]);
-
   const equiposDelMapa = useMemo(() => {
     if (!partidoSeleccionado) return [];
 
@@ -596,11 +586,6 @@ export default function UltimosResultados({
     ].filter(Boolean);
   }, [partidoSeleccionado]);
 
-  const ganadorDelMapa = useMemo(() => {
-    const ganador = detallesDelMapa.find((dato) => dato.ganadorMapa);
-    return ganador?.ganadorMapa || "";
-  }, [detallesDelMapa]);
-
   const estadisticasJugador = useMemo(() => {
     if (!jugadorSeleccionado) return null;
 
@@ -609,13 +594,11 @@ export default function UltimosResultados({
 
   const abrirDetalle = (partido) => {
     setPartidoSeleccionado(partido);
-    setMapaActivo(0);
     setJugadorSeleccionado(null);
   };
 
   const volverResultados = () => {
     setPartidoSeleccionado(null);
-    setMapaActivo(0);
     setJugadorSeleccionado(null);
   };
 
@@ -635,10 +618,7 @@ export default function UltimosResultados({
     }
   };
 
-  /* =========================================
-     ESCUDOS CON POSICIÓN CIRCULAR
-     MISMO DISEÑO QUE WELCOME SCREEN
-  ========================================= */
+  /* ESCUDOS CON POSICIÓN */
 
   const renderEquipoConPosicion = (equipo) => {
     const imagen = obtenerEscudo(equipo);
@@ -674,25 +654,14 @@ export default function UltimosResultados({
       min-height: 300px;
       color: #ffffff;
       background: ${COLORES.fondo};
-      padding: 20px 12px 30px;
+      padding: 20px 12px 35px;
       box-sizing: border-box;
       font-family: inherit;
+      overflow: visible;
     }
 
     .ur-contenedor * {
       box-sizing: border-box;
-    }
-
-    .ur-titulo {
-      color: ${COLORES.cian};
-      font-size: 27px;
-      font-weight: 1000;
-      text-align: center;
-      letter-spacing: 1.8px;
-      margin: 28px 0 8px;
-      padding: 18px 8px 8px;
-      border-top: 1px solid ${COLORES.borde};
-      text-shadow: 0 0 16px rgba(0,217,255,.3);
     }
 
     .ur-filtro {
@@ -921,121 +890,79 @@ export default function UltimosResultados({
       font-weight: 800;
     }
 
-    .ur-detalle-cabecera {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      margin-bottom: 20px;
-    }
+    /* DESPLAZAMIENTO HORIZONTAL ENTRE LOS CINCO MAPAS */
 
-    .ur-volver {
-      flex-shrink: 0;
-      border: 1px solid ${COLORES.borde};
-      border-radius: 9px;
-      background: #0D1B2A;
-      color: ${COLORES.cian};
-      padding: 12px 14px;
-      font-size: 14px;
-      font-weight: 1000;
-      cursor: pointer;
-    }
-
-    .ur-detalle-titulo {
-      color: ${COLORES.cian};
-      font-size: 19px;
-      font-weight: 1000;
-      letter-spacing: .7px;
-      margin: 0;
-    }
-
-    .ur-detalle-subtitulo {
-      color: ${COLORES.secundario};
-      font-size: 13px;
-      font-weight: 900;
-      margin-top: 5px;
-    }
-
-    .ur-mapas-navegacion {
-      display: flex;
-      gap: 8px;
+    .ur-mapas-scroll {
+      width: 100%;
+      max-width: 100%;
       overflow-x: auto;
-      padding-bottom: 11px;
+      overflow-y: visible;
+      display: flex;
+      align-items: stretch;
+      gap: 14px;
+      padding: 4px 2px 18px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
       scrollbar-color: ${COLORES.cian} #102238;
+      overscroll-behavior-x: contain;
     }
 
-    .ur-mapa-boton {
-      flex: 0 0 auto;
-      min-width: 76px;
-      border: 1px solid ${COLORES.borde};
-      border-radius: 9px;
-      background: #0A1523;
-      color: ${COLORES.secundario};
-      padding: 12px 11px;
-      font-size: 13px;
-      font-weight: 1000;
-      cursor: pointer;
-    }
-
-    .ur-mapa-boton.activo {
-      background: #0A3145;
-      color: ${COLORES.cian};
-      border-color: ${COLORES.cian};
-      box-shadow: 0 0 12px rgba(0,217,255,.12);
-    }
-
-    .ur-panel-mapa {
+    .ur-mapa-card {
+      flex: 0 0 88%;
+      width: 88%;
+      min-width: 88%;
+      max-width: 500px;
       background: ${COLORES.tarjeta};
       border: 1px solid ${COLORES.borde};
       border-radius: 14px;
-      padding: 17px 10px;
-      animation: urEntrada .25s ease;
+      padding: 14px 10px 20px;
+      scroll-snap-align: start;
+      align-self: flex-start;
+      min-height: 100px;
     }
 
-    @keyframes urEntrada {
-      from { opacity: .35; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
+    .ur-mapa-encabezado {
+      text-align: center;
+      margin-bottom: 12px;
     }
 
     .ur-mapa-tipo {
       color: ${COLORES.cian};
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 1000;
-      letter-spacing: 1.5px;
-      text-align: center;
+      letter-spacing: 1.4px;
     }
 
     .ur-mapa-nombre {
       color: white;
-      font-size: 25px;
+      font-size: 23px;
       font-weight: 1000;
-      text-align: center;
-      margin: 5px 0 9px;
+      margin-top: 4px;
     }
 
     .ur-mapa-indicador {
       color: ${COLORES.secundario};
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 900;
-      text-align: center;
-      margin-bottom: 15px;
+      margin-top: 4px;
     }
 
     .ur-ganador-mapa {
       color: ${COLORES.verde};
       text-align: center;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 1000;
-      margin: 10px 0 16px;
+      margin: 10px 0 14px;
     }
 
     .ur-equipo-tabla {
-      margin-top: 16px;
+      margin-top: 13px;
     }
 
     .ur-equipo-tabla-titulo {
       color: ${COLORES.cian};
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 1000;
       padding: 10px 2px;
       border-bottom: 1px solid ${COLORES.borde};
@@ -1044,20 +971,21 @@ export default function UltimosResultados({
     .ur-tabla-scroll {
       width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .ur-tabla {
       width: 100%;
       min-width: 330px;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .ur-tabla th {
       color: ${COLORES.secundario};
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 1000;
-      padding: 12px 5px;
+      padding: 11px 5px;
       text-align: center;
       white-space: nowrap;
     }
@@ -1073,6 +1001,7 @@ export default function UltimosResultados({
       padding: 12px 5px;
       text-align: center;
       font-weight: 900;
+      white-space: nowrap;
     }
 
     .ur-jugador-boton {
@@ -1080,11 +1009,12 @@ export default function UltimosResultados({
       border: 0;
       color: ${COLORES.cian};
       font: inherit;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 1000;
       padding: 0;
       text-align: left;
       cursor: pointer;
+      white-space: normal;
       max-width: 125px;
       overflow-wrap: anywhere;
     }
@@ -1092,9 +1022,9 @@ export default function UltimosResultados({
     .ur-sin-stats {
       color: ${COLORES.secundario};
       text-align: center;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.7;
-      padding: 28px 8px;
+      padding: 25px 8px;
       font-weight: 900;
     }
 
@@ -1204,6 +1134,11 @@ export default function UltimosResultados({
       .ur-marcador {
         font-size: 29px;
       }
+
+      .ur-mapa-card {
+        flex-basis: 94%;
+        min-width: 94%;
+      }
     }
 
     @media (min-width: 700px) {
@@ -1223,139 +1158,140 @@ export default function UltimosResultados({
         width: 115px;
         height: 115px;
       }
+
+      .ur-mapa-card {
+        flex-basis: 460px;
+        min-width: 460px;
+      }
     }
   `;
 
   /* =========================================
-     VISTA DETALLE DEL ENCUENTRO
+     VISTA DETALLE: CINCO MAPAS DESLIZABLES
   ========================================= */
 
   if (partidoSeleccionado) {
-    const partido = partidoSeleccionado;
-
     return (
       <div className="ur-contenedor">
         <style>{estilos}</style>
 
-        <div className="ur-detalle-cabecera">
-          <button className="ur-volver" onClick={volverResultados}>
-            ‹ VOLVER
-          </button>
-
-          <div>
-            <h2 className="ur-detalle-titulo">DETALLE DEL ENCUENTRO</h2>
-            <div className="ur-detalle-subtitulo">
-              JORNADA {partido._jornada} · PARTIDO {partido._numeroPartido}
-            </div>
+        {detallesLoading ? (
+          <div className="ur-cargando">
+            CARGANDO ESTADÍSTICAS...
           </div>
-        </div>
-
-        <div className="ur-mapas-navegacion">
-          {MAPAS.map((mapa, indice) => (
-            <button
-              key={mapa.mapa}
-              className={`ur-mapa-boton ${
-                mapaActivo === indice ? "activo" : ""
-              }`}
-              onClick={() => setMapaActivo(indice)}
-            >
-              MAPA {indice + 1}
-            </button>
-          ))}
-        </div>
-
-        <div className="ur-panel-mapa" key={mapaActivo}>
-          <div className="ur-mapa-tipo">
-            {MAPAS[mapaActivo].tipo}
+        ) : detallesError ? (
+          <div className="ur-error">{detallesError}</div>
+        ) : detallesDelPartido.length === 0 ? (
+          <div className="ur-sin-stats">
+            NO SE ENCONTRARON ESTADÍSTICAS PARA ESTE ENCUENTRO.
           </div>
+        ) : (
+          <div className="ur-mapas-scroll">
+            {MAPAS.map((mapa, indice) => {
+              const detallesDelMapa = detallesDelPartido.filter(
+                (dato) => dato.partido === indice + 1
+              );
 
-          <div className="ur-mapa-nombre">
-            {MAPAS[mapaActivo].mapa}
-          </div>
+              const ganador = detallesDelMapa.find(
+                (dato) => dato.ganadorMapa
+              )?.ganadorMapa || "";
 
-          <div className="ur-mapa-indicador">
-            {MAPAS[mapaActivo].tipo} • {MAPAS[mapaActivo].mapa} •{" "}
-            {mapaActivo + 1} DE 5
-          </div>
-
-          {detallesLoading ? (
-            <div className="ur-cargando">
-              CARGANDO ESTADÍSTICAS...
-            </div>
-          ) : detallesError ? (
-            <div className="ur-error">{detallesError}</div>
-          ) : detallesDelPartido.length === 0 ? (
-            <div className="ur-sin-stats">
-              NO SE ENCONTRARON ESTADÍSTICAS PARA ESTE ENCUENTRO.
-            </div>
-          ) : detallesDelMapa.length === 0 ? (
-            <div className="ur-sin-stats">
-              NO HAY ESTADÍSTICAS REGISTRADAS PARA ESTE MAPA.
-            </div>
-          ) : (
-            <>
-              {ganadorDelMapa && (
-                <div className="ur-ganador-mapa">
-                  🏆 GANADOR DEL MAPA: {ganadorDelMapa}
-                </div>
-              )}
-
-              {equiposDelMapa.map((equipo) => {
-                const jugadores = detallesDelMapa.filter(
-                  (dato) =>
-                    claveEquipo(dato.equipo) === claveEquipo(equipo)
-                );
-
-                if (!jugadores.length) return null;
-
-                return (
-                  <div className="ur-equipo-tabla" key={equipo}>
-                    <div className="ur-equipo-tabla-titulo">
-                      {equipo}
+              return (
+                <section className="ur-mapa-card" key={mapa.mapa}>
+                  <div className="ur-mapa-encabezado">
+                    <div className="ur-mapa-tipo">
+                      {mapa.tipo}
                     </div>
 
-                    <div className="ur-tabla-scroll">
-                      <table className="ur-tabla">
-                        <thead>
-                          <tr>
-                            <th>JUGADOR</th>
-                            <th>BAJAS</th>
-                            <th>MUERTES</th>
-                            <th>ASIST.</th>
-                            <th>K/D</th>
-                          </tr>
-                        </thead>
+                    <div className="ur-mapa-nombre">
+                      {mapa.mapa}
+                    </div>
 
-                        <tbody>
-                          {jugadores.map((dato, indice) => (
-                            <tr key={`${dato.jugador}-${indice}`}>
-                              <td>
-                                <button
-                                  className="ur-jugador-boton"
-                                  onClick={() => abrirJugador(dato.jugador)}
-                                >
-                                  {dato.jugador}
-                                </button>
-                              </td>
-                              <td>{dato.bajas}</td>
-                              <td>{dato.muertes}</td>
-                              <td>{dato.asistencias}</td>
-                              <td>
-                                {Number.isFinite(dato.kd)
-                                  ? dato.kd.toFixed(2)
-                                  : formatoKD(dato.bajas, dato.muertes)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="ur-mapa-indicador">
+                      MAPA {indice + 1} DE 5
                     </div>
                   </div>
-                );
-              })}
-            </>
-          )}
-        </div>
+
+                  {detallesDelMapa.length === 0 ? (
+                    <div className="ur-sin-stats">
+                      NO HAY ESTADÍSTICAS REGISTRADAS PARA ESTE MAPA.
+                    </div>
+                  ) : (
+                    <>
+                      {ganador && (
+                        <div className="ur-ganador-mapa">
+                          🏆 GANADOR: {ganador}
+                        </div>
+                      )}
+
+                      {equiposDelMapa.map((equipo) => {
+                        const jugadores = detallesDelMapa.filter(
+                          (dato) =>
+                            claveEquipo(dato.equipo) === claveEquipo(equipo)
+                        );
+
+                        if (!jugadores.length) return null;
+
+                        return (
+                          <div className="ur-equipo-tabla" key={equipo}>
+                            <div className="ur-equipo-tabla-titulo">
+                              {equipo}
+                            </div>
+
+                            <div className="ur-tabla-scroll">
+                              <table className="ur-tabla">
+                                <thead>
+                                  <tr>
+                                    <th>JUGADOR</th>
+                                    <th>BAJAS</th>
+                                    <th>MUERTES</th>
+                                    <th>ASIST.</th>
+                                    <th>K/D</th>
+                                  </tr>
+                                </thead>
+
+                                <tbody>
+                                  {jugadores.map((dato, jugadorIndice) => (
+                                    <tr
+                                      key={`${dato.jugador}-${jugadorIndice}`}
+                                    >
+                                      <td>
+                                        <button
+                                          className="ur-jugador-boton"
+                                          onClick={() =>
+                                            abrirJugador(dato.jugador)
+                                          }
+                                        >
+                                          {dato.jugador}
+                                        </button>
+                                      </td>
+
+                                      <td>{dato.bajas}</td>
+                                      <td>{dato.muertes}</td>
+                                      <td>{dato.asistencias}</td>
+                                      <td>
+                                        {Number.isFinite(dato.kd)
+                                          ? dato.kd.toFixed(2)
+                                          : formatoKD(
+                                              dato.bajas,
+                                              dato.muertes
+                                            )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        )}
 
         {jugadorSeleccionado && (
           <div
@@ -1454,6 +1390,7 @@ export default function UltimosResultados({
                   onClick={() => {
                     const nombre = jugadorSeleccionado;
                     cerrarJugador();
+                    volverResultados();
                     openPlayerMenu(nombre);
                   }}
                 >
@@ -1468,14 +1405,12 @@ export default function UltimosResultados({
   }
 
   /* =========================================
-     VISTA PRINCIPAL DE RESULTADOS
+     VISTA PRINCIPAL: ENCUENTROS
   ========================================= */
 
   return (
     <div className="ur-contenedor">
       <style>{estilos}</style>
-
-      <h2 className="ur-titulo">ÚLTIMOS RESULTADOS</h2>
 
       {matchesLoading ? (
         <div className="ur-cargando">
@@ -1577,7 +1512,7 @@ export default function UltimosResultados({
         </div>
       )}
 
-      {/* FILTRO DE JORNADA DEBAJO DE LOS PARTIDOS */}
+      {/* FILTRO DE JORNADA DEBAJO DE LOS ENCUENTROS */}
 
       <div className="ur-filtro">
         <div className="ur-filtro-superior">
