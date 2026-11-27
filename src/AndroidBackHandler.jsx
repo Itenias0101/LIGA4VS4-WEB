@@ -12,6 +12,7 @@ export default function AndroidBackHandler({
   setNotificationsOpen
 }) {
   const navigationRef = useRef(null);
+  const exitTimeoutRef = useRef(null);
 
   navigationRef.current = {
     showCompetitionMenu,
@@ -38,29 +39,52 @@ export default function AndroidBackHandler({
     const handleBack = () => {
       const navigation = navigationRef.current;
 
+      // Mantener siempre una entrada de historial para interceptar Atrás.
+      pushBackState();
+
       if (navigation.notificationsOpen) {
         navigation.setNotificationsOpen(false);
-      } else if (navigation.playerView) {
+        return;
+      }
+
+      if (navigation.playerView) {
         navigation.closePlayerView();
-      } else if (
+        return;
+      }
+
+      if (
         navigation.showCompetitionMenu &&
         navigation.activeSection !== "inicio"
       ) {
         navigation.setActiveSection("inicio");
-      } else if (navigation.showCompetitionMenu) {
-        navigation.setShowCompetitionMenu(false);
-        navigation.setActiveSection("inicio");
-      } else {
         return;
       }
 
-      pushBackState();
+      if (navigation.showCompetitionMenu) {
+        navigation.setShowCompetitionMenu(false);
+        navigation.setActiveSection("inicio");
+        return;
+      }
+
+      // En la bienvenida no se permite salir con el botón Atrás.
+      // Se muestra un aviso y se conserva la aplicación abierta.
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+      }
+
+      exitTimeoutRef.current = setTimeout(() => {
+        exitTimeoutRef.current = null;
+      }, 2000);
     };
 
     window.addEventListener("popstate", handleBack);
 
     return () => {
       window.removeEventListener("popstate", handleBack);
+
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+      }
     };
   }, []);
 
