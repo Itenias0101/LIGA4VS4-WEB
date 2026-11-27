@@ -906,6 +906,7 @@ export default function UltimosResultados({
       scrollbar-width: thin;
       scrollbar-color: ${COLORES.cian} #102238;
       overscroll-behavior-x: contain;
+      touch-action: pan-x pan-y;
     }
 
     .ur-mapa-card {
@@ -913,6 +914,7 @@ export default function UltimosResultados({
       width: 88%;
       min-width: 88%;
       max-width: 500px;
+      min-width: 0;
       background: ${COLORES.tarjeta};
       border: 1px solid ${COLORES.borde};
       border-radius: 14px;
@@ -920,6 +922,7 @@ export default function UltimosResultados({
       scroll-snap-align: start;
       align-self: flex-start;
       min-height: 100px;
+      overflow: visible;
     }
 
     .ur-mapa-encabezado {
@@ -954,10 +957,13 @@ export default function UltimosResultados({
       font-size: 13px;
       font-weight: 1000;
       margin: 10px 0 14px;
+      overflow-wrap: anywhere;
     }
 
     .ur-equipo-tabla {
       margin-top: 13px;
+      width: 100%;
+      min-width: 0;
     }
 
     .ur-equipo-tabla-titulo {
@@ -966,57 +972,89 @@ export default function UltimosResultados({
       font-weight: 1000;
       padding: 10px 2px;
       border-bottom: 1px solid ${COLORES.borde};
+      overflow-wrap: anywhere;
     }
+
+    /* TABLA ADAPTADA AL ANCHO DE LA VENTANA */
 
     .ur-tabla-scroll {
       width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      max-width: 100%;
+      overflow: visible;
     }
 
     .ur-tabla {
       width: 100%;
-      min-width: 330px;
+      min-width: 0;
+      table-layout: fixed;
       border-collapse: collapse;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .ur-tabla th {
       color: ${COLORES.secundario};
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 1000;
-      padding: 11px 5px;
+      padding: 10px 2px;
       text-align: center;
-      white-space: nowrap;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.2;
     }
 
     .ur-tabla th:first-child,
     .ur-tabla td:first-child {
       text-align: left;
+      width: 38%;
+    }
+
+    .ur-tabla th:nth-child(2),
+    .ur-tabla td:nth-child(2),
+    .ur-tabla th:nth-child(3),
+    .ur-tabla td:nth-child(3),
+    .ur-tabla th:nth-child(4),
+    .ur-tabla td:nth-child(4),
+    .ur-tabla th:nth-child(5),
+    .ur-tabla td:nth-child(5) {
+      width: 15.5%;
     }
 
     .ur-tabla td {
       border-top: 1px solid rgba(140,165,185,.15);
       color: white;
-      padding: 12px 5px;
+      padding: 10px 2px;
       text-align: center;
+      font-size: 11px;
       font-weight: 900;
       white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .ur-tabla td:first-child {
+      white-space: normal;
+      overflow: visible;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .ur-jugador-boton {
+      display: block;
+      width: 100%;
+      min-width: 0;
       background: transparent;
       border: 0;
       color: ${COLORES.cian};
-      font: inherit;
-      font-size: 12px;
+      font-family: inherit;
+      font-size: 10px;
+      line-height: 1.3;
       font-weight: 1000;
-      padding: 0;
+      padding: 2px 0;
       text-align: left;
       cursor: pointer;
       white-space: normal;
-      max-width: 125px;
       overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .ur-sin-stats {
@@ -1137,7 +1175,26 @@ export default function UltimosResultados({
 
       .ur-mapa-card {
         flex-basis: 94%;
-        min-width: 94%;
+        width: 94%;
+        min-width: 0;
+      }
+
+      .ur-tabla {
+        font-size: 10px;
+      }
+
+      .ur-tabla th {
+        font-size: 8px;
+        padding: 9px 1px;
+      }
+
+      .ur-tabla td {
+        font-size: 10px;
+        padding: 9px 1px;
+      }
+
+      .ur-jugador-boton {
+        font-size: 9px;
       }
     }
 
@@ -1161,7 +1218,20 @@ export default function UltimosResultados({
 
       .ur-mapa-card {
         flex-basis: 460px;
-        min-width: 460px;
+        width: 460px;
+        min-width: 0;
+      }
+
+      .ur-tabla th {
+        font-size: 10px;
+      }
+
+      .ur-tabla td {
+        font-size: 12px;
+      }
+
+      .ur-jugador-boton {
+        font-size: 11px;
       }
     }
   `;
