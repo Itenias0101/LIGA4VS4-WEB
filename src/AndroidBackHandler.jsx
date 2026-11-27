@@ -5,9 +5,11 @@ export default function AndroidBackHandler({
   showCompetitionMenu,
   activeSection,
   playerView,
+  notificationsOpen,
   closePlayerView,
   setActiveSection,
-  setShowCompetitionMenu
+  setShowCompetitionMenu,
+  setNotificationsOpen
 }) {
   const navigationRef = useRef(null);
 
@@ -15,18 +17,30 @@ export default function AndroidBackHandler({
     showCompetitionMenu,
     activeSection,
     playerView,
+    notificationsOpen,
     closePlayerView,
     setActiveSection,
-    setShowCompetitionMenu
+    setShowCompetitionMenu,
+    setNotificationsOpen
   };
 
   useEffect(() => {
-    window.history.pushState({ liga4vs4: true }, "");
+    const pushBackState = () => {
+      window.history.pushState(
+        { liga4vs4BackHandler: true },
+        "",
+        window.location.href
+      );
+    };
+
+    pushBackState();
 
     const handleBack = () => {
       const navigation = navigationRef.current;
 
-      if (navigation.playerView) {
+      if (navigation.notificationsOpen) {
+        navigation.setNotificationsOpen(false);
+      } else if (navigation.playerView) {
         navigation.closePlayerView();
       } else if (
         navigation.showCompetitionMenu &&
@@ -40,7 +54,7 @@ export default function AndroidBackHandler({
         return;
       }
 
-      window.history.pushState({ liga4vs4: true }, "");
+      pushBackState();
     };
 
     window.addEventListener("popstate", handleBack);
