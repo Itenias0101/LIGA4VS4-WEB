@@ -19,6 +19,7 @@ import AndroidBackHandler from "./AndroidBackHandler.jsx";
 import Clasificacion from "./Clasificacion.jsx";
 import ProximosEnfrentamientos from "./ProximosEnfrentamientos.jsx";
 import UltimosResultados from "./UltimosResultados.jsx";
+import Publicaciones from "./Publicaciones.jsx";
 import InicioSesion from "./InicioSesion.jsx";
 import WelcomeScreen from "./WelcomeScreen.jsx";
 import useActividadPerfil from "./Actividadperfil.jsx";
@@ -1424,7 +1425,9 @@ export default function App() {
                                   openPlayerMenu={openPlayerMenu}
                                 />
                               )
-                              : renderSectionPlaceholder()}
+                              : activeSection === "publicaciones"
+                                ? <Publicaciones />
+                                : renderSectionPlaceholder()}
 
               <nav className="web-bottom-navigation">
                 {bottomItems.map((item) => (
