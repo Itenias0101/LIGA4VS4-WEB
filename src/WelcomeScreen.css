@@ -1,3 +1,4 @@
+
 /* =========================================
    LIGA4VS4 - BIENVENIDA A PANTALLA COMPLETA
    ========================================= */
@@ -31,11 +32,9 @@
   max-height: none;
   overflow: hidden;
   box-sizing: border-box;
-
   display: flex;
   flex-direction: column;
   align-items: center;
-
   padding: clamp(5px, 1vh, 10px) 14px;
   gap: clamp(5px, 1vh, 9px);
 }
@@ -74,36 +73,68 @@
   padding-bottom: 4px;
 }
 
-/* ESCUDOS MÁS GRANDES */
-.app:has(.android-welcome) .match-shield-button {
-  width: 95px;
-  height: 95px;
-  min-width: 95px;
-  min-height: 95px;
-  padding: 0;
+/* =========================================
+   ESCUDOS: 110 x 110 PX
+   ========================================= */
+
+.app:has(.android-welcome) .match-team {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  justify-content: flex-start;
 }
 
-.app:has(.android-welcome) .match-shield {
-  width: 95px;
-  height: 95px;
-  min-width: 95px;
-  min-height: 95px;
-  max-width: 95px;
-  max-height: 95px;
-  object-fit: contain;
+.app:has(.android-welcome) .match-shield-button {
+  width: 110px !important;
+  height: 110px !important;
+  min-width: 110px !important;
+  min-height: 110px !important;
+  max-width: 110px !important;
+  max-height: 110px !important;
+  padding: 0 !important;
+  margin: 0 auto;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 110px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.app:has(.android-welcome) .match-shield-button .match-shield {
+  display: block !important;
+  width: 110px !important;
+  height: 110px !important;
+  min-width: 110px !important;
+  min-height: 110px !important;
+  max-width: 110px !important;
+  max-height: 110px !important;
+  object-fit: contain !important;
+  flex: 0 0 110px !important;
 }
 
 .app:has(.android-welcome) .match-shield-fallback {
-  width: 95px;
-  height: 95px;
+  width: 110px !important;
+  height: 110px !important;
+  min-width: 110px !important;
+  min-height: 110px !important;
+  max-width: 110px !important;
+  max-height: 110px !important;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  flex: 0 0 110px !important;
+}
+
+/* NOMBRES DE EQUIPOS */
+.app:has(.android-welcome) .match-team > strong {
+  max-width: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 /* BOTÓN DE ENTRADA */
