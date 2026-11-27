@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from "react";
+import "./WelcomeScreen.css";
 import { signOut } from "firebase/auth";
 
 import {
