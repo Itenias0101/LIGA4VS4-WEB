@@ -191,7 +191,10 @@ function TarjetaPublicacion({
             disabled={eliminando}
             onClick={() => onEliminar(publicacion)}
           >
-            {eliminando ? "ELIMINANDO..." : "ELIMINAR PUBLICACIÓN"}
+            <span className="publicacion-eliminar-icon">⌫</span>
+            <span>
+              {eliminando ? "ELIMINANDO..." : "ELIMINAR PUBLICACIÓN"}
+            </span>
           </button>
 
         </div>
@@ -675,31 +678,48 @@ export default function Publicaciones() {
         <section className="publicaciones-composer">
 
           <div className="publicaciones-composer-header">
-            <span>🎥</span>
-            <div>
-              <h2>COMPARTE TU JUGADA</h2>
-              <p>Publica tu mejor momento en la competición.</p>
+
+            <div className="publicaciones-composer-icon">
+              <span>▶</span>
             </div>
+
+            <div className="publicaciones-composer-titulo">
+              <span className="publicaciones-composer-etiqueta">
+                COMUNIDAD · LIGA4VS4
+              </span>
+
+              <h2>COMPARTE TU JUGADA</h2>
+
+              <p>
+                Publica tu mejor momento en la competición.
+              </p>
+            </div>
+
           </div>
 
           <form onSubmit={publicarJugada}>
 
-            <textarea
-              className="publicaciones-descripcion-input"
-              value={descripcion}
-              onChange={(event) => setDescripcion(event.target.value)}
-              placeholder="Describe tu jugada... (opcional)"
-              maxLength={500}
-              rows={3}
-              disabled={publicando}
-            />
+            <div className="publicaciones-textarea-contenedor">
 
-            <div className="publicaciones-contador">
-              {descripcion.length}/500
+              <textarea
+                className="publicaciones-descripcion-input"
+                value={descripcion}
+                onChange={(event) => setDescripcion(event.target.value)}
+                placeholder="Describe tu jugada... (opcional)"
+                maxLength={500}
+                rows={3}
+                disabled={publicando}
+              />
+
+              <div className="publicaciones-contador">
+                <span>{descripcion.length}</span>/500
+              </div>
+
             </div>
 
             <input
               ref={archivoRef}
+              id="archivo-jugada"
               className="publicaciones-archivo-input"
               type="file"
               accept="image/jpeg,image/png,image/webp,video/mp4"
@@ -714,13 +734,14 @@ export default function Publicaciones() {
                 htmlFor="archivo-jugada"
                 onClick={(event) => {
                   event.preventDefault();
+
                   if (!publicando) {
                     archivoRef.current?.click();
                   }
                 }}
               >
-                <span>＋</span>
-                SELECCIONAR ARCHIVO
+                <span className="publicaciones-icono-adjuntar">＋</span>
+                <span>SELECCIONAR ARCHIVO</span>
               </label>
 
               <button
@@ -728,21 +749,45 @@ export default function Publicaciones() {
                 className="publicaciones-btn-publicar"
                 disabled={publicando || !archivo}
               >
-                {publicando ? "PUBLICANDO..." : "PUBLICAR JUGADA"}
+                {publicando ? (
+                  <>
+                    <span className="publicaciones-mini-spinner" />
+                    PUBLICANDO...
+                  </>
+                ) : (
+                  <>
+                    <span>↑</span>
+                    PUBLICAR JUGADA
+                  </>
+                )}
               </button>
 
             </div>
 
             {archivo && (
               <div className="publicaciones-archivo-seleccionado">
-                <span>📎</span>
-                <span>{archivo.name}</span>
-                <span>{formatearTamano(archivo.size)}</span>
+
+                <div className="publicaciones-archivo-icono">
+                  {archivo.type === "video/mp4" ? "▶" : "▧"}
+                </div>
+
+                <div className="publicaciones-archivo-info">
+                  <span className="publicaciones-archivo-nombre">
+                    {archivo.name}
+                  </span>
+
+                  <span className="publicaciones-archivo-peso">
+                    {formatearTamano(archivo.size)}
+                  </span>
+                </div>
 
                 <button
                   type="button"
+                  className="publicaciones-quitar-archivo"
+                  aria-label="Quitar archivo seleccionado"
                   onClick={() => {
                     setArchivo(null);
+
                     if (archivoRef.current) {
                       archivoRef.current.value = "";
                     }
@@ -751,12 +796,16 @@ export default function Publicaciones() {
                 >
                   ✕
                 </button>
+
               </div>
             )}
 
-            <p className="publicaciones-limites">
-              IMÁGENES: MÁX. 15 MB · VIDEOS MP4: MÁX. 80 MB
-            </p>
+            <div className="publicaciones-limites">
+              <span>ⓘ</span>
+              IMÁGENES: MÁX. 15 MB
+              <i />
+              VIDEOS MP4: MÁX. 80 MB
+            </div>
 
           </form>
 
@@ -784,12 +833,14 @@ export default function Publicaciones() {
 
       {mensajeAccion && (
         <div className="publicaciones-mensaje-exito">
+          <span>✓</span>
           {mensajeAccion}
         </div>
       )}
 
       {errorAccion && (
         <div className="publicaciones-mensaje-error">
+          <span>!</span>
           {errorAccion}
         </div>
       )}
