@@ -52,9 +52,11 @@ export default function ProximosEnfrentamientos({
   getTeamShield,
   openPlayerMenu
 }) {
-  const [selectedMatchday, setSelectedMatchday] = useState("TODAS");
+  // null significa selección automática de la próxima jornada.
+  const [selectedMatchday, setSelectedMatchday] = useState(null);
   const [expandedMatch, setExpandedMatch] = useState(null);
 
+  // Obtener todos los encuentros pendientes.
   const pendingMatches = useMemo(() => {
     return matches
       .map((match, index) => ({
@@ -72,24 +74,45 @@ export default function ProximosEnfrentamientos({
       })
       .sort((a, b) => {
         const jornadaDifference =
-          getMatchdayNumber(a.jornada) - getMatchdayNumber(b.jornada);
+          getMatchdayNumber(a.jornada) -
+          getMatchdayNumber(b.jornada);
 
-        if (jornadaDifference !== 0) return jornadaDifference;
+        if (jornadaDifference !== 0) {
+          return jornadaDifference;
+        }
 
         return a.originalIndex - b.originalIndex;
       });
   }, [matches]);
 
+  // Detectar la jornada pendiente más próxima.
+  const nextMatchday = useMemo(() => {
+    if (pendingMatches.length === 0) return null;
+
+    return getMatchdayNumber(pendingMatches[0].jornada);
+  }, [pendingMatches]);
+
+  // Si el usuario no ha elegido una jornada manualmente,
+  // utilizar automáticamente la próxima jornada pendiente.
+  const effectiveMatchday =
+    selectedMatchday === null
+      ? nextMatchday !== null
+        ? String(nextMatchday)
+        : "TODAS"
+      : selectedMatchday;
+
+  // Aplicar el selector sin eliminar ninguna jornada.
   const visibleMatches = useMemo(() => {
-    if (selectedMatchday === "TODAS") {
+    if (effectiveMatchday === "TODAS") {
       return pendingMatches;
     }
 
     return pendingMatches.filter(
       (match) =>
-        getMatchdayNumber(match.jornada) === Number(selectedMatchday)
+        getMatchdayNumber(match.jornada) ===
+        Number(effectiveMatchday)
     );
-  }, [pendingMatches, selectedMatchday]);
+  }, [pendingMatches, effectiveMatchday]);
 
   const getPlayersForTeam = (team) => {
     const normalizedTeam = String(team || "")
@@ -120,9 +143,10 @@ export default function ProximosEnfrentamientos({
   };
 
   const renderTeam = (team, side) => {
-    const shield = typeof getTeamShield === "function"
-      ? getTeamShield(team)
-      : "";
+    const shield =
+      typeof getTeamShield === "function"
+        ? getTeamShield(team)
+        : "";
 
     const teamPlayers = getPlayersForTeam(team);
 
@@ -206,7 +230,9 @@ export default function ProximosEnfrentamientos({
           CENTRO DE COMPETICIÓN
         </div>
 
-        <h2>PRÓXIMOS <span>ENFRENTAMIENTOS</span></h2>
+        <h2>
+          PRÓXIMOS <span>ENFRENTAMIENTOS</span>
+        </h2>
 
         <p>
           TODOS LOS DUELOS PENDIENTES DE LA LIGA
@@ -216,6 +242,7 @@ export default function ProximosEnfrentamientos({
       <div className="upcoming-filter-panel">
         <div className="upcoming-filter-title">
           <span>📅</span>
+
           <div>
             <strong>SELECCIONAR JORNADA</strong>
             <small>FILTRA LOS ENCUENTROS</small>
@@ -224,20 +251,25 @@ export default function ProximosEnfrentamientos({
 
         <select
           className="upcoming-matchday-select"
-          value={selectedMatchday}
+          value={effectiveMatchday}
           onChange={(event) => {
             setSelectedMatchday(event.target.value);
             setExpandedMatch(null);
           }}
           aria-label="Seleccionar jornada"
         >
-          <option value="TODAS">TODAS LAS JORNADAS</option>
+          <option value="TODAS">
+            TODAS LAS JORNADAS
+          </option>
 
           {Array.from(
             { length: TOTAL_JORNADAS },
             (_, index) => index + 1
           ).map((jornada) => (
-            <option key={jornada} value={String(jornada)}>
+            <option
+              key={jornada}
+              value={String(jornada)}
+            >
               JORNADA {jornada}
             </option>
           ))}
@@ -249,6 +281,7 @@ export default function ProximosEnfrentamientos({
           <span className="upcoming-summary-number">
             {visibleMatches.length}
           </span>
+
           <span className="upcoming-summary-label">
             {visibleMatches.length === 1
               ? "ENCUENTRO PENDIENTE"
@@ -272,6 +305,7 @@ export default function ProximosEnfrentamientos({
           <span>⚠️</span>
           <h3>NO SE PUDIERON CARGAR LOS ENCUENTROS</h3>
           <p>{error}</p>
+
           <button
             type="button"
             onClick={() => window.location.reload()}
@@ -282,17 +316,23 @@ export default function ProximosEnfrentamientos({
       ) : visibleMatches.length === 0 ? (
         <div className="upcoming-state upcoming-state-empty">
           <span className="upcoming-empty-icon">🏆</span>
+
           <h3>NO HAY ENCUENTROS PENDIENTES</h3>
+
           <p>
-            {selectedMatchday === "TODAS"
+            {effectiveMatchday === "TODAS"
               ? "Todas las jornadas registradas están finalizadas o todavía no hay encuentros cargados."
-              : `No hay encuentros pendientes en la jornada ${selectedMatchday}.`}
+              : `No hay encuentros pendientes en la jornada ${effectiveMatchday}.`}
           </p>
         </div>
       ) : (
         <div className="upcoming-matches-list">
           {visibleMatches.map((match) => {
-            const matchId = getMatchId(match, match.originalIndex);
+            const matchId = getMatchId(
+              match,
+              match.originalIndex
+            );
+
             const isExpanded = expandedMatch === matchId;
             const jornada = getMatchdayNumber(match.jornada);
 
@@ -323,7 +363,8 @@ export default function ProximosEnfrentamientos({
                   <div className="upcoming-versus">
                     <div className="upcoming-versus-team">
                       <div className="upcoming-versus-shield">
-                        {getTeamShield && getTeamShield(match.team1) ? (
+                        {getTeamShield &&
+                        getTeamShield(match.team1) ? (
                           <img
                             src={getTeamShield(match.team1)}
                             alt={`Escudo ${match.team1}`}
@@ -346,7 +387,8 @@ export default function ProximosEnfrentamientos({
 
                     <div className="upcoming-versus-team">
                       <div className="upcoming-versus-shield">
-                        {getTeamShield && getTeamShield(match.team2) ? (
+                        {getTeamShield &&
+                        getTeamShield(match.team2) ? (
                           <img
                             src={getTeamShield(match.team2)}
                             alt={`Escudo ${match.team2}`}
@@ -417,6 +459,7 @@ export default function ProximosEnfrentamientos({
 
       <div className="upcoming-footer">
         <span className="upcoming-footer-mark">L4</span>
+
         <div>
           <strong>LIGA4VS4 OFICIAL</strong>
           <small>UNA LIGA. UNA COMUNIDAD.</small>
