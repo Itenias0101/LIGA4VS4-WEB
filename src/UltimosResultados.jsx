@@ -293,20 +293,36 @@ function calcularEstadisticasJugador(detalles, nombre) {
   };
 }
 
-function obtenerMedalla(posicion) {
+/* =========================================
+   POSICIONES VISUALES
+========================================= */
+
+function obtenerEstiloPosicion(posicion) {
   if (posicion === 1) {
-    return { texto: "1.º LUGAR", clase: "oro", simbolo: "🥇" };
+    return {
+      clase: "oro",
+      texto: "#1 · ORO",
+    };
   }
 
   if (posicion === 2) {
-    return { texto: "2.º LUGAR", clase: "plata", simbolo: "🥈" };
+    return {
+      clase: "plata",
+      texto: "#2 · PLATA",
+    };
   }
 
   if (posicion === 3) {
-    return { texto: "3.º LUGAR", clase: "bronce", simbolo: "🥉" };
+    return {
+      clase: "bronce",
+      texto: "#3 · BRONCE",
+    };
   }
 
-  return null;
+  return {
+    clase: "normal",
+    texto: `#${posicion}`,
+  };
 }
 
 export default function UltimosResultados({
@@ -578,64 +594,48 @@ export default function UltimosResultados({
     }
   };
 
-  /* ESCUDOS AUMENTADOS */
-
-  const estiloEscudo = {
-    width: 110,
-    height: 110,
-    objectFit: "contain",
-    flexShrink: 0,
-  };
-
-  const renderEscudo = (equipo) => {
-    const imagen = obtenerEscudo(equipo);
-
-    if (imagen) {
-      return (
-        <img
-          src={imagen}
-          alt={equipo}
-          style={estiloEscudo}
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
-        />
-      );
-    }
-
-    return (
-      <div className="ur-escudo-fallback">
-        {limpiarTexto(equipo).slice(0, 3).toUpperCase()}
-      </div>
-    );
-  };
-
-  /* ESCUDO CON POSICIÓN DE CLASIFICACIÓN */
+  /* =========================================
+     ESCUDOS Y POSICIONES
+     DISEÑO DE PRÓXIMOS ENCUENTROS
+  ========================================= */
 
   const renderEquipoConPosicion = (equipo) => {
+    const imagen = obtenerEscudo(equipo);
     const posicion = obtenerPosicionEquipo(equipo);
-    const medalla = posicion ? obtenerMedalla(posicion) : null;
+    const estiloPosicion = posicion
+      ? obtenerEstiloPosicion(posicion)
+      : null;
 
     return (
       <div className="ur-equipo-visual">
-        {medalla ? (
-          <div className={`ur-posicion-equipo ${medalla.clase}`}>
-            <span className="ur-posicion-simbolo">
-              {medalla.simbolo}
-            </span>
-            <span>{medalla.texto}</span>
-          </div>
-        ) : posicion ? (
-          <div className="ur-posicion-equipo ur-otras-posiciones">
-            {posicion}.º LUGAR
+        {estiloPosicion ? (
+          <div
+            className={`ur-posicion-equipo ${estiloPosicion.clase}`}
+          >
+            {estiloPosicion.texto}
           </div>
         ) : (
           <div className="ur-posicion-equipo ur-posicion-pendiente">
-            {clasificacionLoading ? "CARGANDO..." : "SIN POSICIÓN"}
+            {clasificacionLoading ? "..." : "SIN POSICIÓN"}
           </div>
         )}
 
-        {renderEscudo(equipo)}
+        <div className="ur-escudo-marco">
+          {imagen ? (
+            <img
+              src={imagen}
+              alt={equipo}
+              className="ur-escudo-imagen"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <div className="ur-escudo-fallback">
+              {limpiarTexto(equipo).slice(0, 3).toUpperCase()}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -764,74 +764,93 @@ export default function UltimosResultados({
       justify-content: flex-start;
       width: 100%;
       min-width: 0;
-      gap: 7px;
+      gap: 10px;
     }
+
+    /* ETIQUETAS DE POSICIÓN */
 
     .ur-posicion-equipo {
-      min-height: 27px;
-      display: flex;
+      min-height: 25px;
+      min-width: 70px;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      padding: 4px 8px;
+      padding: 5px 11px;
       border-radius: 7px;
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1;
       font-weight: 1000;
-      letter-spacing: .3px;
+      letter-spacing: .6px;
       white-space: nowrap;
-    }
-
-    .ur-posicion-simbolo {
-      font-size: 17px;
+      background: rgba(0,217,255,.07);
+      color: ${COLORES.cian};
+      border: 1px solid rgba(0,217,255,.25);
     }
 
     .ur-posicion-equipo.oro {
-      color: #FFE58A;
-      background: linear-gradient(135deg, #76500A, #B8860B);
-      border: 1px solid #FFD700;
-      box-shadow: 0 0 12px rgba(255,215,0,.2);
+      color: #FFE08A;
+      background: rgba(255,205,50,.10);
+      border: 1px solid rgba(255,205,50,.55);
+      box-shadow: 0 0 10px rgba(255,205,50,.08);
     }
 
     .ur-posicion-equipo.plata {
-      color: #FFFFFF;
-      background: linear-gradient(135deg, #4A5662, #8996A3);
-      border: 1px solid #DCE4EC;
-      box-shadow: 0 0 10px rgba(220,228,236,.15);
+      color: #E1EAF2;
+      background: rgba(190,205,220,.09);
+      border: 1px solid rgba(190,205,220,.45);
     }
 
     .ur-posicion-equipo.bronce {
-      color: #FFE0C2;
-      background: linear-gradient(135deg, #75401F, #B87333);
-      border: 1px solid #CD7F32;
-      box-shadow: 0 0 10px rgba(205,127,50,.17);
+      color: #E6B18A;
+      background: rgba(205,127,50,.10);
+      border: 1px solid rgba(205,127,50,.48);
     }
 
-    .ur-otras-posiciones {
-      color: ${COLORES.secundario};
-      background: #142638;
-      border: 1px solid #29465B;
+    .ur-posicion-equipo.normal {
+      color: ${COLORES.cian};
+      background: rgba(0,217,255,.06);
+      border: 1px solid rgba(0,217,255,.22);
     }
 
     .ur-posicion-pendiente {
       color: ${COLORES.secundario};
-      background: #142638;
-      border: 1px solid #29465B;
+      background: rgba(140,165,185,.07);
+      border: 1px solid rgba(140,165,185,.18);
     }
 
-    .ur-escudo-fallback {
-      width: 110px;
-      height: 110px;
+    /* MARCO DEL ESCUDO, ESTILO PRÓXIMOS ENCUENTROS */
+
+    .ur-escudo-marco {
+      width: 100px;
+      height: 100px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 12px;
-      border: 1px solid ${COLORES.borde};
-      background: #142638;
+      padding: 7px;
+      border: 1px solid rgba(0,217,255,.2);
+      border-radius: 17px;
+      background: rgba(0,217,255,.055);
+      overflow: hidden;
+    }
+
+    .ur-escudo-imagen {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .ur-escudo-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: ${COLORES.cian};
-      font-size: 25px;
+      font-size: 23px;
       font-weight: 1000;
+      text-align: center;
     }
 
     .ur-equipo-nombre {
@@ -980,9 +999,9 @@ export default function UltimosResultados({
       gap: 5px;
     }
 
-    .ur-resumen-equipos .ur-equipo img {
-      width: 110px !important;
-      height: 110px !important;
+    .ur-resumen-equipos .ur-escudo-marco {
+      width: 100px;
+      height: 100px;
     }
 
     .ur-resumen-marcador {
@@ -1243,20 +1262,21 @@ export default function UltimosResultados({
     }
 
     @media (max-width: 380px) {
-      .ur-escudo-fallback {
-        width: 90px;
-        height: 90px;
-        font-size: 21px;
+      .ur-escudo-marco {
+        width: 88px;
+        height: 88px;
+        border-radius: 14px;
+        padding: 6px;
       }
 
-      .ur-equipo-visual img {
-        width: 90px !important;
-        height: 90px !important;
+      .ur-resumen-equipos .ur-escudo-marco {
+        width: 88px;
+        height: 88px;
       }
 
       .ur-posicion-equipo {
         font-size: 10px;
-        padding: 4px 5px;
+        padding: 5px 8px;
       }
 
       .ur-equipo-nombre {
@@ -1265,6 +1285,10 @@ export default function UltimosResultados({
 
       .ur-marcador {
         font-size: 29px;
+      }
+
+      .ur-resumen-marcador {
+        font-size: 23px;
       }
     }
 
@@ -1279,6 +1303,16 @@ export default function UltimosResultados({
         display: grid;
         grid-template-columns: repeat(2,minmax(0,1fr));
         gap: 18px;
+      }
+
+      .ur-escudo-marco {
+        width: 115px;
+        height: 115px;
+      }
+
+      .ur-resumen-equipos .ur-escudo-marco {
+        width: 115px;
+        height: 115px;
       }
     }
   `;
@@ -1685,8 +1719,6 @@ export default function UltimosResultados({
           })}
         </div>
       )}
-
-      {/* EL ENCABEZADO AHORA QUEDA AL FINAL */}
 
       <h2 className="ur-titulo">ÚLTIMOS RESULTADOS</h2>
     </div>
