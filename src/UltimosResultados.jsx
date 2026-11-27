@@ -1,89 +1,52 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-const DETALLES_URL =
+const DETALLES_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1zC_U8J5oginUCot85-agY4wdTicdpyC6VESPsndHlv30yW8-EUPwxq_rOL7jReG4EQowROX3fSHo/pub?gid=237931925&single=true&output=csv";
 
 const MAPAS = [
-  { nombre: "PTO CALIENTE", subtitulo: "COMBINE" },
-  { nombre: "BYD", subtitulo: "SLUM" },
-  { nombre: "CONTROL", subtitulo: "RAID" },
-  { nombre: "PTO CALIENTE", subtitulo: "TAKEOFF" },
-  { nombre: "BYD", subtitulo: "STANDOFF" },
+  { tipo: "PTO CALIENTE", mapa: "COMBINE" },
+  { tipo: "BYD", mapa: "SLUM" },
+  { tipo: "CONTROL", mapa: "RAID" },
+  { tipo: "PTO CALIENTE", mapa: "TAKEOFF" },
+  { tipo: "BYD", mapa: "STANDOFF" },
 ];
 
-const C = {
+const EQUIPOS_OFICIALES = [
+  "ETERNITY",
+  "2D",
+  "KINGS",
+  "Lycoris",
+  "The Butchers",
+  "NoMercy",
+];
+
+const COLORES = {
   fondo: "#05080F",
-  azul: "#0E1C2D",
-  panel: "#09111D",
+  tarjeta: "#0E1C2D",
+  filtro: "#09111D",
   cian: "#00D9FF",
   secundario: "#8CA5B9",
+  verde: "#00E696",
+  dorado: "#FFCD32",
   borde: "#143E55",
-  verde: "#00E6AA",
-  rojo: "#FF9182",
-  dorado: "#FFCD41",
-  blanco: "#FFFFFF",
 };
 
-const normalizar = (valor) =>
-  String(valor ?? "")
-    .trim()
+function limpiarTexto(valor) {
+  return String(valor ?? "").trim();
+}
+
+function normalizar(valor) {
+  return limpiarTexto(valor)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/\s+/g, " ");
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-const numero = (valor) => {
-  const n = Number(String(valor ?? "").trim().replace(",", "."));
-  return Number.isFinite(n) ? n : 0;
-};
-
-const nombreJugador = (jugador) => {
-  if (typeof jugador === "string") return jugador.trim();
-
-  return String(
-    jugador?.player ??
-    jugador?.jugador ??
-    jugador?.nombre ??
-    jugador?.name ??
-    ""
-  ).trim();
-};
-
-const nombreEquipoJugador = (jugador) => {
-  if (typeof jugador === "string") return "";
-
-  return String(
-    jugador?.team ??
-    jugador?.equipo ??
-    jugador?.teamName ??
-    ""
-  ).trim();
-};
-
-const jornadaPartido = (partido) =>
-  Number(
-    partido?.jornada ??
-    partido?.Jornada ??
-    partido?.matchday ??
-    partido?.fecha ??
-    0
-  );
-
-const marcadorValido = (valor) => {
-  if (valor === null || valor === undefined || String(valor).trim() === "") {
-    return false;
-  }
-
-  return Number.isFinite(Number(valor));
-};
-
-const estaFinalizado = (partido) =>
-  marcadorValido(partido?.score1) &&
-  marcadorValido(partido?.score2);
-
-const normalizarEquipoOficial = (nombre) => {
-  const clave = normalizar(nombre);
+function normalizarEquipo(valor) {
+  const texto = normalizar(valor);
 
   const equipos = {
     eternity: "ETERNITY",
@@ -94,39 +57,54 @@ const normalizarEquipoOficial = (nombre) => {
     nomercy: "NoMercy",
   };
 
-  return equipos[clave] || String(nombre ?? "").trim();
-};
+  return equipos[texto] || limpiarTexto(valor);
+}
 
-const parsearCSV = (texto) => {
+function numero(valor) {
+  const texto = limpiarTexto(valor).replace(",", ".");
+  if (!texto) return NaN;
+
+  const resultado = Number(texto);
+  return Number.isFinite(resultado) ? resultado : NaN;
+}
+
+function numeroEntero(valor) {
+  const resultado = numero(valor);
+  return Number.isFinite(resultado) ? resultado : 0;
+}
+
+function extraerNumero(valor) {
+  const coincidencia = String(valor ?? "").match(/\d+/);
+  return coincidencia ? Number(coincidencia[0]) : NaN;
+}
+
+function leerCSV(texto) {
   const filas = [];
   let fila = [];
   let campo = "";
-  let comillas = false;
+  let dentroComillas = false;
 
   for (let i = 0; i < texto.length; i++) {
     const caracter = texto[i];
+    const siguiente = texto[i + 1];
 
-    if (
-      caracter === '"' &&
-      comillas &&
-      texto[i + 1] === '"'
-    ) {
+    if (caracter === '"' && dentroComillas && siguiente === '"') {
       campo += '"';
       i++;
     } else if (caracter === '"') {
-      comillas = !comillas;
-    } else if (caracter === "," && !comillas) {
+      dentroComillas = !dentroComillas;
+    } else if (caracter === "," && !dentroComillas) {
       fila.push(campo);
       campo = "";
     } else if (
       (caracter === "\n" || caracter === "\r") &&
-      !comillas
+      !dentroComillas
     ) {
-      if (caracter === "\r" && texto[i + 1] === "\n") i++;
+      if (caracter === "\r" && siguiente === "\n") i++;
 
       fila.push(campo);
 
-      if (fila.some((valor) => valor.trim() !== "")) {
+      if (fila.some((celda) => limpiarTexto(celda) !== "")) {
         filas.push(fila);
       }
 
@@ -137,1173 +115,1212 @@ const parsearCSV = (texto) => {
     }
   }
 
-  if (campo.length || fila.length) {
-    fila.push(campo);
+  fila.push(campo);
 
-    if (fila.some((valor) => valor.trim() !== "")) {
-      filas.push(fila);
-    }
+  if (fila.some((celda) => limpiarTexto(celda) !== "")) {
+    filas.push(fila);
   }
 
   return filas;
-};
+}
 
-const convertirDetalles = (contenido) => {
-  const filas = parsearCSV(contenido.replace(/^\uFEFF/, ""));
+function convertirDetalles(texto) {
+  const filas = leerCSV(texto);
 
-  return filas.slice(1).filter((fila) => fila.length >= 12).map((fila) => ({
-    fecha: fila[0]?.trim() ?? "",
-    jornada: fila[1]?.trim() ?? "",
-    partido: fila[2]?.trim() ?? "",
-    mapa: fila[3]?.trim() ?? "",
-    jugador: fila[4]?.trim() ?? "",
-    equipo: normalizarEquipoOficial(fila[5]),
-    bajas: fila[6]?.trim() ?? "",
-    muertes: fila[7]?.trim() ?? "",
-    asistencias: fila[8]?.trim() ?? "",
-    kd: fila[9]?.trim() ?? "",
-    resultado: fila[10]?.trim() ?? "",
-    ganadorMapa: normalizarEquipoOficial(fila[11]),
+  if (!filas.length) return [];
+
+  const primeraFila = filas[0].map(normalizar);
+  const tieneEncabezado =
+    primeraFila.includes("jornada") ||
+    primeraFila.includes("jugador") ||
+    primeraFila.includes("ganadormapa");
+
+  const datos = tieneEncabezado ? filas.slice(1) : filas;
+
+  return datos.map((fila) => ({
+    fecha: limpiarTexto(fila[0]),
+    jornada: extraerNumero(fila[1]),
+    partido: extraerNumero(fila[2]),
+    mapa: limpiarTexto(fila[3]),
+    jugador: limpiarTexto(fila[4]),
+    equipo: normalizarEquipo(fila[5]),
+    bajas: numeroEntero(fila[6]),
+    muertes: numeroEntero(fila[7]),
+    asistencias: numeroEntero(fila[8]),
+    kd: numero(fila[9]),
+    resultado: limpiarTexto(fila[10]),
+    ganadorMapa: normalizarEquipo(fila[11]),
   }));
-};
-
-const extraerNumero = (valor) => {
-  const encontrado = String(valor ?? "").match(/\d+/);
-  return encontrado ? Number(encontrado[0]) : 0;
-};
-
-const estilos = `
-  .ur-contenedor {
-    width: 100%;
-    min-height: 200px;
-    padding: 18px 14px 28px;
-    box-sizing: border-box;
-    color: ${C.blanco};
-    background: ${C.fondo};
-    font-family: Arial, Helvetica, sans-serif;
-  }
-
-  .ur-titulo {
-    margin: 12px 0 22px;
-    color: ${C.cian};
-    text-align: center;
-    font-size: 22px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-shadow: 0 0 12px rgba(0,217,255,.3);
-  }
-
-  .ur-filtro {
-    padding: 15px;
-    margin-bottom: 22px;
-    background: ${C.panel};
-    border: 1px solid ${C.borde};
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,.25);
-  }
-
-  .ur-filtro-encabezado {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin-bottom: 14px;
-  }
-
-  .ur-linea-cian {
-    width: 4px;
-    height: 19px;
-    flex-shrink: 0;
-    border-radius: 5px;
-    background: ${C.cian};
-  }
-
-  .ur-etiqueta {
-    flex: 1;
-    color: ${C.cian};
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: .7px;
-  }
-
-  .ur-cantidad {
-    color: ${C.secundario};
-    font-size: 10px;
-    font-weight: 800;
-  }
-
-  .ur-selector {
-    width: 100%;
-    min-height: 53px;
-    padding: 0 14px;
-    color: white;
-    background: #081320;
-    border: 1px solid #00AAD7;
-    border-radius: 11px;
-    outline: none;
-    font-size: 13px;
-    font-weight: 900;
-  }
-
-  .ur-selector option {
-    color: white;
-    background: #070F1A;
-  }
-
-  .ur-tarjeta {
-    padding: 16px 12px;
-    margin-bottom: 16px;
-    overflow: hidden;
-    background: linear-gradient(145deg, #0E1C2D, #091522);
-    border: 1px solid #008CB4;
-    border-radius: 16px;
-    box-shadow: 0 5px 16px rgba(0,0,0,.35);
-    transition: border-color .2s, transform .2s;
-  }
-
-  .ur-tarjeta:active {
-    transform: scale(.995);
-    border-color: ${C.cian};
-  }
-
-  .ur-jornada {
-    color: ${C.cian};
-    text-align: center;
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: .8px;
-  }
-
-  .ur-enfrentamiento {
-    display: grid;
-    grid-template-columns: minmax(0,1fr) 100px minmax(0,1fr);
-    align-items: center;
-    gap: 3px;
-    padding: 17px 0;
-  }
-
-  .ur-equipo {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .ur-escudo {
-    width: 85px;
-    height: 85px;
-    object-fit: contain;
-    filter: drop-shadow(0 0 7px rgba(0,217,255,.15));
-  }
-
-  .ur-nombre-equipo {
-    margin-top: 7px;
-    font-size: 12px;
-    font-weight: 900;
-    overflow-wrap: anywhere;
-  }
-
-  .ur-victoria {
-    color: ${C.cian};
-  }
-
-  .ur-marcador {
-    text-align: center;
-    font-size: 25px;
-    font-weight: 1000;
-    letter-spacing: 1px;
-    white-space: nowrap;
-  }
-
-  .ur-marcador-etiqueta {
-    margin-top: 5px;
-    color: ${C.cian};
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 1px;
-  }
-
-  .ur-estado {
-    margin-top: 4px;
-    color: ${C.verde};
-    text-align: center;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: .8px;
-  }
-
-  .ur-instruccion {
-    margin-top: 12px;
-    color: ${C.secundario};
-    text-align: center;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: .6px;
-  }
-
-  .ur-boton-volver {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 12px 8px;
-    margin-bottom: 15px;
-    color: ${C.cian};
-    background: transparent;
-    border: none;
-    font-size: 14px;
-    font-weight: 900;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .ur-boton-volver span {
-    font-size: 34px;
-    line-height: 20px;
-  }
-
-  .ur-detalle-titulo {
-    margin: 7px 0 15px;
-    color: ${C.cian};
-    text-align: center;
-    font-size: 16px;
-    font-weight: 900;
-    overflow-wrap: anywhere;
-  }
-
-  .ur-ayuda-deslizar {
-    margin: 0 0 13px;
-    color: ${C.secundario};
-    text-align: center;
-    font-size: 10px;
-    font-weight: 800;
-  }
-
-  .ur-indicador-mapa {
-    margin-bottom: 12px;
-    color: ${C.cian};
-    text-align: center;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: .5px;
-  }
-
-  .ur-scroll-mapas {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
-    scrollbar-color: ${C.cian} #0A1826;
-    padding-bottom: 8px;
-  }
-
-  .ur-scroll-mapas::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  .ur-scroll-mapas::-webkit-scrollbar-thumb {
-    background: ${C.cian};
-    border-radius: 5px;
-  }
-
-  .ur-pagina-mapa {
-    flex: 0 0 100%;
-    min-width: 0;
-    min-height: 450px;
-    padding: 15px 10px;
-    box-sizing: border-box;
-    background: #091320;
-    border: 1px solid #008CB4;
-    border-radius: 15px;
-    scroll-snap-align: start;
-  }
-
-  .ur-mapa-nombre {
-    margin: 3px 0;
-    color: ${C.cian};
-    text-align: center;
-    font-size: 22px;
-    font-weight: 1000;
-  }
-
-  .ur-mapa-subtitulo {
-    margin-bottom: 16px;
-    color: ${C.secundario};
-    text-align: center;
-    font-size: 13px;
-    font-weight: 900;
-  }
-
-  .ur-ganador {
-    padding: 11px 8px;
-    margin-bottom: 14px;
-    text-align: center;
-    background: #0C2B30;
-    border: 1px solid #00B496;
-    border-radius: 10px;
-  }
-
-  .ur-ganador-etiqueta {
-    color: ${C.secundario};
-    font-size: 10px;
-    font-weight: 900;
-  }
-
-  .ur-ganador-nombre {
-    margin-top: 5px;
-    color: ${C.verde};
-    font-size: 17px;
-    font-weight: 900;
-  }
-
-  .ur-tabla {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 5px;
-    table-layout: fixed;
-  }
-
-  .ur-tabla th {
-    padding: 10px 2px;
-    color: ${C.cian};
-    background: #10283A;
-    font-size: 9px;
-    font-weight: 900;
-    overflow-wrap: anywhere;
-  }
-
-  .ur-tabla th:first-child {
-    border-radius: 7px 0 0 7px;
-    width: 34%;
-  }
-
-  .ur-tabla th:last-child {
-    border-radius: 0 7px 7px 0;
-  }
-
-  .ur-tabla td {
-    padding: 12px 2px;
-    color: white;
-    background: #0C1927;
-    text-align: center;
-    font-size: 10px;
-    font-weight: 800;
-    overflow-wrap: anywhere;
-  }
-
-  .ur-tabla td:first-child {
-    text-align: left;
-    padding-left: 5px;
-    color: ${C.cian};
-  }
-
-  .ur-tabla tr td:first-child {
-    border-radius: 6px 0 0 6px;
-  }
-
-  .ur-tabla tr td:last-child {
-    border-radius: 0 6px 6px 0;
-  }
-
-  .ur-jugador-boton {
-    padding: 0;
-    color: ${C.cian};
-    background: transparent;
-    border: none;
-    text-align: left;
-    font-size: 10px;
-    font-weight: 900;
-    overflow-wrap: anywhere;
-    cursor: pointer;
-  }
-
-  .ur-jugador-boton:hover {
-    text-decoration: underline;
-  }
-
-  .ur-equipo-detalle {
-    margin: 17px 0 8px;
-    color: ${C.cian};
-    font-size: 13px;
-    font-weight: 900;
-  }
-
-  .ur-mensaje {
-    padding: 28px 15px;
-    color: ${C.secundario};
-    background: ${C.panel};
-    border: 1px solid ${C.borde};
-    border-radius: 12px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 900;
-    line-height: 1.7;
-  }
-
-  .ur-modal-fondo {
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    box-sizing: border-box;
-    background: rgba(0,0,0,.82);
-    backdrop-filter: blur(5px);
-  }
-
-  .ur-modal {
-    width: 100%;
-    max-width: 440px;
-    max-height: 88vh;
-    overflow-y: auto;
-    padding: 18px;
-    box-sizing: border-box;
-    background: #070F1A;
-    border: 1px solid #008CB4;
-    border-radius: 17px;
-    box-shadow: 0 0 25px rgba(0,217,255,.12);
-    animation: urEntrada .2s ease;
-  }
-
-  @keyframes urEntrada {
-    from { opacity: 0; transform: translateY(12px) scale(.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  .ur-modal-cabecera {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .ur-modal-titulo {
-    color: ${C.cian};
-    font-size: 16px;
-    font-weight: 900;
-    overflow-wrap: anywhere;
-  }
-
-  .ur-cerrar {
-    width: 35px;
-    height: 35px;
-    color: white;
-    background: #10283A;
-    border: 1px solid ${C.borde};
-    border-radius: 9px;
-    font-size: 20px;
-    cursor: pointer;
-  }
-
-  .ur-perfil-cabecera {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 8px 0 18px;
-  }
-
-  .ur-iniciales {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 72px;
-    height: 72px;
-    color: ${C.cian};
-    background: #0D1D2C;
-    border: 2px solid ${C.cian};
-    border-radius: 50%;
-    font-size: 22px;
-    font-weight: 900;
-  }
-
-  .ur-perfil-nombre {
-    color: white;
-    font-size: 17px;
-    font-weight: 900;
-    overflow-wrap: anywhere;
-  }
-
-  .ur-perfil-equipo {
-    margin-top: 6px;
-    color: ${C.secundario};
-    font-size: 11px;
-    font-weight: 900;
-  }
-
-  .ur-estadisticas-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0,1fr));
-    gap: 9px;
-  }
-
-  .ur-estadistica {
-    padding: 14px 5px;
-    background: #0D1D2C;
-    border: 1px solid #184258;
-    border-radius: 10px;
-    text-align: center;
-  }
-
-  .ur-estadistica-etiqueta {
-    color: ${C.secundario};
-    font-size: 9px;
-    font-weight: 900;
-  }
-
-  .ur-estadistica-valor {
-    margin-top: 7px;
-    color: ${C.cian};
-    font-size: 21px;
-    font-weight: 1000;
-    overflow-wrap: anywhere;
-  }
-
-  .ur-modal-nota {
-    margin-top: 15px;
-    color: ${C.secundario};
-    text-align: center;
-    font-size: 10px;
-    line-height: 1.5;
-  }
-
-  @media(max-width: 380px) {
-    .ur-escudo {
-      width: 68px;
-      height: 68px;
+}
+
+function obtenerJornada(partido) {
+  return extraerNumero(partido?.jornada);
+}
+
+function obtenerEquipo1(partido) {
+  return normalizarEquipo(
+    partido?.team1 ??
+      partido?.equipo1 ??
+      partido?.local ??
+      partido?.equipoLocal ??
+      ""
+  );
+}
+
+function obtenerEquipo2(partido) {
+  return normalizarEquipo(
+    partido?.team2 ??
+      partido?.equipo2 ??
+      partido?.visitante ??
+      partido?.equipoVisitante ??
+      ""
+  );
+}
+
+function obtenerMarcador1(partido) {
+  return numero(
+    partido?.score1 ??
+      partido?.marcador1 ??
+      partido?.puntos1 ??
+      partido?.resultado1
+  );
+}
+
+function obtenerMarcador2(partido) {
+  return numero(
+    partido?.score2 ??
+      partido?.marcador2 ??
+      partido?.puntos2 ??
+      partido?.resultado2
+  );
+}
+
+function partidoFinalizado(partido) {
+  return (
+    Number.isFinite(obtenerMarcador1(partido)) &&
+    Number.isFinite(obtenerMarcador2(partido))
+  );
+}
+
+function indiceMapa(nombre) {
+  const mapa = normalizar(nombre);
+
+  if (mapa.includes("combine")) return 0;
+  if (mapa.includes("slum")) return 1;
+  if (mapa.includes("raid")) return 2;
+  if (mapa.includes("takeoff")) return 3;
+  if (mapa.includes("standoff")) return 4;
+
+  return -1;
+}
+
+function formatoKD(bajas, muertes) {
+  if (muertes === 0) return bajas.toFixed(2);
+  return (bajas / muertes).toFixed(2);
+}
+
+function calcularEstadisticasJugador(detalles, nombre) {
+  const jugadorNormalizado = normalizar(nombre);
+
+  const registros = detalles.filter(
+    (dato) => normalizar(dato.jugador) === jugadorNormalizado
+  );
+
+  const bajas = registros.reduce((total, dato) => total + dato.bajas, 0);
+  const muertes = registros.reduce((total, dato) => total + dato.muertes, 0);
+  const asistencias = registros.reduce(
+    (total, dato) => total + dato.asistencias,
+    0
+  );
+
+  const mapasGanados = registros.filter(
+    (dato) =>
+      dato.ganadorMapa &&
+      normalizar(dato.ganadorMapa) === normalizar(dato.equipo)
+  ).length;
+
+  const equipos = {};
+
+  registros.forEach((dato) => {
+    if (dato.equipo) {
+      equipos[dato.equipo] = (equipos[dato.equipo] || 0) + 1;
     }
+  });
 
-    .ur-enfrentamiento {
-      grid-template-columns: minmax(0,1fr) 86px minmax(0,1fr);
-    }
+  const equipoPrincipal =
+    Object.entries(equipos).sort((a, b) => b[1] - a[1])[0]?.[0] || "Sin equipo";
 
-    .ur-marcador {
-      font-size: 21px;
-    }
+  const mapasJugados = registros.length;
 
-    .ur-nombre-equipo {
-      font-size: 10px;
-    }
-
-    .ur-tabla th,
-    .ur-tabla td {
-      font-size: 8px;
-    }
-  }
-`;
+  return {
+    bajas,
+    muertes,
+    asistencias,
+    kd: formatoKD(bajas, muertes),
+    mapasJugados,
+    mapasGanados,
+    porcentaje:
+      mapasJugados > 0
+        ? ((mapasGanados / mapasJugados) * 100).toFixed(1)
+        : "0.0",
+    equipoPrincipal,
+  };
+}
 
 export default function UltimosResultados({
   matches = [],
   matchesLoading = false,
   matchesError = null,
   getTeamShield,
-  normalizeText,
+  openPlayerMenu,
 }) {
-  const [jornadaSeleccionada, setJornadaSeleccionada] = useState("AUTO");
-  const [partidoSeleccionado, setPartidoSeleccionado] = useState(null);
   const [detalles, setDetalles] = useState([]);
   const [detallesLoading, setDetallesLoading] = useState(true);
-  const [detallesError, setDetallesError] = useState(false);
-  const [paginaActual, setPaginaActual] = useState(0);
+  const [detallesError, setDetallesError] = useState("");
+  const [jornadaSeleccionada, setJornadaSeleccionada] = useState("TODAS");
+  const [partidoSeleccionado, setPartidoSeleccionado] = useState(null);
+  const [mapaActivo, setMapaActivo] = useState(0);
   const [jugadorSeleccionado, setJugadorSeleccionado] = useState(null);
-
-  const normalizarTexto = (valor) => {
-    if (typeof normalizeText === "function") {
-      return normalizeText(String(valor ?? ""));
-    }
-
-    return normalizar(valor);
-  };
-
-  const comparar = (a, b) =>
-    normalizarTexto(a) === normalizarTexto(b);
-
-  // ==================================
-  // CARGAR CSV DE DETALLES
-  // ==================================
 
   useEffect(() => {
     let activo = true;
-    const controlador = new AbortController();
 
-    const cargar = async () => {
+    const cargarDetalles = async () => {
       try {
-        setDetallesLoading(true);
-        setDetallesError(false);
-
-        const respuesta = await fetch(DETALLES_URL, {
-          signal: controlador.signal,
+        const respuesta = await fetch(DETALLES_CSV_URL, {
           cache: "no-store",
         });
 
         if (!respuesta.ok) {
-          throw new Error("No se pudieron descargar los detalles");
+          throw new Error("No se pudieron descargar las estadísticas.");
         }
 
-        const contenido = await respuesta.text();
-        const datos = convertirDetalles(contenido);
+        const texto = await respuesta.text();
+        const datos = convertirDetalles(texto);
 
         if (activo) {
           setDetalles(datos);
-          setDetallesLoading(false);
+          setDetallesError("");
         }
       } catch (error) {
-        if (error.name === "AbortError") return;
-
-        console.error("Error cargando detalles de resultados:", error);
-
         if (activo) {
-          setDetallesError(true);
-          setDetallesLoading(false);
+          setDetallesError(
+            error?.message || "Error al cargar las estadísticas."
+          );
         }
+      } finally {
+        if (activo) setDetallesLoading(false);
       }
     };
 
-    cargar();
+    cargarDetalles();
+
+    const intervalo = setInterval(cargarDetalles, 60000);
 
     return () => {
       activo = false;
-      controlador.abort();
+      clearInterval(intervalo);
     };
   }, []);
 
-  const partidos = useMemo(
-    () => (Array.isArray(matches) ? matches : []),
-    [matches]
+  const partidosPreparados = useMemo(() => {
+    const contadores = {};
+
+    return (Array.isArray(matches) ? matches : []).map((partido, indice) => {
+      const jornada = obtenerJornada(partido);
+      const clave = Number.isFinite(jornada) ? jornada : 0;
+
+      contadores[clave] = (contadores[clave] || 0) + 1;
+
+      return {
+        ...partido,
+        _indiceOriginal: indice,
+        _jornada: jornada,
+        _numeroPartido: contadores[clave],
+        _equipo1: obtenerEquipo1(partido),
+        _equipo2: obtenerEquipo2(partido),
+        _marcador1: obtenerMarcador1(partido),
+        _marcador2: obtenerMarcador2(partido),
+        _finalizado: partidoFinalizado(partido),
+      };
+    });
+  }, [matches]);
+
+  const partidosFinalizados = useMemo(
+    () => partidosPreparados.filter((partido) => partido._finalizado),
+    [partidosPreparados]
   );
 
-  // ==================================
-  // RESULTADOS FINALIZADOS
-  // ==================================
+  const jornadaInicial = useMemo(() => {
+    const jornadas = [...new Set(
+      partidosPreparados
+        .map((partido) => partido._jornada)
+        .filter(Number.isFinite)
+    )].sort((a, b) => b - a);
 
-  const resultados = useMemo(() => {
-    const contador = {};
-
-    return partidos
-      .map((partido, indiceOriginal) => {
-        const jornada = jornadaPartido(partido);
-
-        contador[jornada] = (contador[jornada] || 0) + 1;
-
-        return {
-          ...partido,
-          jornadaNumero: jornada,
-          numeroPartido: contador[jornada],
-          indiceOriginal,
-          equipo1: normalizarEquipoOficial(partido?.team1),
-          equipo2: normalizarEquipoOficial(partido?.team2),
-          score1: String(partido?.score1 ?? "").trim(),
-          score2: String(partido?.score2 ?? "").trim(),
-          finalizado: estaFinalizado(partido),
-        };
-      })
-      .filter((partido) =>
-        partido.finalizado &&
-        partido.jornadaNumero >= 1 &&
-        partido.jornadaNumero <= 15
+    const jornadaCompleta = jornadas.find((jornada) => {
+      const partidos = partidosPreparados.filter(
+        (partido) => partido._jornada === jornada
       );
-  }, [partidos]);
 
-  // ==================================
-  // JORNADA AUTOMÁTICA
-  // ==================================
-
-  const ultimaJornadaCompleta = useMemo(() => {
-    const control = {};
-
-    partidos.forEach((partido) => {
-      const jornada = jornadaPartido(partido);
-
-      if (!jornada || jornada < 1 || jornada > 15) return;
-
-      if (!control[jornada]) {
-        control[jornada] = {
-          total: 0,
-          finalizados: 0,
-        };
-      }
-
-      control[jornada].total++;
-
-      if (estaFinalizado(partido)) {
-        control[jornada].finalizados++;
-      }
+      return partidos.length === 3 && partidos.every((p) => p._finalizado);
     });
 
-    const completas = Object.entries(control)
-      .filter(([, datos]) =>
-        datos.total === 3 &&
-        datos.finalizados === 3
-      )
-      .map(([jornada]) => Number(jornada));
+    if (jornadaCompleta) return jornadaCompleta;
 
-    if (completas.length) {
-      return Math.max(...completas);
-    }
+    const jornadaConResultado = partidosFinalizados
+      .map((partido) => partido._jornada)
+      .filter(Number.isFinite)
+      .sort((a, b) => b - a)[0];
 
-    const jornadasConResultados = resultados.map(
-      (partido) => partido.jornadaNumero
-    );
+    return jornadaConResultado ?? "TODAS";
+  }, [partidosPreparados, partidosFinalizados]);
 
-    return jornadasConResultados.length
-      ? Math.max(...jornadasConResultados)
-      : null;
-  }, [partidos, resultados]);
+  useEffect(() => {
+    setJornadaSeleccionada(jornadaInicial);
+  }, [jornadaInicial]);
 
-  const jornadaActiva =
-    jornadaSeleccionada === "AUTO"
-      ? ultimaJornadaCompleta
-      : Number(jornadaSeleccionada);
+  const partidosVisibles = useMemo(() => {
+    return partidosFinalizados.filter((partido) => {
+      return (
+        jornadaSeleccionada === "TODAS" ||
+        partido._jornada === Number(jornadaSeleccionada)
+      );
+    });
+  }, [partidosFinalizados, jornadaSeleccionada]);
 
-  const resultadosVisibles = useMemo(() => {
-    if (jornadaActiva === null) return [];
-
-    return resultados
-      .filter((partido) => partido.jornadaNumero === jornadaActiva)
-      .sort((a, b) => a.numeroPartido - b.numeroPartido);
-  }, [resultados, jornadaActiva]);
-
-  // ==================================
-  // DETALLES DEL ENFRENTAMIENTO
-  // ==================================
+  const jornadasDisponibles = useMemo(() => {
+    return Array.from({ length: 15 }, (_, i) => i + 1);
+  }, []);
 
   const detallesDelPartido = useMemo(() => {
     if (!partidoSeleccionado) return [];
 
-    return detalles.filter((detalle) => {
-      const jornada = extraerNumero(detalle.jornada);
-      const numeroPartido = extraerNumero(detalle.partido);
-
-      return (
-        jornada === partidoSeleccionado.jornadaNumero &&
-        numeroPartido === partidoSeleccionado.numeroPartido &&
-        (
-          comparar(detalle.equipo, partidoSeleccionado.equipo1) ||
-          comparar(detalle.equipo, partidoSeleccionado.equipo2)
-        )
-      );
-    });
+    return detalles.filter(
+      (dato) =>
+        dato.jornada === partidoSeleccionado._jornada &&
+        dato.partido === partidoSeleccionado._numeroPartido
+    );
   }, [detalles, partidoSeleccionado]);
 
-  const jugadoresDelMapa = (numeroMapa) =>
-    detallesDelPartido.filter(
-      (detalle) => extraerNumero(detalle.partido) === numeroMapa
+  const detallesDelMapa = useMemo(() => {
+    return detallesDelPartido.filter(
+      (dato) => indiceMapa(dato.mapa) === mapaActivo
     );
+  }, [detallesDelPartido, mapaActivo]);
 
-  const obtenerGanadorMapa = (jugadores) =>
-    jugadores.find((jugador) => jugador.ganadorMapa?.trim())?.ganadorMapa ?? "";
+  const equiposDelMapa = useMemo(() => {
+    if (!partidoSeleccionado) return [];
 
-  // ==================================
-  // ESTADÍSTICAS GLOBALES
-  // ==================================
+    const equipos = [
+      partidoSeleccionado._equipo1,
+      partidoSeleccionado._equipo2,
+    ];
 
-  const estadisticasGlobales = useMemo(() => {
+    return equipos.filter(Boolean);
+  }, [partidoSeleccionado]);
+
+  const ganadorDelMapa = useMemo(() => {
+    const ganador = detallesDelMapa.find((dato) => dato.ganadorMapa);
+    return ganador?.ganadorMapa || "";
+  }, [detallesDelMapa]);
+
+  const estadisticasJugador = useMemo(() => {
     if (!jugadorSeleccionado) return null;
 
-    const registros = detalles.filter((detalle) =>
-      comparar(detalle.jugador, jugadorSeleccionado.jugador)
-    );
-
-    const bajas = registros.reduce(
-      (total, item) => total + numero(item.bajas),
-      0
-    );
-
-    const muertes = registros.reduce(
-      (total, item) => total + numero(item.muertes),
-      0
-    );
-
-    const asistencias = registros.reduce(
-      (total, item) => total + numero(item.asistencias),
-      0
-    );
-
-    const mapasGanados = registros.filter((registro) =>
-      registro.ganadorMapa &&
-      comparar(registro.equipo, registro.ganadorMapa)
-    ).length;
-
-    const mapasJugados = registros.length;
-
-    const kd = muertes > 0 ? bajas / muertes : bajas;
-
-    const porcentaje = mapasJugados > 0
-      ? (mapasGanados / mapasJugados) * 100
-      : 0;
-
-    const equipos = {};
-
-    registros.forEach((registro) => {
-      equipos[registro.equipo] = (equipos[registro.equipo] || 0) + 1;
-    });
-
-    const equipoPrincipal =
-      Object.entries(equipos).sort((a, b) => b[1] - a[1])[0]?.[0] ??
-      jugadorSeleccionado.equipo ??
-      "SIN EQUIPO";
-
-    return {
-      bajas,
-      muertes,
-      asistencias,
-      kd,
-      mapasJugados,
-      mapasGanados,
-      porcentaje,
-      equipoPrincipal,
-    };
-  }, [detalles, jugadorSeleccionado, normalizeText]);
-
-  // ==================================
-  // FORMATO DE NÚMEROS
-  // ==================================
-
-  const formatear = (valor) =>
-    Number.isInteger(valor)
-      ? String(valor)
-      : valor.toFixed(1);
-
-  const iniciales = (nombre) => {
-    const partes = String(nombre ?? "")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-
-    if (!partes.length) return "?";
-
-    if (partes.length === 1) {
-      return partes[0].slice(0, 2).toUpperCase();
-    }
-
-    return (
-      partes[0].slice(0, 1) +
-      partes[partes.length - 1].slice(0, 1)
-    ).toUpperCase();
-  };
-
-  // ==================================
-  // ESCUDOS
-  // ==================================
-
-  const escudo = (equipo) => {
-    if (typeof getTeamShield !== "function") return null;
-
-    try {
-      return getTeamShield(equipo);
-    } catch {
-      return null;
-    }
-  };
-
-  // ==================================
-  // ABRIR Y CERRAR DETALLE
-  // ==================================
+    return calcularEstadisticasJugador(detalles, jugadorSeleccionado);
+  }, [detalles, jugadorSeleccionado]);
 
   const abrirDetalle = (partido) => {
     setPartidoSeleccionado(partido);
-    setPaginaActual(0);
+    setMapaActivo(0);
+    setJugadorSeleccionado(null);
   };
 
-  const volver = () => {
+  const volverResultados = () => {
     setPartidoSeleccionado(null);
-    setPaginaActual(0);
+    setMapaActivo(0);
+    setJugadorSeleccionado(null);
   };
 
-  const abrirEstadisticas = (jugador, equipo) => {
-    setJugadorSeleccionado({
-      jugador,
-      equipo,
-    });
+  const abrirJugador = (nombre) => {
+    setJugadorSeleccionado(nombre);
   };
 
-  // ==================================
-  // TARJETA DE EQUIPO
-  // ==================================
+  const cerrarJugador = () => {
+    setJugadorSeleccionado(null);
+  };
 
-  const renderEquipo = (nombre, gana) => {
-    const imagen = escudo(nombre);
+  const obtenerEscudo = (equipo) => {
+    try {
+      return getTeamShield?.(equipo) || "";
+    } catch {
+      return "";
+    }
+  };
+
+  const estiloEscudo = {
+    width: 58,
+    height: 58,
+    objectFit: "contain",
+    flexShrink: 0,
+  };
+
+  const renderEscudo = (equipo) => {
+    const imagen = obtenerEscudo(equipo);
+
+    if (imagen) {
+      return (
+        <img
+          src={imagen}
+          alt={equipo}
+          style={estiloEscudo}
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+      );
+    }
 
     return (
-      <div className="ur-equipo">
-        {imagen ? (
-          <img
-            className="ur-escudo"
-            src={imagen}
-            alt={`Escudo ${nombre}`}
-            onError={(evento) => {
-              evento.currentTarget.style.visibility = "hidden";
-            }}
-          />
-        ) : (
-          <div className="ur-escudo" />
-        )}
-
-        <div className={`ur-nombre-equipo ${gana ? "ur-victoria" : ""}`}>
-          {nombre}
-        </div>
-
-        {gana && (
-          <div style={{
-            marginTop: 5,
-            color: C.dorado,
-            fontSize: 10,
-            fontWeight: 900,
-          }}>
-            🏆 VICTORIA
-          </div>
-        )}
+      <div className="ur-escudo-fallback">
+        {limpiarTexto(equipo).slice(0, 3).toUpperCase()}
       </div>
     );
   };
 
-  // ==================================
-  // PÁGINA DE MAPA
-  // ==================================
+  const estilos = `
+    .ur-contenedor {
+      width: 100%;
+      min-height: 300px;
+      color: #ffffff;
+      background: ${COLORES.fondo};
+      padding: 18px 12px 30px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
 
-  const renderMapa = (mapa, indice) => {
-    const jugadores = jugadoresDelMapa(indice + 1);
-    const ganador = obtenerGanadorMapa(jugadores);
+    .ur-contenedor * {
+      box-sizing: border-box;
+    }
 
-    const equipo1 = partidoSeleccionado.equipo1;
-    const equipo2 = partidoSeleccionado.equipo2;
+    .ur-titulo {
+      color: ${COLORES.cian};
+      font-size: 22px;
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: 1.5px;
+      margin: 5px 0 22px;
+      text-shadow: 0 0 14px rgba(0,217,255,.25);
+    }
 
-    const equipos = [equipo1, equipo2];
+    .ur-filtro {
+      background: ${COLORES.filtro};
+      border: 1px solid ${COLORES.borde};
+      border-radius: 13px;
+      padding: 14px;
+      margin-bottom: 18px;
+    }
 
-    return (
-      <section className="ur-pagina-mapa" key={`${mapa.nombre}-${indice}`}>
-        <div className="ur-mapa-nombre">
-          {mapa.nombre}
-        </div>
+    .ur-filtro-superior {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
 
-        <div className="ur-mapa-subtitulo">
-          {mapa.subtitulo}
-        </div>
+    .ur-filtro-titulo {
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .8px;
+    }
 
-        {ganador && (
-          <div className="ur-ganador">
-            <div className="ur-ganador-etiqueta">
-              GANADOR DEL MAPA
-            </div>
-            <div className="ur-ganador-nombre">
-              {ganador}
-            </div>
-          </div>
-        )}
+    .ur-filtro-cantidad {
+      color: ${COLORES.cian};
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
 
-        <table className="ur-tabla">
-          <thead>
-            <tr>
-              <th>JUGADOR</th>
-              <th>BAJAS</th>
-              <th>MUERTES</th>
-              <th>ASIST.</th>
-              <th>K/D</th>
-            </tr>
-          </thead>
+    .ur-select {
+      width: 100%;
+      min-height: 43px;
+      background: #0E1C2D;
+      color: white;
+      border: 1px solid ${COLORES.borde};
+      border-radius: 8px;
+      padding: 0 12px;
+      outline: none;
+      font-size: 12px;
+      font-weight: 800;
+    }
 
-          {equipos.map((equipo) => {
-            const jugadoresEquipo = jugadores.filter((jugador) =>
-              comparar(jugador.equipo, equipo)
-            );
+    .ur-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
 
-            if (!jugadoresEquipo.length) return null;
+    .ur-partido {
+      width: 100%;
+      text-align: left;
+      border: 1px solid #17364B;
+      border-radius: 13px;
+      padding: 15px 13px;
+      background: linear-gradient(145deg, #102238, #0A1523);
+      color: white;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+    }
 
-            return (
-              <tbody key={equipo}>
-                <tr>
-                  <td colSpan={5} style={{
-                    padding: "15px 5px 5px",
-                    color: C.cian,
-                    background: "transparent",
-                    fontSize: 12,
-                  }}>
-                    {equipo}
-                  </td>
-                </tr>
+    .ur-partido:active {
+      transform: scale(.985);
+      border-color: ${COLORES.cian};
+    }
 
-                {jugadoresEquipo.map((jugador, i) => {
-                  const kd = numero(jugador.kd);
+    .ur-partido-jornada {
+      color: ${COLORES.cian};
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+    }
 
-                  return (
-                    <tr key={`${jugador.jugador}-${i}`}>
-                      <td>
-                        <button
-                          className="ur-jugador-boton"
-                          type="button"
-                          onClick={() =>
-                            abrirEstadisticas(
-                              jugador.jugador,
-                              jugador.equipo
-                            )
-                          }
-                        >
-                          {jugador.jugador}
-                        </button>
-                      </td>
+    .ur-enfrentamiento {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+      align-items: center;
+      gap: 8px;
+    }
 
-                      <td>{jugador.bajas || "0"}</td>
-                      <td>{jugador.muertes || "0"}</td>
-                      <td>{jugador.asistencias || "0"}</td>
+    .ur-equipo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 0;
+    }
 
-                      <td style={{
-                        color: kd >= 1 ? C.verde : C.rojo,
-                      }}>
-                        {jugador.kd || "0"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            );
-          })}
-        </table>
+    .ur-equipo-nombre {
+      font-size: 11px;
+      line-height: 1.3;
+      font-weight: 900;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
 
-        {!jugadores.length && (
-          <div className="ur-mensaje" style={{ marginTop: 15 }}>
-            NO HAY ESTADÍSTICAS REGISTRADAS PARA ESTE MAPA.
-          </div>
-        )}
-      </section>
-    );
-  };
+    .ur-ganador {
+      color: ${COLORES.cian};
+    }
 
-  // ==================================
-  // DETALLE DEL ENCUENTRO
-  // ==================================
+    .ur-marcador {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      color: white;
+      font-size: 27px;
+      font-weight: 1000;
+      white-space: nowrap;
+    }
+
+    .ur-separador {
+      color: ${COLORES.secundario};
+      font-size: 18px;
+    }
+
+    .ur-etiqueta-resultado {
+      text-align: center;
+      color: ${COLORES.secundario};
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      margin-top: 7px;
+    }
+
+    .ur-pie-partido {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid rgba(140,165,185,.13);
+      margin-top: 14px;
+      padding-top: 11px;
+    }
+
+    .ur-estado {
+      color: ${COLORES.verde};
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .5px;
+    }
+
+    .ur-detalle-link {
+      color: ${COLORES.cian};
+      font-size: 9px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .ur-victoria {
+      color: ${COLORES.dorado};
+      font-size: 9px;
+      font-weight: 900;
+      margin-top: 3px;
+    }
+
+    .ur-vacio {
+      background: ${COLORES.tarjeta};
+      border: 1px solid ${COLORES.borde};
+      border-radius: 12px;
+      color: ${COLORES.secundario};
+      padding: 27px 15px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.6;
+    }
+
+    .ur-cargando {
+      color: ${COLORES.cian};
+      text-align: center;
+      padding: 25px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .ur-error {
+      color: #FF7777;
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+    }
+
+    .ur-detalle-cabecera {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .ur-volver {
+      flex-shrink: 0;
+      border: 1px solid ${COLORES.borde};
+      border-radius: 9px;
+      background: #0D1B2A;
+      color: ${COLORES.cian};
+      padding: 10px 13px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ur-detalle-titulo {
+      color: ${COLORES.cian};
+      font-size: 16px;
+      font-weight: 1000;
+      letter-spacing: .7px;
+      margin: 0;
+    }
+
+    .ur-detalle-subtitulo {
+      color: ${COLORES.secundario};
+      font-size: 10px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .ur-resumen-detalle {
+      background: ${COLORES.tarjeta};
+      border: 1px solid ${COLORES.borde};
+      border-radius: 13px;
+      padding: 14px 10px;
+      margin-bottom: 17px;
+    }
+
+    .ur-resumen-equipos {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ur-resumen-equipos .ur-equipo img {
+      width: 43px;
+      height: 43px;
+    }
+
+    .ur-resumen-equipos .ur-equipo-nombre {
+      font-size: 10px;
+    }
+
+    .ur-resumen-marcador {
+      color: white;
+      font-size: 22px;
+      font-weight: 1000;
+      white-space: nowrap;
+    }
+
+    .ur-mapas-titulo {
+      color: white;
+      font-size: 14px;
+      font-weight: 1000;
+      letter-spacing: 1px;
+      margin: 0 0 5px;
+    }
+
+    .ur-deslizar {
+      color: ${COLORES.secundario};
+      font-size: 10px;
+      margin-bottom: 12px;
+    }
+
+    .ur-mapas-navegacion {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: ${COLORES.cian} #102238;
+    }
+
+    .ur-mapa-boton {
+      flex: 0 0 auto;
+      min-width: 62px;
+      border: 1px solid ${COLORES.borde};
+      border-radius: 8px;
+      background: #0A1523;
+      color: ${COLORES.secundario};
+      padding: 9px 10px;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ur-mapa-boton.activo {
+      background: #0A3145;
+      color: ${COLORES.cian};
+      border-color: ${COLORES.cian};
+      box-shadow: 0 0 12px rgba(0,217,255,.12);
+    }
+
+    .ur-panel-mapa {
+      background: ${COLORES.tarjeta};
+      border: 1px solid ${COLORES.borde};
+      border-radius: 13px;
+      padding: 14px 10px;
+      animation: urEntrada .25s ease;
+    }
+
+    @keyframes urEntrada {
+      from { opacity: .35; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ur-mapa-tipo {
+      color: ${COLORES.cian};
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-align: center;
+    }
+
+    .ur-mapa-nombre {
+      color: white;
+      font-size: 20px;
+      font-weight: 1000;
+      text-align: center;
+      margin: 4px 0 8px;
+    }
+
+    .ur-mapa-indicador {
+      color: ${COLORES.secundario};
+      font-size: 9px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .ur-ganador-mapa {
+      color: ${COLORES.verde};
+      text-align: center;
+      font-size: 11px;
+      font-weight: 900;
+      margin: 8px 0 15px;
+    }
+
+    .ur-equipo-tabla {
+      margin-top: 14px;
+    }
+
+    .ur-equipo-tabla-titulo {
+      color: ${COLORES.cian};
+      font-size: 11px;
+      font-weight: 1000;
+      padding: 8px 2px;
+      border-bottom: 1px solid ${COLORES.borde};
+    }
+
+    .ur-tabla-scroll {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .ur-tabla {
+      width: 100%;
+      min-width: 310px;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    .ur-tabla th {
+      color: ${COLORES.secundario};
+      font-size: 9px;
+      font-weight: 900;
+      padding: 10px 5px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .ur-tabla th:first-child,
+    .ur-tabla td:first-child {
+      text-align: left;
+    }
+
+    .ur-tabla td {
+      border-top: 1px solid rgba(140,165,185,.12);
+      color: white;
+      padding: 10px 5px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .ur-jugador-boton {
+      background: transparent;
+      border: 0;
+      color: ${COLORES.cian};
+      font: inherit;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 0;
+      text-align: left;
+      cursor: pointer;
+      max-width: 115px;
+      overflow-wrap: anywhere;
+    }
+
+    .ur-sin-stats {
+      color: ${COLORES.secundario};
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.6;
+      padding: 25px 8px;
+      font-weight: 800;
+    }
+
+    .ur-modal-fondo {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0,0,0,.82);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .ur-modal {
+      width: 100%;
+      max-width: 390px;
+      max-height: 85vh;
+      overflow-y: auto;
+      background: #0B1725;
+      border: 1px solid ${COLORES.borde};
+      border-radius: 15px;
+      padding: 19px;
+      box-shadow: 0 15px 55px rgba(0,0,0,.5);
+    }
+
+    .ur-modal-titulo {
+      color: ${COLORES.cian};
+      text-align: center;
+      font-size: 17px;
+      font-weight: 1000;
+      overflow-wrap: anywhere;
+      margin: 0 0 5px;
+    }
+
+    .ur-modal-equipo {
+      text-align: center;
+      color: ${COLORES.secundario};
+      font-size: 10px;
+      font-weight: 800;
+      margin-bottom: 17px;
+    }
+
+    .ur-estadisticas-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 9px;
+    }
+
+    .ur-estadistica {
+      background: #102238;
+      border: 1px solid #19374D;
+      border-radius: 9px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .ur-estadistica-valor {
+      color: ${COLORES.cian};
+      font-size: 20px;
+      font-weight: 1000;
+    }
+
+    .ur-estadistica-label {
+      color: ${COLORES.secundario};
+      font-size: 9px;
+      font-weight: 900;
+      margin-top: 4px;
+    }
+
+    .ur-modal-cerrar {
+      width: 100%;
+      margin-top: 17px;
+      padding: 12px;
+      background: #0A3145;
+      border: 1px solid ${COLORES.cian};
+      color: ${COLORES.cian};
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ur-modal-perfil {
+      width: 100%;
+      margin-top: 9px;
+      padding: 11px;
+      background: transparent;
+      border: 1px solid ${COLORES.borde};
+      color: white;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    @media (min-width: 700px) {
+      .ur-contenedor {
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 22px;
+      }
+
+      .ur-lista {
+        display: grid;
+        grid-template-columns: repeat(2,minmax(0,1fr));
+      }
+    }
+  `;
 
   if (partidoSeleccionado) {
+    const partido = partidoSeleccionado;
+    const equipo1 = partido._equipo1;
+    const equipo2 = partido._equipo2;
+
     return (
       <div className="ur-contenedor">
         <style>{estilos}</style>
 
-        <button
-          type="button"
-          className="ur-boton-volver"
-          onClick={volver}
-        >
-          <span>‹</span>
-          VOLVER A RESULTADOS
-        </button>
+        <div className="ur-detalle-cabecera">
+          <button className="ur-volver" onClick={volverResultados}>
+            ‹ VOLVER
+          </button>
 
-        <h2 className="ur-detalle-titulo">
-          {partidoSeleccionado.equipo1}
-          {" VS "}
-          {partidoSeleccionado.equipo2}
-        </h2>
-
-        <div className="ur-ayuda-deslizar">
-          DESLIZA HORIZONTALMENTE PARA CAMBIAR DE MAPA
+          <div>
+            <h2 className="ur-detalle-titulo">DETALLE DEL ENCUENTRO</h2>
+            <div className="ur-detalle-subtitulo">
+              JORNADA {partido._jornada} · PARTIDO {partido._numeroPartido}
+            </div>
+          </div>
         </div>
 
-        <div className="ur-indicador-mapa">
-          {MAPAS[paginaActual]?.nombre}
-          {" • "}
-          {MAPAS[paginaActual]?.subtitulo}
-          {" • "}
-          {paginaActual + 1} DE 5
+        <div className="ur-resumen-detalle">
+          <div className="ur-resumen-equipos">
+            <div className="ur-equipo">
+              {renderEscudo(equipo1)}
+              <div className="ur-equipo-nombre">{equipo1}</div>
+            </div>
+
+            <div className="ur-resumen-marcador">
+              {partido._marcador1} - {partido._marcador2}
+            </div>
+
+            <div className="ur-equipo">
+              {renderEscudo(equipo2)}
+              <div className="ur-equipo-nombre">{equipo2}</div>
+            </div>
+          </div>
         </div>
 
-        {detallesLoading ? (
-          <div className="ur-mensaje">
-            CARGANDO ESTADÍSTICAS DEL ENCUENTRO...
-          </div>
-        ) : detallesError ? (
-          <div className="ur-mensaje">
-            NO SE PUDIERON CARGAR LAS ESTADÍSTICAS.
-            <br />
-            COMPRUEBA LA CONEXIÓN.
-          </div>
-        ) : (
-          <div
-            className="ur-scroll-mapas"
-            onScroll={(evento) => {
-              const ancho = evento.currentTarget.clientWidth + 10;
-              const pagina = Math.round(
-                evento.currentTarget.scrollLeft / ancho
-              );
+        <h3 className="ur-mapas-titulo">5 MAPAS</h3>
+        <div className="ur-deslizar">
+          Selecciona un mapa para consultar sus estadísticas.
+        </div>
 
-              setPaginaActual(
-                Math.max(0, Math.min(4, pagina))
-              );
-            }}
-          >
-            {MAPAS.map((mapa, indice) =>
-              renderMapa(mapa, indice)
-            )}
-          </div>
-        )}
+        <div className="ur-mapas-navegacion">
+          {MAPAS.map((mapa, indice) => (
+            <button
+              key={mapa.mapa}
+              className={`ur-mapa-boton ${
+                mapaActivo === indice ? "activo" : ""
+              }`}
+              onClick={() => setMapaActivo(indice)}
+            >
+              MAPA {indice + 1}
+            </button>
+          ))}
+        </div>
 
-        <button
-          type="button"
-          className="ur-boton-volver"
-          style={{
-            justifyContent: "center",
-            marginTop: 15,
-            padding: 15,
-            background: "#081927",
-            border: `1px solid ${C.borde}`,
-            borderRadius: 11,
-          }}
-          onClick={volver}
-        >
-          ‹ VOLVER A RESULTADOS
-        </button>
+        <div className="ur-panel-mapa" key={mapaActivo}>
+          <div className="ur-mapa-tipo">
+            {MAPAS[mapaActivo].tipo}
+          </div>
+
+          <div className="ur-mapa-nombre">
+            {MAPAS[mapaActivo].mapa}
+          </div>
+
+          <div className="ur-mapa-indicador">
+            {MAPAS[mapaActivo].tipo} • {MAPAS[mapaActivo].mapa} •{" "}
+            {mapaActivo + 1} DE 5
+          </div>
+
+          {detallesLoading ? (
+            <div className="ur-cargando">
+              CARGANDO ESTADÍSTICAS...
+            </div>
+          ) : detallesError ? (
+            <div className="ur-error">{detallesError}</div>
+          ) : detallesDelPartido.length === 0 ? (
+            <div className="ur-sin-stats">
+              NO SE ENCONTRARON ESTADÍSTICAS PARA ESTE ENCUENTRO.
+            </div>
+          ) : detallesDelMapa.length === 0 ? (
+            <div className="ur-sin-stats">
+              NO HAY ESTADÍSTICAS REGISTRADAS PARA ESTE MAPA.
+            </div>
+          ) : (
+            <>
+              {ganadorDelMapa && (
+                <div className="ur-ganador-mapa">
+                  🏆 GANADOR DEL MAPA: {ganadorDelMapa}
+                </div>
+              )}
+
+              {equiposDelMapa.map((equipo) => {
+                const jugadores = detallesDelMapa.filter(
+                  (dato) =>
+                    normalizar(dato.equipo) === normalizar(equipo)
+                );
+
+                if (!jugadores.length) return null;
+
+                return (
+                  <div className="ur-equipo-tabla" key={equipo}>
+                    <div className="ur-equipo-tabla-titulo">
+                      {equipo}
+                    </div>
+
+                    <div className="ur-tabla-scroll">
+                      <table className="ur-tabla">
+                        <thead>
+                          <tr>
+                            <th>JUGADOR</th>
+                            <th>BAJAS</th>
+                            <th>MUERTES</th>
+                            <th>ASIST.</th>
+                            <th>K/D</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {jugadores.map((dato, indice) => (
+                            <tr
+                              key={`${dato.jugador}-${indice}`}
+                            >
+                              <td>
+                                <button
+                                  className="ur-jugador-boton"
+                                  onClick={() =>
+                                    abrirJugador(dato.jugador)
+                                  }
+                                >
+                                  {dato.jugador}
+                                </button>
+                              </td>
+                              <td>{dato.bajas}</td>
+                              <td>{dato.muertes}</td>
+                              <td>{dato.asistencias}</td>
+                              <td>
+                                {Number.isFinite(dato.kd)
+                                  ? dato.kd.toFixed(2)
+                                  : formatoKD(dato.bajas, dato.muertes)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
 
         {jugadorSeleccionado && (
-          <ModalEstadisticas
-            jugador={jugadorSeleccionado}
-            estadisticas={estadisticasGlobales}
-            iniciales={iniciales(jugadorSeleccionado.jugador)}
-            onCerrar={() => setJugadorSeleccionado(null)}
-          />
+          <div
+            className="ur-modal-fondo"
+            onClick={cerrarJugador}
+          >
+            <div
+              className="ur-modal"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h3 className="ur-modal-titulo">
+                {jugadorSeleccionado}
+              </h3>
+
+              <div className="ur-modal-equipo">
+                ESTADÍSTICAS GENERALES
+              </div>
+
+              {estadisticasJugador && (
+                <div className="ur-estadisticas-grid">
+                  <div className="ur-estadistica">
+                    <div className="ur-estadistica-valor">
+                      {estadisticasJugador.bajas}
+                    </div>
+                    <div className="ur-estadistica-label">BAJAS</div>
+                  </div>
+
+                  <div className="ur-estadistica">
+                    <div className="ur-estadistica-valor">
+                      {estadisticasJugador.muertes}
+                    </div>
+                    <div className="ur-estadistica-label">MUERTES</div>
+                  </div>
+
+                  <div className="ur-estadistica">
+                    <div className="ur-estadistica-valor">
+                      {estadisticasJugador.asistencias}
+                    </div>
+                    <div className="ur-estadistica-label">ASISTENCIAS</div>
+                  </div>
+
+                  <div className="ur-estadistica">
+                    <div className="ur-estadistica-valor">
+                      {estadisticasJugador.kd}
+                    </div>
+                    <div className="ur-estadistica-label">K/D GLOBAL</div>
+                  </div>
+
+                  <div className="ur-estadistica">
+                    <div className="ur-estadistica-valor">
+                      {estadisticasJugador.mapasJugados}
+                    </div>
+                    <div className="ur-estadistica-label">MAPAS JUGADOS</div>
+                  </div>
+
+                  <div className="ur-estadistica">
+                    <div className="ur-estadistica-valor">
+                      {estadisticasJugador.mapasGanados}
+                    </div>
+                    <div className="ur-estadistica-label">MAPAS GANADOS</div>
+                  </div>
+
+                  <div className="ur-estadistica">
+                    <div className="ur-estadistica-valor">
+                      {estadisticasJugador.porcentaje}%
+                    </div>
+                    <div className="ur-estadistica-label">
+                      VICTORIAS
+                    </div>
+                  </div>
+
+                  <div className="ur-estadistica">
+                    <div
+                      className="ur-estadistica-valor"
+                      style={{ fontSize: 13, paddingTop: 4 }}
+                    >
+                      {estadisticasJugador.equipoPrincipal}
+                    </div>
+                    <div className="ur-estadistica-label">
+                      EQUIPO PRINCIPAL
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button
+                className="ur-modal-cerrar"
+                onClick={cerrarJugador}
+              >
+                CERRAR
+              </button>
+
+              {typeof openPlayerMenu === "function" && (
+                <button
+                  className="ur-modal-perfil"
+                  onClick={() => {
+                    const nombre = jugadorSeleccionado;
+                    cerrarJugador();
+                    openPlayerMenu(nombre);
+                  }}
+                >
+                  VER PERFIL DEL JUGADOR
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     );
   }
 
-  // ==================================
-  // PANTALLA PRINCIPAL
-  // ==================================
-
   return (
     <div className="ur-contenedor">
       <style>{estilos}</style>
 
-      <h2 className="ur-titulo">
-        ÚLTIMOS RESULTADOS
-      </h2>
+      <h2 className="ur-titulo">ÚLTIMOS RESULTADOS</h2>
 
       <div className="ur-filtro">
-        <div className="ur-filtro-encabezado">
-          <div className="ur-linea-cian" />
-
-          <div className="ur-etiqueta">
+        <div className="ur-filtro-superior">
+          <span className="ur-filtro-titulo">
             FILTRAR JORNADA
-          </div>
+          </span>
 
-          <div className="ur-cantidad">
+          <span className="ur-filtro-cantidad">
             15 JORNADAS
-          </div>
+          </span>
         </div>
 
         <select
-          className="ur-selector"
+          className="ur-select"
           value={jornadaSeleccionada}
-          onChange={(evento) =>
-            setJornadaSeleccionada(evento.target.value)
+          onChange={(event) =>
+            setJornadaSeleccionada(event.target.value)
           }
         >
-          <option value="AUTO">
-            ÚLTIMA JORNADA FINALIZADA
-          </option>
+          <option value="TODAS">TODAS LAS JORNADAS</option>
 
-          {Array.from({ length: 15 }, (_, i) => i + 1).map((jornada) => (
+          {jornadasDisponibles.map((jornada) => (
             <option key={jornada} value={String(jornada)}>
               JORNADA {jornada}
             </option>
@@ -1312,239 +1329,103 @@ export default function UltimosResultados({
       </div>
 
       {matchesLoading ? (
-        <div className="ur-mensaje">
+        <div className="ur-cargando">
           CARGANDO RESULTADOS...
         </div>
       ) : matchesError ? (
-        <div className="ur-mensaje">
-          NO SE PUDIERON CARGAR LOS RESULTADOS.
-          <br />
-          COMPRUEBA LA CONEXIÓN.
+        <div className="ur-error">
+          NO SE PUDIERON CARGAR LOS PARTIDOS.
         </div>
-      ) : !partidos.length ? (
-        <div className="ur-mensaje">
+      ) : partidosPreparados.length === 0 ? (
+        <div className="ur-vacio">
           NO HAY RESULTADOS DISPONIBLES.
         </div>
-      ) : !resultados.length ? (
-        <div className="ur-mensaje">
-          TODAVÍA NO HAY ENFRENTAMIENTOS FINALIZADOS.
-        </div>
-      ) : !resultadosVisibles.length ? (
-        <div className="ur-mensaje">
+      ) : partidosVisibles.length === 0 ? (
+        <div className="ur-vacio">
           NO HAY RESULTADOS FINALIZADOS EN ESTA JORNADA.
         </div>
       ) : (
-        resultadosVisibles.map((partido) => {
-          const marcador1 = numero(partido.score1);
-          const marcador2 = numero(partido.score2);
+        <div className="ur-lista">
+          {partidosVisibles.map((partido) => {
+            const ganaEquipo1 =
+              partido._marcador1 > partido._marcador2;
+            const ganaEquipo2 =
+              partido._marcador2 > partido._marcador1;
 
-          const gana1 = marcador1 > marcador2;
-          const gana2 = marcador2 > marcador1;
+            return (
+              <button
+                className="ur-partido"
+                key={`${partido._jornada}-${partido._numeroPartido}-${partido._indiceOriginal}`}
+                onClick={() => abrirDetalle(partido)}
+              >
+                <div className="ur-partido-jornada">
+                  JORNADA {partido._jornada} · PARTIDO{" "}
+                  {partido._numeroPartido}
+                </div>
 
-          return (
-            <article
-              key={`${partido.jornadaNumero}-${partido.numeroPartido}-${partido.indiceOriginal}`}
-              className="ur-tarjeta"
-              onClick={() => abrirDetalle(partido)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(evento) => {
-                if (evento.key === "Enter") abrirDetalle(partido);
-              }}
-            >
-              <div className="ur-jornada">
-                JORNADA {partido.jornadaNumero}
-              </div>
+                <div className="ur-enfrentamiento">
+                  <div className="ur-equipo">
+                    {renderEscudo(partido._equipo1)}
 
-              <div className="ur-enfrentamiento">
-                {renderEquipo(partido.equipo1, gana1)}
+                    <div
+                      className={`ur-equipo-nombre ${
+                        ganaEquipo1 ? "ur-ganador" : ""
+                      }`}
+                    >
+                      {partido._equipo1}
 
-                <div>
-                  <div className="ur-marcador">
-                    {partido.score1} - {partido.score2}
+                      {ganaEquipo1 && (
+                        <div className="ur-victoria">
+                          🏆 VICTORIA
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="ur-marcador-etiqueta">
-                    RESULTADO
+                  <div>
+                    <div className="ur-marcador">
+                      <span>{partido._marcador1}</span>
+                      <span className="ur-separador">-</span>
+                      <span>{partido._marcador2}</span>
+                    </div>
+                    <div className="ur-etiqueta-resultado">
+                      RESULTADO
+                    </div>
+                  </div>
+
+                  <div className="ur-equipo">
+                    {renderEscudo(partido._equipo2)}
+
+                    <div
+                      className={`ur-equipo-nombre ${
+                        ganaEquipo2 ? "ur-ganador" : ""
+                      }`}
+                    >
+                      {partido._equipo2}
+
+                      {ganaEquipo2 && (
+                        <div className="ur-victoria">
+                          🏆 VICTORIA
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {renderEquipo(partido.equipo2, gana2)}
-              </div>
+                <div className="ur-pie-partido">
+                  <span className="ur-estado">
+                    ● FINALIZADO
+                  </span>
 
-              <div className="ur-estado">
-                ● FINALIZADO
-              </div>
-
-              <div className="ur-instruccion">
-                TOCA PARA VER EL DETALLE ›
-              </div>
-            </article>
-          );
-        })
-      )}
-
-      {jugadorSeleccionado && (
-        <ModalEstadisticas
-          jugador={jugadorSeleccionado}
-          estadisticas={estadisticasGlobales}
-          iniciales={iniciales(jugadorSeleccionado.jugador)}
-          onCerrar={() => setJugadorSeleccionado(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-// ==================================
-// MODAL DE ESTADÍSTICAS GLOBALES
-// ==================================
-
-function ModalEstadisticas({
-  jugador,
-  estadisticas,
-  iniciales,
-  onCerrar,
-}) {
-  return (
-    <div
-      className="ur-modal-fondo"
-      onClick={onCerrar}
-    >
-      <div
-        className="ur-modal"
-        onClick={(evento) => evento.stopPropagation()}
-      >
-        <div className="ur-modal-cabecera">
-          <div className="ur-modal-titulo">
-            ESTADÍSTICAS GENERALES
-          </div>
-
-          <button
-            type="button"
-            className="ur-cerrar"
-            onClick={onCerrar}
-          >
-            ×
-          </button>
+                  <span className="ur-detalle-link">
+                    TOCA PARA VER EL DETALLE ›
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
-
-        <div className="ur-perfil-cabecera">
-          <div className="ur-iniciales">
-            {iniciales}
-          </div>
-
-          <div>
-            <div className="ur-perfil-nombre">
-              {jugador.jugador}
-            </div>
-
-            <div className="ur-perfil-equipo">
-              {estadisticas?.equipoPrincipal ?? jugador.equipo}
-            </div>
-
-            <div style={{
-              marginTop: 5,
-              color: C.cian,
-              fontSize: 9,
-              fontWeight: 900,
-            }}>
-              JUGADOR DE LIGA 4VS4
-            </div>
-          </div>
-        </div>
-
-        {!estadisticas ? (
-          <div className="ur-mensaje">
-            NO HAY ESTADÍSTICAS DISPONIBLES.
-          </div>
-        ) : (
-          <>
-            <div className="ur-estadisticas-grid">
-              <TarjetaEstadistica
-                etiqueta="BAJAS"
-                valor={formatoGlobal(estadisticas.bajas)}
-                color={C.verde}
-              />
-
-              <TarjetaEstadistica
-                etiqueta="MUERTES"
-                valor={formatoGlobal(estadisticas.muertes)}
-                color={C.rojo}
-              />
-
-              <TarjetaEstadistica
-                etiqueta="ASISTENCIAS"
-                valor={formatoGlobal(estadisticas.asistencias)}
-                color={C.cian}
-              />
-
-              <TarjetaEstadistica
-                etiqueta="K/D GLOBAL"
-                valor={estadisticas.kd.toFixed(2)}
-                color={C.dorado}
-              />
-
-              <TarjetaEstadistica
-                etiqueta="MAPAS JUGADOS"
-                valor={String(estadisticas.mapasJugados)}
-                color={C.blanco}
-              />
-
-              <TarjetaEstadistica
-                etiqueta="MAPAS GANADOS"
-                valor={`${estadisticas.mapasGanados} (${estadisticas.porcentaje.toFixed(1)}%)`}
-                color={C.verde}
-              />
-            </div>
-
-            <div className="ur-modal-nota">
-              Datos acumulados de todos los registros disponibles.
-            </div>
-          </>
-        )}
-
-        <button
-          type="button"
-          onClick={onCerrar}
-          style={{
-            width: "100%",
-            padding: 13,
-            marginTop: 17,
-            color: C.cian,
-            background: "#10283A",
-            border: `1px solid ${C.borde}`,
-            borderRadius: 10,
-            fontWeight: 900,
-            cursor: "pointer",
-          }}
-        >
-          CERRAR
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function formatoGlobal(valor) {
-  return Number.isInteger(valor)
-    ? String(valor)
-    : valor.toFixed(1);
-}
-
-function TarjetaEstadistica({ etiqueta, valor, color }) {
-  return (
-    <div className="ur-estadistica">
-      <div className="ur-estadistica-etiqueta">
-        {etiqueta}
-      </div>
-
-      <div
-        className="ur-estadistica-valor"
-        style={{ color }}
-      >
-        {valor}
-      </div>
+      )}
     </div>
   );
 }
