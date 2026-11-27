@@ -975,7 +975,7 @@ export default function UltimosResultados({
       overflow-wrap: anywhere;
     }
 
-    /* TABLA ADAPTADA AL ANCHO DE LA VENTANA */
+    /* TABLAS Y TIPOGRAFÍA AMPLIADA */
 
     .ur-tabla-scroll {
       width: 100%;
@@ -988,12 +988,12 @@ export default function UltimosResultados({
       min-width: 0;
       table-layout: fixed;
       border-collapse: collapse;
-      font-size: 11px;
+      font-size: 13px;
     }
 
     .ur-tabla th {
       color: ${COLORES.secundario};
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 1000;
       padding: 10px 2px;
       text-align: center;
@@ -1022,9 +1022,9 @@ export default function UltimosResultados({
     .ur-tabla td {
       border-top: 1px solid rgba(140,165,185,.15);
       color: white;
-      padding: 10px 2px;
+      padding: 11px 2px;
       text-align: center;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 900;
       white-space: nowrap;
       overflow: hidden;
@@ -1046,10 +1046,10 @@ export default function UltimosResultados({
       border: 0;
       color: ${COLORES.cian};
       font-family: inherit;
-      font-size: 10px;
-      line-height: 1.3;
+      font-size: 13px;
+      line-height: 1.35;
       font-weight: 1000;
-      padding: 2px 0;
+      padding: 3px 0;
       text-align: left;
       cursor: pointer;
       white-space: normal;
@@ -1180,21 +1180,21 @@ export default function UltimosResultados({
       }
 
       .ur-tabla {
-        font-size: 10px;
+        font-size: 12px;
       }
 
       .ur-tabla th {
-        font-size: 8px;
+        font-size: 9px;
         padding: 9px 1px;
       }
 
       .ur-tabla td {
-        font-size: 10px;
-        padding: 9px 1px;
+        font-size: 12px;
+        padding: 10px 1px;
       }
 
       .ur-jugador-boton {
-        font-size: 9px;
+        font-size: 12px;
       }
     }
 
@@ -1227,11 +1227,11 @@ export default function UltimosResultados({
       }
 
       .ur-tabla td {
-        font-size: 12px;
+        font-size: 13px;
       }
 
       .ur-jugador-boton {
-        font-size: 11px;
+        font-size: 13px;
       }
     }
   `;
