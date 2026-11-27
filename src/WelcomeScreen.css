@@ -1,136 +1,122 @@
 
-.welcome-screen {
-  width: 100%;
-  max-width: 760px;
-  min-height: calc(100vh - 70px);
-  min-height: calc(100dvh - 70px);
-  margin: 0 auto;
-  padding: clamp(10px, 2.5vh, 24px) 18px;
+/* =========================================
+   LIGA4VS4 - BIENVENIDA A PANTALLA COMPLETA
+   ========================================= */
+
+.app:has(.android-welcome) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  background:
-    radial-gradient(ellipse at 50% 0%, #102638 0%, transparent 48%),
-    #03070D;
 }
 
-.welcome-screen .welcome-logo-panel {
-  min-height: clamp(105px, 20vh, 170px);
-  flex-shrink: 1;
+.app:has(.android-welcome) .welcome-header {
+  flex: 0 0 auto;
+  margin-bottom: 0;
 }
 
-.welcome-screen .welcome-logo-caption {
-  margin-top: 10px;
-}
-
-.welcome-screen .welcome-matches-heading {
-  margin: clamp(10px, 2vh, 20px) 0 9px;
-  flex-shrink: 0;
-}
-
-.welcome-screen .welcome-matches-panel {
+.app:has(.android-welcome) .android-welcome {
+  flex: 1 1 auto;
   min-height: 0;
-  flex: 1;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: clamp(8px, 2vh, 18px) 14px;
+  gap: clamp(6px, 1.5vh, 14px);
+}
+
+.app:has(.android-welcome) .welcome-logo-panel {
+  flex: 0 1 auto;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.app:has(.android-welcome) .welcome-matches-heading {
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.app:has(.android-welcome) .welcome-matches-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  width: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
-.welcome-screen .matches-list {
-  gap: 7px;
+.app:has(.android-welcome) .welcome-matches-panel::-webkit-scrollbar {
+  display: none;
 }
 
-.welcome-screen .welcome-match-card {
-  padding: 7px 6px;
+.app:has(.android-welcome) .matches-list {
+  padding-bottom: 4px;
 }
 
-.welcome-screen .match-shield-button {
-  width: clamp(48px, 10vw, 68px);
-  height: clamp(48px, 10vw, 68px);
+.app:has(.android-welcome) .welcome-enter-button {
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
-.welcome-screen .match-shield {
-  width: 42px;
-  height: 42px;
-  max-width: 42px;
-  max-height: 42px;
+.app:has(.android-welcome) .welcome-register-link {
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
-.welcome-screen .match-team {
-  gap: 3px;
+.app:has(.android-welcome) footer {
+  display: none;
 }
 
-.welcome-screen .match-center {
-  gap: 5px;
-}
-
-.welcome-screen .welcome-enter-button {
-  min-height: 48px;
-  margin-top: clamp(10px, 2vh, 18px);
-  flex-shrink: 0;
-}
-
-.welcome-screen .welcome-register-link {
-  margin-top: 9px;
-  min-height: 22px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 700px) {
-  .welcome-screen {
-    min-height: calc(100vh - 70px);
-    min-height: calc(100dvh - 70px);
-    padding: 10px 14px 12px;
-  }
-
-  .welcome-screen .welcome-logo-panel {
-    min-height: clamp(95px, 17vh, 145px);
-  }
-
-  .welcome-screen .welcome-matches-heading h2 {
-    font-size: 11px;
-  }
-
-  .welcome-screen .welcome-matches-panel {
-    padding: 8px;
-  }
-
-  .welcome-screen .welcome-enter-button {
-    min-height: 45px;
-    font-size: 10px;
-  }
-}
-
+/* Pantallas pequeñas */
 @media (max-height: 700px) {
-  .welcome-screen {
-    padding-top: 7px;
-    padding-bottom: 7px;
+  .app:has(.android-welcome) .android-welcome {
+    gap: 5px;
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 
-  .welcome-screen .welcome-logo-panel {
-    min-height: 85px;
+  .app:has(.android-welcome) .welcome-logo-panel {
+    transform: scale(0.85);
+    transform-origin: center;
   }
 
-  .welcome-screen .welcome-matches-heading {
-    margin-top: 8px;
-    margin-bottom: 6px;
+  .app:has(.android-welcome) .welcome-matches-heading {
+    margin-bottom: 0;
   }
 
-  .welcome-screen .welcome-logo-caption {
-    margin-top: 5px;
-  }
-
-  .welcome-screen .welcome-enter-button {
-    margin-top: 7px;
-  }
-
-  .welcome-screen .welcome-register-link {
-    margin-top: 4px;
+  .app:has(.android-welcome) .welcome-enter-button {
+    min-height: 42px;
   }
 }
 
-@media (max-width: 360px) {
-  .welcome-screen {
-    padding-left: 10px;
-    padding-right: 10px;
+/* Teléfonos muy bajos */
+@media (max-height: 580px) {
+  .app:has(.android-welcome) .welcome-logo-panel {
+    transform: scale(0.72);
+    margin-top: -8px;
+    margin-bottom: -8px;
+  }
+
+  .app:has(.android-welcome) .welcome-matches-heading h2 {
+    font-size: 13px;
+  }
+
+  .app:has(.android-welcome) .welcome-enter-button {
+    min-height: 38px;
+    font-size: 12px;
   }
 }
