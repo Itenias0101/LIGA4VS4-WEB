@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import "./WelcomeScreen.css";
 import { signOut } from "firebase/auth";
@@ -17,6 +18,7 @@ import { auth, db } from "./firebase";
 import AndroidBackHandler from "./AndroidBackHandler.jsx";
 import Clasificacion from "./Clasificacion.jsx";
 import ProximosEnfrentamientos from "./ProximosEnfrentamientos.jsx";
+import UltimosResultados from "./UltimosResultados.jsx";
 import InicioSesion from "./InicioSesion.jsx";
 import WelcomeScreen from "./WelcomeScreen.jsx";
 import useActividadPerfil from "./Actividadperfil.jsx";
@@ -1412,7 +1414,17 @@ export default function App() {
                                 openPlayerMenu={openPlayerMenu}
                               />
                             )
-                            : renderSectionPlaceholder()}
+                            : activeSection === "resultados"
+                              ? (
+                                <UltimosResultados
+                                  matches={matches}
+                                  matchesLoading={matchesLoading}
+                                  matchesError={matchesError}
+                                  getTeamShield={getTeamShield}
+                                  openPlayerMenu={openPlayerMenu}
+                                />
+                              )
+                              : renderSectionPlaceholder()}
 
               <nav className="web-bottom-navigation">
                 {bottomItems.map((item) => (
