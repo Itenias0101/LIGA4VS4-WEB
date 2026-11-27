@@ -11,7 +11,8 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  serverTimestamp
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
@@ -771,7 +772,7 @@ export default function App() {
 
       await updateDoc(notificationRef, {
         leida: true,
-        leidaAt: new Date()
+        leidaAt: serverTimestamp()
       });
     } catch (err) {
       console.error("Error al marcar notificación:", err);
