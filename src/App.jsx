@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
+import AndroidBackHandler from "./AndroidBackHandler.jsx";
 import Clasificacion from "./Clasificacion.jsx";
 import InicioSesion from "./InicioSesion.jsx";
 import WelcomeScreen from "./WelcomeScreen.jsx";
@@ -1271,6 +1272,17 @@ export default function App() {
 
   return (
     <main className="app">
+
+<AndroidBackHandler
+  showCompetitionMenu={showCompetitionMenu}
+  activeSection={activeSection}
+  playerView={playerView}
+  notificationsOpen={notificationsOpen}
+  closePlayerView={closePlayerView}
+  setActiveSection={setActiveSection}
+  setShowCompetitionMenu={setShowCompetitionMenu}
+  setNotificationsOpen={setNotificationsOpen}
+/>
 
       <InicioSesion
         mode={mode}
