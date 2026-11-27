@@ -1,8 +1,12 @@
 
+/* =========================================
+   PÁGINA PRINCIPAL
+========================================= */
+
 .publicaciones-page {
   width: 100%;
   min-height: 100vh;
-  padding: 22px 14px 110px;
+  padding: 15px 14px 110px;
   box-sizing: border-box;
   color: #ffffff;
   background:
@@ -14,65 +18,568 @@
     #05080d;
 }
 
+/* =========================================
+   ENCABEZADO COMPACTO
+========================================= */
+
 .publicaciones-heading {
+  position: relative;
   width: 100%;
   max-width: 760px;
-  margin: 0 auto 25px;
-  padding: 22px 16px;
+  margin: 0 auto 19px;
+  padding: 13px 15px;
   text-align: center;
   box-sizing: border-box;
-  border: 1px solid rgba(0, 217, 255, 0.18);
-  border-radius: 15px;
-  background: linear-gradient(
-    145deg,
-    rgba(12, 28, 43, 0.95),
-    rgba(5, 10, 17, 0.98)
-  );
+  overflow: hidden;
+  border: 1px solid rgba(0, 217, 255, 0.17);
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      110deg,
+      rgba(12, 28, 43, 0.96),
+      rgba(5, 10, 17, 0.98)
+    );
   box-shadow:
-    0 0 24px rgba(0, 174, 255, 0.07),
-    inset 0 0 25px rgba(0, 174, 255, 0.025);
+    0 5px 20px rgba(0, 0, 0, 0.2),
+    inset 0 0 20px rgba(0, 174, 255, 0.025);
+}
+
+.publicaciones-heading::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 15%;
+  width: 70%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 217, 255, 0.7),
+    transparent
+  );
 }
 
 .publicaciones-heading-label {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  color: #8da8bb;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 2px;
+  gap: 7px;
+  color: #819aaa;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
 }
 
 .publicaciones-heading-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #00dcff;
-  box-shadow: 0 0 10px #00dcff;
+  box-shadow: 0 0 9px #00dcff;
 }
 
 .publicaciones-heading h1 {
-  margin: 15px 0 8px;
-  font-size: clamp(23px, 5vw, 36px);
+  margin: 8px 0 5px;
+  font-size: clamp(20px, 4.8vw, 30px);
   line-height: 1.1;
   font-weight: 1000;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   color: #ffffff;
 }
 
 .publicaciones-heading h1 span {
   color: #00d9ff;
-  text-shadow: 0 0 15px rgba(0, 217, 255, 0.35);
+  text-shadow: 0 0 13px rgba(0, 217, 255, 0.3);
 }
 
 .publicaciones-heading p {
   margin: 0;
-  color: #8499a9;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
+  color: #71899b;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
+
+/* =========================================
+   FORMULARIO COMPARTE TU JUGADA
+========================================= */
+
+.publicaciones-composer {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto 22px;
+  padding: 17px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(0, 194, 255, 0.22);
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      ellipse at 0% 0%,
+      rgba(0, 160, 255, 0.09),
+      transparent 50%
+    ),
+    linear-gradient(
+      145deg,
+      #111e2b,
+      #090f17 65%,
+      #080d14
+    );
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.publicaciones-composer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 18px;
+  width: 95px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    #00d9ff,
+    rgba(0, 217, 255, 0.05)
+  );
+  box-shadow: 0 0 12px rgba(0, 217, 255, 0.45);
+}
+
+.publicaciones-composer-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+
+.publicaciones-composer-icon {
+  display: flex;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 217, 255, 0.38);
+  border-radius: 11px;
+  background: linear-gradient(
+    145deg,
+    rgba(0, 183, 255, 0.19),
+    rgba(0, 65, 110, 0.13)
+  );
+  color: #00dcff;
+  font-size: 16px;
+  box-shadow:
+    inset 0 0 13px rgba(0, 217, 255, 0.06),
+    0 0 14px rgba(0, 180, 255, 0.07);
+}
+
+.publicaciones-composer-icon span {
+  margin-left: 2px;
+}
+
+.publicaciones-composer-titulo {
+  min-width: 0;
+}
+
+.publicaciones-composer-etiqueta {
+  display: block;
+  margin-bottom: 4px;
+  color: #00c9f4;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+}
+
+.publicaciones-composer-header h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 1000;
+  letter-spacing: 0.7px;
+}
+
+.publicaciones-composer-header p {
+  margin: 5px 0 0;
+  color: #8195a5;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* =========================================
+   DESCRIPCIÓN
+========================================= */
+
+.publicaciones-textarea-contenedor {
+  position: relative;
+  width: 100%;
+}
+
+.publicaciones-descripcion-input {
+  display: block;
+  width: 100%;
+  min-height: 91px;
+  padding: 13px 13px 29px;
+  box-sizing: border-box;
+  resize: vertical;
+  outline: none;
+  border: 1px solid rgba(130, 164, 190, 0.15);
+  border-radius: 9px;
+  background: rgba(3, 9, 16, 0.72);
+  color: #eaf8ff;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.publicaciones-descripcion-input::placeholder {
+  color: #64798a;
+}
+
+.publicaciones-descripcion-input:focus {
+  border-color: rgba(0, 205, 255, 0.55);
+  background: rgba(3, 12, 21, 0.95);
+  box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.07);
+}
+
+.publicaciones-descripcion-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.publicaciones-contador {
+  position: absolute;
+  right: 11px;
+  bottom: 9px;
+  color: #60798b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.publicaciones-contador span {
+  color: #00cfff;
+}
+
+/* =========================================
+   SELECTOR DE ARCHIVO
+========================================= */
+
+.publicaciones-archivo-input {
+  display: none;
+}
+
+.publicaciones-composer-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.publicaciones-seleccionar-archivo {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 10px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 196, 255, 0.35);
+  border-radius: 8px;
+  background: linear-gradient(
+    145deg,
+    rgba(0, 146, 205, 0.13),
+    rgba(0, 62, 103, 0.09)
+  );
+  color: #b8eafa;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.35px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.publicaciones-seleccionar-archivo:hover {
+  border-color: #00d9ff;
+  background: rgba(0, 176, 235, 0.17);
+  color: #ffffff;
+  box-shadow: 0 0 13px rgba(0, 195, 255, 0.09);
+}
+
+.publicaciones-icono-adjuntar {
+  color: #00d9ff;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* =========================================
+   BOTÓN PUBLICAR
+========================================= */
+
+.publicaciones-btn-publicar {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 10px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 225, 255, 0.75);
+  border-radius: 8px;
+  background: linear-gradient(
+    115deg,
+    #007fae,
+    #00a9d4 55%,
+    #087ca9
+  );
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 1000;
+  letter-spacing: 0.45px;
+  cursor: pointer;
+  box-shadow:
+    0 4px 13px rgba(0, 156, 220, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.publicaciones-btn-publicar > span:first-child {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.publicaciones-btn-publicar:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 18px rgba(0, 185, 255, 0.27),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.publicaciones-btn-publicar:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.publicaciones-btn-publicar:disabled {
+  border-color: rgba(100, 133, 151, 0.16);
+  background: linear-gradient(
+    120deg,
+    #263744,
+    #1a2934
+  );
+  color: #728695;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.publicaciones-mini-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: publicaciones-girar 0.7s linear infinite;
+}
+
+/* =========================================
+   ARCHIVO SELECCIONADO
+========================================= */
+
+.publicaciones-archivo-seleccionado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(0, 198, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 153, 210, 0.07);
+}
+
+.publicaciones-archivo-icono {
+  display: flex;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: rgba(0, 194, 255, 0.12);
+  color: #00d9ff;
+  font-size: 15px;
+}
+
+.publicaciones-archivo-info {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.publicaciones-archivo-nombre {
+  overflow: hidden;
+  color: #d9edf7;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.publicaciones-archivo-peso {
+  color: #7893a5;
+  font-size: 9px;
+}
+
+.publicaciones-quitar-archivo {
+  display: flex;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 100, 100, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 65, 65, 0.08);
+  color: #ff8888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.publicaciones-quitar-archivo:hover {
+  border-color: rgba(255, 100, 100, 0.55);
+  background: rgba(255, 65, 65, 0.17);
+  color: #ffffff;
+}
+
+.publicaciones-quitar-archivo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   LÍMITES DE ARCHIVO
+========================================= */
+
+.publicaciones-limites {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 13px;
+  color: #718797;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.publicaciones-limites > span {
+  margin-right: 2px;
+  color: #00cfff;
+  font-size: 11px;
+}
+
+.publicaciones-limites i {
+  width: 3px;
+  height: 3px;
+  margin: 0 3px;
+  border-radius: 50%;
+  background: #00aeca;
+}
+
+/* =========================================
+   AVISOS Y MENSAJES
+========================================= */
+
+.publicaciones-aviso-permisos {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto 20px;
+  padding: 13px 15px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 180, 255, 0.16);
+  border-radius: 9px;
+  background: rgba(8, 21, 33, 0.9);
+}
+
+.publicaciones-aviso-permisos > span {
+  font-size: 17px;
+}
+
+.publicaciones-aviso-permisos p {
+  margin: 0;
+  color: #91a9b9;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.publicaciones-mensaje-exito,
+.publicaciones-mensaje-error {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto 15px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.publicaciones-mensaje-exito {
+  border: 1px solid rgba(42, 220, 153, 0.25);
+  background: rgba(25, 160, 105, 0.09);
+  color: #83e6ba;
+}
+
+.publicaciones-mensaje-exito span {
+  color: #39e7a0;
+  font-size: 15px;
+}
+
+.publicaciones-mensaje-error {
+  border: 1px solid rgba(255, 88, 88, 0.25);
+  background: rgba(190, 45, 45, 0.09);
+  color: #ffaaaa;
+}
+
+.publicaciones-mensaje-error span {
+  display: flex;
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 80, 80, 0.16);
+  color: #ff8585;
+}
+
+/* =========================================
+   FEED
+========================================= */
 
 .publicaciones-feed {
   display: flex;
@@ -82,6 +589,10 @@
   max-width: 760px;
   margin: 0 auto;
 }
+
+/* =========================================
+   TARJETA DE PUBLICACIÓN
+========================================= */
 
 .publicacion-card {
   width: 100%;
@@ -220,6 +731,56 @@
   letter-spacing: 1.3px;
 }
 
+/* =========================================
+   BOTÓN ELIMINAR PUBLICACIÓN
+========================================= */
+
+.publicacion-acciones {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 13px 12px;
+}
+
+.publicacion-btn-eliminar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 29px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 93, 93, 0.2);
+  border-radius: 6px;
+  background: rgba(160, 38, 45, 0.09);
+  color: #c77c83;
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.55px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.publicacion-eliminar-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.publicacion-btn-eliminar:hover:not(:disabled) {
+  border-color: rgba(255, 89, 89, 0.5);
+  background: rgba(190, 45, 55, 0.17);
+  color: #ff9b9b;
+  box-shadow: 0 0 12px rgba(255, 55, 65, 0.07);
+}
+
+.publicacion-btn-eliminar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   ESTADOS DE CARGA
+========================================= */
+
 .publicaciones-estado {
   display: flex;
   min-height: 180px;
@@ -275,6 +836,10 @@
   font-weight: 900;
 }
 
+/* =========================================
+   FEED VACÍO
+========================================= */
+
 .publicaciones-vacio {
   display: flex;
   min-height: 290px;
@@ -324,6 +889,10 @@
   letter-spacing: 1.5px;
 }
 
+/* =========================================
+   PIE DE PÁGINA
+========================================= */
+
 .publicaciones-footer {
   display: flex;
   flex-direction: column;
@@ -343,13 +912,41 @@
   letter-spacing: 1.5px;
 }
 
+/* =========================================
+   TABLETS Y ESCRITORIO
+========================================= */
+
 @media (min-width: 700px) {
+
   .publicaciones-page {
-    padding: 30px 22px 120px;
+    padding: 20px 22px 120px;
   }
 
   .publicaciones-heading {
-    padding: 28px 20px;
+    padding: 15px 20px;
+  }
+
+  .publicaciones-composer {
+    padding: 21px;
+  }
+
+  .publicaciones-composer-header {
+    margin-bottom: 19px;
+  }
+
+  .publicaciones-composer-header h2 {
+    font-size: 17px;
+  }
+
+  .publicaciones-descripcion-input {
+    min-height: 105px;
+    font-size: 13px;
+  }
+
+  .publicaciones-seleccionar-archivo,
+  .publicaciones-btn-publicar {
+    min-height: 45px;
+    font-size: 10px;
   }
 
   .publicacion-card-header {
@@ -362,7 +959,54 @@
   }
 }
 
+/* =========================================
+   MÓVILES PEQUEÑOS
+========================================= */
+
 @media (max-width: 380px) {
+
+  .publicaciones-page {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .publicaciones-composer {
+    padding: 13px;
+  }
+
+  .publicaciones-composer-header {
+    gap: 9px;
+  }
+
+  .publicaciones-composer-icon {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .publicaciones-composer-header h2 {
+    font-size: 13px;
+  }
+
+  .publicaciones-composer-header p {
+    font-size: 9px;
+  }
+
+  .publicaciones-composer-actions {
+    gap: 6px;
+  }
+
+  .publicaciones-seleccionar-archivo,
+  .publicaciones-btn-publicar {
+    padding-right: 6px;
+    padding-left: 6px;
+    font-size: 8px;
+  }
+
+  .publicaciones-limites {
+    font-size: 7px;
+  }
+
   .publicacion-fecha {
     max-width: 85px;
     font-size: 8px;
