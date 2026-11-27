@@ -52,7 +52,7 @@ const TEAM_SHIELDS = {
   THEBUTCHERS:
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifCUkuhD1Rotz7ryg2x5csfz6tdYpBMzJjbHTxS-6q-UlccYFeG6Dn5SLVOlG9FAAY1d8oGURG5QpaDMSyeG6nN87bEbbAtjr14gQn4CKj36yhUBpTcMjLyj6C8LC9Lsrzme520bSRVvvQXYV7DAMs2zA5lN-SwfmN5EMeHp1QL8XxcaX9SafZBBCI89k/s1341/1000138092.png",
   NOMERCY:
-    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcBDOqw3eSzt2_VLN1SyblE3rXVWh5Yw9-fvuw4ctVeA9zAt3KGub2nMn8z0wAHyTN7Zy14Q8JS1F8ZIxDJwfJfRNNKtt9iz0LeM2qG7A_yJCQ_2Op4qOu13A7gufB-3sHjdkNmZhEX4az8Urq-JRM6fkNzMAShQI1cplKe8IHKubVzAB-cVobGOoUYYQ/s1600/1000113547.png"
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcBDOqw3eSzt2_VLN1SyblE3rXVWh5Yw9-fvuw4ctVeA9zAt3KGub2nMn8z0wAHyTN7Zy14Q8JS1F8ZIxDJwfJfRNNKtt9iz0LeM2qG7A_yJCQ_2Op4qOu13A7gufB-3sHjdkNmZhEX4az8Urq-JRM6fkNzMAShQI1cplKe8IHKubVzAB-cVobGOuY-s1600/1000113547.png"
 };
 
 // =========================================
@@ -543,7 +543,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // null = ventana de autenticación cerrada
   const [mode, setMode] = useState(null);
 
   const [message, setMessage] = useState("");
@@ -1303,12 +1302,7 @@ export default function App() {
         )}
       </div>
 
-      <div className="welcome-competition-active">
-        <span className="championship-status-dot" />
-        SISTEMA DE COMPETICIÓN ACTIVO
-      </div>
-
-      <div className="welcome-footer">LIGA 4VS4 OFICIAL | 2026</div>
+      {/* BOTÓN SUBIDO: se eliminaron los dos textos anteriores */}
 
       <button className="welcome-enter-button" onClick={enterChampionship}>
         ENTRAR AL CAMPEONATO <span>›</span>
@@ -1454,7 +1448,6 @@ export default function App() {
   return (
     <main className="app">
 
-      {/* La autenticación permanece montada incluso durante la carga inicial */}
       <InicioSesion
         mode={mode}
         onModeChange={setMode}
