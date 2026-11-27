@@ -52,11 +52,9 @@ export default function ProximosEnfrentamientos({
   getTeamShield,
   openPlayerMenu
 }) {
-  // null significa selección automática de la próxima jornada.
   const [selectedMatchday, setSelectedMatchday] = useState(null);
   const [expandedMatch, setExpandedMatch] = useState(null);
 
-  // Obtener todos los encuentros pendientes.
   const pendingMatches = useMemo(() => {
     return matches
       .map((match, index) => ({
@@ -73,27 +71,22 @@ export default function ProximosEnfrentamientos({
         );
       })
       .sort((a, b) => {
-        const jornadaDifference =
+        const difference =
           getMatchdayNumber(a.jornada) -
           getMatchdayNumber(b.jornada);
 
-        if (jornadaDifference !== 0) {
-          return jornadaDifference;
-        }
+        if (difference !== 0) return difference;
 
         return a.originalIndex - b.originalIndex;
       });
   }, [matches]);
 
-  // Detectar la jornada pendiente más próxima.
   const nextMatchday = useMemo(() => {
     if (pendingMatches.length === 0) return null;
 
     return getMatchdayNumber(pendingMatches[0].jornada);
   }, [pendingMatches]);
 
-  // Si el usuario no ha elegido una jornada manualmente,
-  // utilizar automáticamente la próxima jornada pendiente.
   const effectiveMatchday =
     selectedMatchday === null
       ? nextMatchday !== null
@@ -101,7 +94,6 @@ export default function ProximosEnfrentamientos({
         : "TODAS"
       : selectedMatchday;
 
-  // Aplicar el selector sin eliminar ninguna jornada.
   const visibleMatches = useMemo(() => {
     if (effectiveMatchday === "TODAS") {
       return pendingMatches;
@@ -199,10 +191,6 @@ export default function ProximosEnfrentamientos({
                   }
                 }}
               >
-                <span className="upcoming-player-number">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-
                 <span className="upcoming-player-name">
                   {player.player}
                 </span>
