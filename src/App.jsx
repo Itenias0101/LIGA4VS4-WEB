@@ -1,12 +1,7 @@
 
 import React, { useEffect, useState } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  signOut
-} from "firebase/auth";
+import "./WelcomeScreen.css";
+import { signOut } from "firebase/auth";
 
 import {
   collection,
@@ -16,14 +11,17 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  writeBatch,
-  getDocs,
-  where,
-  limit
+  writeBatch
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
-import Publicaciones from "./Publicaciones.jsx";
+import AndroidBackHandler from "./AndroidBackHandler.jsx";
+import Clasificacion from "./Clasificacion.jsx";
+import ProximosEnfrentamientos from "./ProximosEnfrentamientos.jsx";
+import UltimosResultados from "./UltimosResultados.jsx";
+import InicioSesion from "./InicioSesion.jsx";
+import WelcomeScreen from "./WelcomeScreen.jsx";
+import useActividadPerfil from "./Actividadperfil.jsx";
 
 // =========================================
 // FUENTES DE DATOS
@@ -55,22 +53,11 @@ const TEAM_SHIELDS = {
   KINGS:
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9_Js8cNIVeuf_7SJEav59OvTKG1IQ_IXETMNG34i3TeRUfnwl1SL9tif0aqeDrUuMyV3vedMzMYbDWsofYU1xZQoSCAd04hmyFavJWbQl0i1m1iiuV3-y0YxC86iuwuRz1is6ayV2xTnq8h1S3V_4xEPbRq0amTN-vMA8rU5IF0nlkkcA7hD8fWFc6jI/s1341/1000112984.png",
   LYCORIS:
-    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNFsU2keWU_HRggeS0rrLDN6LEtBCv66ksbDClCREshy_DQ9afWBbBGY4PVlOmaDYb18bMj7gJMv0zvJ50gCS4WojOLUKN8WvwM5mpkfxFULCuBWRew1NJowEsYsyP-7NxXBRt-LzxZ5Jnid01yvcnhczJT3qAW-VbhB4aywBnlr5odppit-f9P5GW_y8/s896/1000112788.png",
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNFsU2keWU_HRggeS0rrLDN6LEtBCv66kskDClCREshy_DQ9afWBbBGY4PVlOmaDYb18bMj7gJMv0zvJ50gCS4WojOLUKN8WvwM5mpkfxFULCuBWRew1NJowEsYsyP-7NxXBRt-LzxZ5Jnid01yvcnhczJT3qAW-VbhB4aywBnlr5odppit-f9P5GW_y8/s896/1000112788.png",
   THEBUTCHERS:
     "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifCUkuhD1Rotz7ryg2x5csfz6tdYpBMzJjbHTxS-6q-UlccYFeG6Dn5SLVOlG9FAAY1d8oGURG5QpaDMSyeG6nN87bEbbAtjr14gQn4CKj36yhUBpTcMjLyj6C8LC9Lsrzme520bSRVvvQXYV7DAMs2zA5lN-SwfmN5EMeHp1QL8XxcaX9SafZBBCI89k/s1341/1000138092.png",
   NOMERCY:
-    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcBDOqw3eSzt2_VLN1SyblE3rXVWh5Yw9-fvuw4ctVeA9zAt3KGub2nMn8z0wAHyTN7Zy14Q8JS1F8ZIxDJwfJfRNNKtt9iz0LeM2qG7A_yJCQ_2Op4qOu13A7gufB-3sHjdkNmZhEX4az8Urq-JRM6fkNzMAShQI1cplKe8IHKubVzAB-cVobGOoUYYQ/s1600/1000113547.png"
-};
-
-const GRADIENTS = {
-  oceano: ["#06152E", "#087CA7"],
-  obsidiana: ["#090909", "#414141"],
-  carmesi: ["#310B24", "#B21F45"],
-  galaxia: ["#160B35", "#7139B8"],
-  esmeralda: ["#062C26", "#16866A"],
-  fenix: ["#421B08", "#D87819"],
-  neon: ["#07313D", "#11B9C9"],
-  aurora: ["#28102D", "#A04487"]
+    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcBDOqw3eSzt2_VLN1SyblE3rXVWh5Yw9-fvuw4ctVeA9zAt3KGub2nMn8z0wAHyTN7Zy14Q8JS1F8ZIxDJwfJfRNNKtt9iz0LeM2qG7A_yJCQ_2Op4qOu13A7gufB-3sHjdkNmZhEX4az8Urq-JRM6fkNzMAShQI1cplKe8IHKubVzAB-cVobGOoUYYQ/s1341/1000113547.png"
 };
 
 // =========================================
@@ -136,21 +123,6 @@ const formatNumber = (value, decimals = 0) =>
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   });
-
-const getFirebaseError = (error) => {
-  const errors = {
-    "auth/invalid-email": "El correo electrónico no es válido.",
-    "auth/user-not-found": "No existe una cuenta con ese correo.",
-    "auth/wrong-password": "La contraseña es incorrecta.",
-    "auth/invalid-credential": "Correo o contraseña incorrectos.",
-    "auth/email-already-in-use": "Este correo ya está registrado.",
-    "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
-    "auth/too-many-requests": "Demasiados intentos. Inténtalo más tarde.",
-    "auth/network-request-failed": "Error de conexión. Comprueba tu internet."
-  };
-
-  return errors[error.code] || "Ha ocurrido un error. Inténtalo nuevamente.";
-};
 
 const formatNotificationDate = (timestamp) => {
   if (!timestamp) return "";
@@ -393,7 +365,6 @@ const parsePlayersCSV = (csvText) => {
   ];
   const teamHeaders = ["EQUIPO", "TEAM", "CLUB"];
 
-  // Igual que Android: localizar la fila real de encabezados en cualquier posición.
   const headerIndex = rows.findIndex((row) => {
     const headers = row.map(normalizeHeader);
     return (
@@ -459,7 +430,6 @@ const parsePlayerStatsCSV = (csvText) => {
   const rows = parseCSV(csvText);
   if (!rows.length) return [];
 
-  // Android busca la fila real de encabezados, no presupone que sea la primera.
   const headerIndex = rows.findIndex((row) => {
     const normalized = row.map(normalizeHeader);
     return normalized.includes("JUGADOR") && normalized.includes("EQUIPO");
@@ -478,7 +448,7 @@ const parsePlayerStatsCSV = (csvText) => {
     kills: findHeaderIndex(headers, ["BAJAS", "KILLS"]),
     deaths: findHeaderIndex(headers, ["MUERTES", "DEATHS"]),
     assists: findHeaderIndex(headers, ["ASISTENCIAS", "ASSISTS"]),
-    kd: findHeaderIndex(headers, ["KDGLOBAL", "KDGLOBAL", "KD", "KDR"]),
+    kd: findHeaderIndex(headers, ["KDGLOBAL", "KD", "KDR"]),
     wins: findHeaderIndex(headers, ["MAPASGANADOS", "GANADOS"]),
     losses: findHeaderIndex(headers, ["MAPASPERDIDOS", "PERDIDOS"])
   };
@@ -487,9 +457,9 @@ const parsePlayerStatsCSV = (csvText) => {
     .map((row) => {
       const player = String(row[indexes.player] || "").trim();
       const team = String(row[indexes.team] || "").trim();
-      const kills = parseNumber(row[indexes.kills] >= 0 ? row[indexes.kills] : 0);
-      const deaths = parseNumber(row[indexes.deaths] >= 0 ? row[indexes.deaths] : 0);
-      const assists = parseNumber(row[indexes.assists] >= 0 ? row[indexes.assists] : 0);
+      const kills = parseNumber(indexes.kills >= 0 ? row[indexes.kills] : 0);
+      const deaths = parseNumber(indexes.deaths >= 0 ? row[indexes.deaths] : 0);
+      const assists = parseNumber(indexes.assists >= 0 ? row[indexes.assists] : 0);
       const kdValue = indexes.kd >= 0 ? row[indexes.kd] : "";
       const maps = indexes.maps >= 0 ? parseNumber(row[indexes.maps]) : 0;
       const wins = indexes.wins >= 0 ? parseNumber(row[indexes.wins]) : 0;
@@ -577,15 +547,11 @@ const sectionNames = {
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState("home");
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [mode, setMode] = useState(null);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [processing, setProcessing] = useState(false);
 
   const [activeSection, setActiveSection] = useState("inicio");
   const [showCompetitionMenu, setShowCompetitionMenu] = useState(false);
@@ -601,22 +567,6 @@ export default function App() {
 
   const [expandedTeams, setExpandedTeams] = useState({});
   const [expandedTeam, setExpandedTeam] = useState(null);
-
-  // Perfil público
-  const [selectedPlayer, setSelectedPlayer] = useState("");
-  const [selectedPlayerPhoto, setSelectedPlayerPhoto] = useState("");
-  const [playerPhotoLoading, setPlayerPhotoLoading] = useState(false);
-  const [playerPhotoStatus, setPlayerPhotoStatus] = useState("");
-  const [selectedPlayerProfile, setSelectedPlayerProfile] = useState(null);
-
-  // Vistas individuales
-  const [playerView, setPlayerView] = useState("");
-  const [playerStats, setPlayerStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [statsError, setStatsError] = useState("");
-  const [playerPosts, setPlayerPosts] = useState([]);
-  const [postsLoading, setPostsLoading] = useState(false);
-  const [postsError, setPostsError] = useState("");
 
   // =========================================
   // BARRA DE AVISOS FIRESTORE
@@ -651,7 +601,7 @@ export default function App() {
   }, []);
 
   // =========================================
-  // CARGAR PARTIDOS Y JUGADORES POR SEPARADO
+  // CARGAR PARTIDOS Y JUGADORES
   // =========================================
 
   useEffect(() => {
@@ -755,209 +705,6 @@ export default function App() {
 
   const toggleCompetitionTeam = (team) => {
     setExpandedTeam((previous) => previous === team ? null : team);
-  };
-
-  // =========================================
-  // PERFIL PÚBLICO DEL JUGADOR
-  // =========================================
-
-  const closePlayerMenu = () => {
-    setSelectedPlayer("");
-    setSelectedPlayerPhoto("");
-    setPlayerPhotoLoading(false);
-    setPlayerPhotoStatus("");
-    setSelectedPlayerProfile(null);
-  };
-
-  const openPlayerMenu = async (playerName) => {
-    setSelectedPlayer(playerName);
-    setSelectedPlayerPhoto("");
-    setSelectedPlayerProfile(null);
-    setPlayerPhotoLoading(true);
-    setPlayerPhotoStatus("BUSCANDO PERFIL...");
-
-    try {
-      const profilesRef = collection(db, "perfiles_publicos");
-      let foundDoc = null;
-
-      // Primero se intenta la búsqueda exacta usada por Android.
-      const exactQuery = query(
-        profilesRef,
-        where("nick", "==", playerName),
-        limit(2)
-      );
-
-      const exactSnapshot = await getDocs(exactQuery);
-
-      if (exactSnapshot.size === 1) {
-        foundDoc = exactSnapshot.docs[0];
-      } else if (exactSnapshot.size > 1) {
-        setPlayerPhotoStatus("NO SE PUDO IDENTIFICAR EL PERFIL");
-        return;
-      } else {
-        // Respaldo: comparación normalizada para diferencias de espacios,
-        // acentos y caracteres invisibles.
-        const allProfiles = await getDocs(profilesRef);
-        const matchesFound = allProfiles.docs.filter((profileDoc) => {
-          const data = profileDoc.data();
-          return normalizeNick(data.nick) === normalizeNick(playerName);
-        });
-
-        if (matchesFound.length === 1) {
-          foundDoc = matchesFound[0];
-        } else if (matchesFound.length > 1) {
-          setPlayerPhotoStatus("NO SE PUDO IDENTIFICAR EL PERFIL");
-          return;
-        }
-      }
-
-      if (!foundDoc) {
-        setPlayerPhotoStatus("PERFIL NO ENCONTRADO");
-        return;
-      }
-
-      const profile = foundDoc.data();
-      const photo = String(profile.fotoPerfil || "").trim();
-
-      const profileData = {
-        uid: foundDoc.id,
-        nick: String(profile.nick || playerName),
-        equipo: String(profile.equipo || ""),
-        biografia: String(profile.biografia || ""),
-        fotoPerfil: photo.startsWith("https://") ? photo : "",
-        gradientePerfil: String(profile.gradientePerfil || "")
-      };
-
-      setSelectedPlayerProfile(profileData);
-      setSelectedPlayerPhoto(profileData.fotoPerfil);
-
-      if (!photo) {
-        setPlayerPhotoStatus("SIN FOTO REGISTRADA");
-      } else if (!photo.startsWith("https://")) {
-        setPlayerPhotoStatus("URL DE FOTO INVÁLIDA");
-      } else {
-        setPlayerPhotoStatus("");
-      }
-    } catch (err) {
-      console.error("Error buscando perfil público:", err);
-      setPlayerPhotoStatus("ERROR AL BUSCAR PERFIL");
-    } finally {
-      setPlayerPhotoLoading(false);
-    }
-  };
-
-  // =========================================
-  // ABRIR ESTADÍSTICAS DEL JUGADOR
-  // =========================================
-
-  const openPlayerStats = async () => {
-    if (!selectedPlayer) return;
-
-    const nick = selectedPlayer;
-    setPlayerView("stats");
-    setSelectedPlayer("");
-    setStatsLoading(true);
-    setStatsError("");
-    setPlayerStats(null);
-
-    try {
-      const response = await fetch(STATS_CSV_URL, { cache: "no-store" });
-
-      if (!response.ok) {
-        throw new Error(`No se pudo descargar el CSV (${response.status}).`);
-      }
-
-      const csvText = await response.text();
-      const allStats = parsePlayerStatsCSV(csvText);
-      const stats = getPlayerStats(allStats, nick);
-
-      if (!stats) {
-        setStatsError(
-          `Todavía no aparecen estadísticas para el nick oficial "${nick}".`
-        );
-      } else {
-        setPlayerStats(stats);
-      }
-    } catch (err) {
-      console.error("Error cargando estadísticas:", err);
-      setStatsError(
-        err.message || "No se pudieron cargar las estadísticas del jugador."
-      );
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
-  // =========================================
-  // PUBLICACIONES DEL JUGADOR
-  // =========================================
-
-  useEffect(() => {
-    if (playerView !== "posts" || !selectedPlayerProfile) {
-      setPlayerPosts([]);
-      setPostsLoading(false);
-      setPostsError("");
-      return;
-    }
-
-    setPostsLoading(true);
-    setPostsError("");
-
-    const postsRef = collection(db, "publicaciones");
-    const postsQuery = query(postsRef, orderBy("createdAt", "desc"));
-
-    const unsubscribe = onSnapshot(
-      postsQuery,
-      (snapshot) => {
-        const profileUid = selectedPlayerProfile.uid;
-        const profileNick = normalizeNick(selectedPlayerProfile.nick || selectedPlayer);
-
-        const filtered = snapshot.docs
-          .map((postDoc) => ({
-            id: postDoc.id,
-            ...postDoc.data()
-          }))
-          .filter((post) => {
-            // Se prioriza el UID. Se conserva el filtro por nombre
-            // como respaldo compatible con el comportamiento Android.
-            if (post.uid && profileUid && post.uid === profileUid) return true;
-
-            return normalizeNick(post.nombre) === profileNick;
-          });
-
-        setPlayerPosts(filtered);
-        setPostsLoading(false);
-        setPostsError("");
-      },
-      (firebaseError) => {
-        console.error("Error cargando publicaciones:", firebaseError);
-        setPostsLoading(false);
-        setPostsError(
-          "No se pudieron cargar las publicaciones. Comprueba los permisos de Firestore."
-        );
-      }
-    );
-
-    return () => unsubscribe();
-  }, [playerView, selectedPlayerProfile, selectedPlayer]);
-
-  const openPlayerPosts = () => {
-    if (!selectedPlayerProfile) {
-      setPlayerPhotoStatus("NO SE ENCONTRÓ EL PERFIL DEL JUGADOR");
-      return;
-    }
-
-    setPlayerView("posts");
-    setSelectedPlayer("");
-  };
-
-  const closePlayerView = () => {
-    setPlayerView("");
-    setPlayerStats(null);
-    setStatsError("");
-    setPlayerPosts([]);
-    setPostsError("");
-    closePlayerMenu();
   };
 
   // =========================================
@@ -1088,112 +835,70 @@ export default function App() {
   };
 
   // =========================================
-  // AUTENTICACIÓN
+  // CONTROL DE AUTENTICACIÓN
   // =========================================
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
 
   const openMode = (newMode) => {
     setMode(newMode);
     setMessage("");
     setError("");
-    setPassword("");
-    setConfirmPassword("");
   };
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-    setProcessing(true);
+  const handleAuthUserChange = React.useCallback((currentUser) => {
+    setUser(currentUser);
+    setLoading(false);
+  }, []);
 
-    try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      setMode("home");
-      setActiveSection("inicio");
-      setShowCompetitionMenu(false);
-      setPassword("");
-    } catch (err) {
-      setError(getFirebaseError(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
+  // =========================================
+  // PERFILES Y ACTIVIDAD
+  // =========================================
 
-  const handleRegister = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
+  const perfil = useActividadPerfil({
+    user,
+    db,
+    setError,
+    openMode,
+    showCompetitionMenu,
+    formatNumber,
+    formatPostDate,
+    STATS_CSV_URL,
+    parsePlayerStatsCSV,
+    getPlayerStats
+  });
 
-    if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
+  const {
+    ownProfile, ownProfileLoading, ownProfileOpen, ownProfileError, ownProfileMessage,
+    ownBiographyDraft, ownBiographyEditing, ownProfileSaving, ownPhotoUploading,
+    ownGradientSaving, ownAvatarPosition, ownAvatarDragStart, ownAvatarWasDragged,
+    selectedPlayer, selectedPlayerPhoto, playerPhotoLoading, playerPhotoStatus,
+    selectedPlayerProfile, biographyLikes, biographyLiked, biographyLikeBusy,
+    expandedProfilePhoto, playerView, playerStats, statsLoading, statsError,
+    playerPosts, postsLoading, postsError,
+    resetOwnProfile, closePlayerMenu, openPlayerMenu, openPlayerStats,
+    openPlayerPosts, closePlayerView, toggleBiographyLike,
+    renderExpandedProfilePhoto, renderOwnProfile, renderOwnFloatingAvatar,
+    renderPlayerMenu, renderPlayerProfile, renderPlayerStats, renderPlayerPosts
+  } = perfil;
 
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
-
-    setProcessing(true);
-
-    try {
-      await createUserWithEmailAndPassword(auth, email.trim(), password);
-      setMode("home");
-      setActiveSection("inicio");
-      setShowCompetitionMenu(false);
-      setPassword("");
-      setConfirmPassword("");
-      setMessage("¡Tu cuenta se creó correctamente!");
-    } catch (err) {
-      setError(getFirebaseError(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handlePasswordReset = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (!email.trim()) {
-      setError("Escribe tu correo electrónico.");
-      return;
-    }
-
-    setProcessing(true);
-
-    try {
-      await sendPasswordResetEmail(auth, email.trim());
-      setMessage(
-        "Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña."
-      );
-    } catch (err) {
-      setError(getFirebaseError(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
+  // =========================================
+  // CERRAR SESIÓN
+  // =========================================
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setMode("home");
+
+      setMode(null);
       setActiveSection("inicio");
       setShowCompetitionMenu(false);
       setNotificationsOpen(false);
       setNotifications([]);
       setMessage("Has cerrado sesión correctamente.");
       setError("");
-    } catch {
+
+      resetOwnProfile();
+    } catch (err) {
+      console.error("Error al cerrar sesión:", err);
       setError("No se pudo cerrar la sesión. Inténtalo nuevamente.");
     }
   };
@@ -1439,628 +1144,6 @@ export default function App() {
   };
 
   // =========================================
-  // VENTANA PERFIL DEL JUGADOR
-  // =========================================
-
-  const renderPlayerMenu = () => {
-    if (!selectedPlayer) return null;
-
-    const gradientName = selectedPlayerProfile?.gradientePerfil || "";
-    const gradient = GRADIENTS[gradientName] || ["#071827", "#123D59"];
-
-    return (
-      <div className="player-profile-overlay" onClick={closePlayerMenu}>
-        <section
-          className="player-profile-modal"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="player-profile-heading">PERFIL DEL JUGADOR</div>
-
-          <div
-            className="player-profile-avatar"
-            style={{
-              background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`
-            }}
-          >
-            {selectedPlayerPhoto ? (
-              <img src={selectedPlayerPhoto} alt={selectedPlayer} />
-            ) : (
-              <span>{selectedPlayer.slice(0, 1).toUpperCase()}</span>
-            )}
-          </div>
-
-          {playerPhotoLoading ? (
-            <p className="player-profile-photo-status">BUSCANDO JUGADOR...</p>
-          ) : playerPhotoStatus ? (
-            <p className="player-profile-photo-status">{playerPhotoStatus}</p>
-          ) : null}
-
-          <h3 className="player-profile-name">
-            {selectedPlayerProfile?.nick || selectedPlayer}
-          </h3>
-
-          {selectedPlayerProfile?.equipo && (
-            <p style={{
-              color: "#00D9FF",
-              textAlign: "center",
-              fontSize: "12px",
-              fontWeight: "700",
-              margin: "5px 0"
-            }}>
-              {selectedPlayerProfile.equipo}
-            </p>
-          )}
-
-          {selectedPlayerProfile?.biografia && (
-            <p style={{
-              color: "#AABBCB",
-              textAlign: "center",
-              fontSize: "12px",
-              margin: "8px 12px"
-            }}>
-              {selectedPlayerProfile.biografia}
-            </p>
-          )}
-
-          <div className="player-profile-divider" />
-
-          <button
-            type="button"
-            className="player-profile-option"
-            onClick={openPlayerStats}
-          >
-            <span className="player-profile-option-icon">◈</span>
-            <span>
-              <strong>VER STATS</strong>
-              <small>Estadísticas individuales del jugador</small>
-            </span>
-            <b>›</b>
-          </button>
-
-          <button
-            type="button"
-            className="player-profile-option"
-            onClick={openPlayerPosts}
-          >
-            <span className="player-profile-option-icon">▣</span>
-            <span>
-              <strong>VER PUBLICACIONES</strong>
-              <small>Jugadas destacadas de este jugador</small>
-            </span>
-            <b>›</b>
-          </button>
-
-          <button
-            type="button"
-            className="player-profile-close"
-            onClick={closePlayerMenu}
-          >
-            CERRAR
-          </button>
-        </section>
-      </div>
-    );
-  };
-
-  // =========================================
-  // VISTA DE ESTADÍSTICAS
-  // =========================================
-
-  const renderPlayerStats = () => (
-    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
-      <span className="placeholder-label">PERFIL DEL JUGADOR</span>
-      <h2>ESTADÍSTICAS</h2>
-
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "12px",
-        margin: "15px 0 25px"
-      }}>
-        {selectedPlayerProfile?.fotoPerfil ? (
-          <img
-            src={selectedPlayerProfile.fotoPerfil}
-            alt={selectedPlayer}
-            style={{
-              width: "58px",
-              height: "58px",
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "2px solid #00D9FF"
-            }}
-          />
-        ) : (
-          <div style={{
-            width: "58px",
-            height: "58px",
-            borderRadius: "50%",
-            display: "grid",
-            placeItems: "center",
-            background: "#123D59",
-            color: "#fff",
-            fontSize: "24px",
-            fontWeight: "800"
-          }}>
-            {(selectedPlayerProfile?.nick || selectedPlayer || "?").slice(0, 1)}
-          </div>
-        )}
-
-        <div style={{ textAlign: "left" }}>
-          <strong style={{ color: "#fff", display: "block" }}>
-            {selectedPlayerProfile?.nick || selectedPlayer}
-          </strong>
-          <small style={{ color: "#00D9FF" }}>
-            {selectedPlayerProfile?.equipo || ""}
-          </small>
-        </div>
-      </div>
-
-      {statsLoading && (
-        <div className="matches-state">
-          <span className="matches-spinner" />
-          <p>CARGANDO ESTADÍSTICAS...</p>
-        </div>
-      )}
-
-      {!statsLoading && statsError && (
-        <div className="matches-state matches-error">
-          <p>{statsError}</p>
-        </div>
-      )}
-
-      {!statsLoading && playerStats && (
-        <>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: "10px",
-            margin: "15px 0"
-          }}>
-            {[
-              ["RANKING", `#${playerStats.ranking}`],
-              ["BAJAS", formatNumber(playerStats.kills)],
-              ["MUERTES", formatNumber(playerStats.deaths)],
-              ["ASISTENCIAS", formatNumber(playerStats.assists)],
-              ["K/D GLOBAL", formatNumber(playerStats.kd, 2)],
-              ["MAPAS JUGADOS", formatNumber(playerStats.maps)]
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                style={{
-                  padding: "18px 10px",
-                  border: "1px solid rgba(0,217,255,.25)",
-                  borderRadius: "10px",
-                  background: "rgba(5,20,35,.75)"
-                }}
-              >
-                <small style={{
-                  display: "block",
-                  color: "#8EA6BA",
-                  fontSize: "10px",
-                  fontWeight: "700"
-                }}>
-                  {label}
-                </small>
-                <strong style={{
-                  display: "block",
-                  color: "#00D9FF",
-                  fontSize: "23px",
-                  marginTop: "7px"
-                }}>
-                  {value}
-                </strong>
-              </div>
-            ))}
-          </div>
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gap: "8px",
-            margin: "12px 0"
-          }}>
-            {[
-              ["GANADOS", playerStats.hasWins ? formatNumber(playerStats.wins) : "—"],
-              ["PERDIDOS", playerStats.hasLosses ? formatNumber(playerStats.losses) : "—"],
-              ["VICTORIAS", playerStats.hasMaps
-                ? `${formatNumber(playerStats.winRate, 1)}%`
-                : "—"]
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                style={{
-                  padding: "14px 5px",
-                  borderRadius: "8px",
-                  background: "rgba(255,255,255,.04)",
-                  border: "1px solid rgba(255,255,255,.1)"
-                }}
-              >
-                <small style={{ display: "block", color: "#8EA6BA", fontSize: "9px" }}>
-                  {label}
-                </small>
-                <strong style={{ color: "#fff", fontSize: "17px" }}>{value}</strong>
-              </div>
-            ))}
-          </div>
-
-          <p style={{
-            color: "#71899D",
-            fontSize: "10px",
-            textAlign: "center",
-            marginTop: "15px"
-          }}>
-            POSICIÓN CALCULADA POR BAJAS ACUMULADAS
-          </p>
-        </>
-      )}
-
-      <button className="primary-button" onClick={closePlayerView}>
-        VOLVER
-      </button>
-    </section>
-  );
-
-  // =========================================
-  // VISTA DE PUBLICACIONES
-  // =========================================
-
-  const renderPlayerPosts = () => (
-    <section className="web-section-placeholder" style={{ paddingBottom: "100px" }}>
-      <span className="placeholder-label">PERFIL DEL JUGADOR</span>
-      <h2>JUGADAS DESTACADAS</h2>
-
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "12px",
-        margin: "15px 0 25px"
-      }}>
-        {selectedPlayerProfile?.fotoPerfil ? (
-          <img
-            src={selectedPlayerProfile.fotoPerfil}
-            alt={selectedPlayer}
-            style={{
-              width: "52px",
-              height: "52px",
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "2px solid #00D9FF"
-            }}
-          />
-        ) : null}
-
-        <strong style={{ color: "#fff" }}>
-          {selectedPlayerProfile?.nick || selectedPlayer}
-        </strong>
-      </div>
-
-      {postsLoading && (
-        <div className="matches-state">
-          <span className="matches-spinner" />
-          <p>CARGANDO PUBLICACIONES...</p>
-        </div>
-      )}
-
-      {!postsLoading && postsError && (
-        <div className="matches-state matches-error">
-          <p>{postsError}</p>
-        </div>
-      )}
-
-      {!postsLoading && !postsError && playerPosts.length === 0 && (
-        <div className="matches-state">
-          <p>ESTE JUGADOR TODAVÍA NO TIENE PUBLICACIONES.</p>
-        </div>
-      )}
-
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr)",
-        gap: "18px",
-        marginTop: "15px"
-      }}>
-        {playerPosts.map((post) => {
-          const isVideo = String(post.mediaType || "").startsWith("video/");
-
-          return (
-            <article
-              key={post.id}
-              style={{
-                overflow: "hidden",
-                borderRadius: "12px",
-                background: "rgba(5,15,27,.9)",
-                border: "1px solid rgba(0,217,255,.2)",
-                textAlign: "left"
-              }}
-            >
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "12px"
-              }}>
-                {selectedPlayerProfile?.fotoPerfil ? (
-                  <img
-                    src={selectedPlayerProfile.fotoPerfil}
-                    alt=""
-                    style={{
-                      width: "38px",
-                      height: "38px",
-                      borderRadius: "50%",
-                      objectFit: "cover"
-                    }}
-                  />
-                ) : (
-                  <span style={{
-                    width: "38px",
-                    height: "38px",
-                    borderRadius: "50%",
-                    display: "grid",
-                    placeItems: "center",
-                    background: "#123D59",
-                    color: "#fff"
-                  }}>
-                    {(post.nick || post.nombre || "?").slice(0, 1)}
-                  </span>
-                )}
-
-                <div>
-                  <strong style={{ color: "#fff", display: "block" }}>
-                    {post.nick || post.nombre || selectedPlayer}
-                  </strong>
-                  <small style={{ color: "#00D9FF" }}>
-                    {post.equipo || selectedPlayerProfile?.equipo || ""}
-                  </small>
-                </div>
-              </div>
-
-              {post.mediaUrl && (
-                isVideo ? (
-                  <video
-                    src={post.mediaUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      maxHeight: "440px",
-                      background: "#000"
-                    }}
-                  />
-                ) : (
-                  <img
-                    src={post.mediaUrl}
-                    alt="Publicación del jugador"
-                    loading="lazy"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      maxHeight: "440px",
-                      objectFit: "contain",
-                      background: "#000"
-                    }}
-                  />
-                )
-              )}
-
-              {post.descripcion && (
-                <p style={{
-                  color: "#E5EDF5",
-                  padding: "12px",
-                  margin: 0,
-                  fontSize: "13px",
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "anywhere"
-                }}>
-                  {post.descripcion}
-                </p>
-              )}
-
-              <div style={{
-                padding: "0 12px 12px",
-                color: "#7890A5",
-                fontSize: "10px"
-              }}>
-                {formatPostDate(post.createdAt)}
-              </div>
-            </article>
-          );
-        })}
-      </div>
-
-      <button className="primary-button" onClick={closePlayerView}>
-        VOLVER
-      </button>
-    </section>
-  );
-
-  // =========================================
-  // PANTALLA PRINCIPAL
-  // =========================================
-
-  const renderWelcome = () => (
-    <section className="android-welcome">
-      <div className="welcome-logo-panel">
-        <div className="welcome-logo-mark">
-          <span>LIGA</span>
-          <strong>4VS4</strong>
-        </div>
-
-        <div className="welcome-logo-caption">COMPETICIÓN OFICIAL</div>
-      </div>
-
-      <div className="welcome-matches-heading">
-        <h2>PRÓXIMOS ENFRENTAMIENTOS</h2>
-        <span className="welcome-live"><i /> EN VIVO</span>
-      </div>
-
-      <div className="welcome-matches-panel">
-        {announcement.active && (
-          <div className="announcement-bar">
-            <span className="announcement-icon">⚡</span>
-            <div className="announcement-marquee">
-              <span>{announcement.message}</span>
-            </div>
-          </div>
-        )}
-
-        {matchesLoading && (
-          <div className="matches-state">
-            <span className="matches-spinner" />
-            <p>CARGANDO ENFRENTAMIENTOS...</p>
-          </div>
-        )}
-
-        {!matchesLoading && matchesError && (
-          <div className="matches-state matches-error"><p>{matchesError}</p></div>
-        )}
-
-        {!matchesLoading && !matchesError && currentMatchday && (
-          <>
-            <div className="matchday-label">
-              <span>JORNADA</span>
-              <strong>{currentMatchday.jornada}</strong>
-            </div>
-
-            <div className="matches-list">
-              {currentMatchday.matches
-                .filter((match) => !isFinishedMatch(match))
-                .map((match, index) => {
-                  const shield1 = getTeamShield(match.team1);
-                  const shield2 = getTeamShield(match.team2);
-
-                  return (
-                    <article
-                      className="welcome-match-card"
-                      key={`${match.jornada}-${match.team1}-${match.team2}-${index}`}
-                    >
-                      <div className="match-team">
-                        <button
-                          type="button"
-                          className="match-shield-button"
-                          onClick={() => toggleTeamRoster(match.team1)}
-                          aria-label={`Ver jugadores de ${match.team1}`}
-                        >
-                          {shield1 ? (
-                            <img
-                              src={shield1}
-                              alt={`Escudo ${match.team1}`}
-                              className="match-shield"
-                              onError={(event) => {
-                                event.currentTarget.style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <span className="match-shield-fallback">
-                              {normalizeText(match.team1).slice(0, 2)}
-                            </span>
-                          )}
-                        </button>
-                        <strong>{match.team1}</strong>
-                      </div>
-
-                      <div className="match-center">
-                        <span className="match-vs">VS</span>
-                        <span className="match-pending">PENDIENTE</span>
-                      </div>
-
-                      <div className="match-team">
-                        <button
-                          type="button"
-                          className="match-shield-button"
-                          onClick={() => toggleTeamRoster(match.team2)}
-                          aria-label={`Ver jugadores de ${match.team2}`}
-                        >
-                          {shield2 ? (
-                            <img
-                              src={shield2}
-                              alt={`Escudo ${match.team2}`}
-                              className="match-shield"
-                              onError={(event) => {
-                                event.currentTarget.style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <span className="match-shield-fallback">
-                              {normalizeText(match.team2).slice(0, 2)}
-                            </span>
-                          )}
-                        </button>
-                        <strong>{match.team2}</strong>
-                      </div>
-
-                      {expandedTeams[match.team1] && (
-                        <div className="team-roster">
-                          <div className="team-roster-heading">
-                            JUGADORES · {match.team1}
-                          </div>
-
-                          {playersLoading && players.length === 0
-                            ? <p>Cargando jugadores...</p>
-                            : getPlayersForTeam(match.team1).length > 0
-                            ? getPlayersForTeam(match.team1).map((player, playerIndex) => (
-                                <div className="team-roster-player" key={`${player.player}-${playerIndex}`}>
-                                  <span>{playerIndex + 1}</span>{player.player}
-                                </div>
-                              ))
-                            : <p>{playersError || "No se encontraron jugadores para este equipo."}</p>}
-                        </div>
-                      )}
-
-                      {expandedTeams[match.team2] && (
-                        <div className="team-roster">
-                          <div className="team-roster-heading">
-                            JUGADORES · {match.team2}
-                          </div>
-
-                          {playersLoading && players.length === 0
-                            ? <p>Cargando jugadores...</p>
-                            : getPlayersForTeam(match.team2).length > 0
-                            ? getPlayersForTeam(match.team2).map((player, playerIndex) => (
-                                <div className="team-roster-player" key={`${player.player}-${playerIndex}`}>
-                                  <span>{playerIndex + 1}</span>{player.player}
-                                </div>
-                              ))
-                            : <p>{playersError || "No se encontraron jugadores para este equipo."}</p>}
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-            </div>
-          </>
-        )}
-
-        {!matchesLoading && !matchesError && !currentMatchday && (
-          <div className="matches-state">
-            <p>NO HAY ENFRENTAMIENTOS PENDIENTES.</p>
-          </div>
-        )}
-      </div>
-
-      <div className="welcome-competition-active">
-        <span className="championship-status-dot" />
-        SISTEMA DE COMPETICIÓN ACTIVO
-      </div>
-
-      <div className="welcome-footer">LIGA 4VS4 OFICIAL | 2026</div>
-
-      <button className="welcome-enter-button" onClick={enterChampionship}>
-        ENTRAR AL CAMPEONATO <span>›</span>
-      </button>
-
-      {!user && (
-        <button className="welcome-register-link" onClick={() => openMode("register")}>
-          ¿NO TIENES CUENTA? <strong>REGÍSTRATE</strong>
-        </button>
-      )}
-    </section>
-  );
-
-  // =========================================
   // MENÚ PRINCIPAL
   // =========================================
 
@@ -2191,6 +1274,24 @@ export default function App() {
 
   return (
     <main className="app">
+
+      <AndroidBackHandler
+        showCompetitionMenu={showCompetitionMenu}
+        activeSection={activeSection}
+        playerView={playerView}
+        notificationsOpen={notificationsOpen}
+        closePlayerView={closePlayerView}
+        setActiveSection={setActiveSection}
+        setShowCompetitionMenu={setShowCompetitionMenu}
+        setNotificationsOpen={setNotificationsOpen}
+      />
+
+      <InicioSesion
+        mode={mode}
+        onModeChange={setMode}
+        onUserChange={handleAuthUserChange}
+      />
+
       {loading ? (
         <div className="loading-screen">
           <span className="brand-icon">L4</span>
@@ -2240,7 +1341,24 @@ export default function App() {
 
           {!showCompetitionMenu ? (
             <>
-              {renderWelcome()}
+              <WelcomeScreen
+                announcement={announcement}
+                matchesLoading={matchesLoading}
+                matchesError={matchesError}
+                currentMatchday={currentMatchday}
+                isFinishedMatch={isFinishedMatch}
+                getTeamShield={getTeamShield}
+                normalizeText={normalizeText}
+                expandedTeams={expandedTeams}
+                toggleTeamRoster={toggleTeamRoster}
+                playersLoading={playersLoading}
+                players={players}
+                getPlayersForTeam={getPlayersForTeam}
+                playersError={playersError}
+                user={user}
+                enterChampionship={enterChampionship}
+                openMode={openMode}
+              />
 
               {message && (
                 <div className="global-message success-message">
@@ -2263,17 +1381,50 @@ export default function App() {
             </>
           ) : (
             <>
-              {playerView === "stats"
-                ? renderPlayerStats()
-                : playerView === "posts"
-                  ? renderPlayerPosts()
-                  : activeSection === "inicio"
-                    ? renderMenu()
-                    : activeSection === "equipos"
-                      ? renderTeams()
-                      : activeSection === "publicaciones"
-                        ? <Publicaciones />
-                        : renderSectionPlaceholder()}
+              {playerView === "profile"
+                ? renderPlayerProfile()
+                : playerView === "stats"
+                  ? renderPlayerStats()
+                  : playerView === "posts"
+                    ? renderPlayerPosts()
+                    : activeSection === "inicio"
+                      ? renderMenu()
+                      : activeSection === "equipos"
+                        ? renderTeams()
+                        : activeSection === "clasificacion"
+                          ? (
+                            <Clasificacion
+                              teams={TEAMS}
+                              matches={matches}
+                              loading={matchesLoading}
+                              error={matchesError}
+                              getTeamShield={getTeamShield}
+                            />
+                          )
+                          : activeSection === "proximos"
+                            ? (
+                              <ProximosEnfrentamientos
+                                matches={matches}
+                                players={players}
+                                loading={matchesLoading}
+                                error={matchesError}
+                                playersLoading={playersLoading}
+                                playersError={playersError}
+                                getTeamShield={getTeamShield}
+                                openPlayerMenu={openPlayerMenu}
+                              />
+                            )
+                            : activeSection === "resultados"
+                              ? (
+                                <UltimosResultados
+                                  matches={matches}
+                                  matchesLoading={matchesLoading}
+                                  matchesError={matchesError}
+                                  getTeamShield={getTeamShield}
+                                  openPlayerMenu={openPlayerMenu}
+                                />
+                              )
+                              : renderSectionPlaceholder()}
 
               <nav className="web-bottom-navigation">
                 {bottomItems.map((item) => (
@@ -2293,128 +1444,10 @@ export default function App() {
       )}
 
       {renderPlayerMenu()}
+      {renderExpandedProfilePhoto()}
+      {renderOwnFloatingAvatar()}
+      {renderOwnProfile()}
 
-      {mode !== "home" && !user && (
-        <div className="auth-overlay" onClick={() => openMode("home")}>
-          <section className="auth-card" onClick={(event) => event.stopPropagation()}>
-            <button
-              className="auth-close"
-              onClick={() => openMode("home")}
-              aria-label="Cerrar"
-            >
-              ×
-            </button>
-
-            <div className="auth-logo">L4</div>
-
-            <h2>
-              {mode === "login" && "INICIAR SESIÓN"}
-              {mode === "register" && "CREAR CUENTA"}
-              {mode === "forgot" && "RECUPERAR CONTRASEÑA"}
-            </h2>
-
-            <p className="auth-description">
-              {mode === "login" && "Accede a tu cuenta de LIGA4VS4."}
-              {mode === "register" && "Únete a la comunidad oficial."}
-              {mode === "forgot" && "Te enviaremos instrucciones a tu correo."}
-            </p>
-
-            <form
-              onSubmit={
-                mode === "login"
-                  ? handleLogin
-                  : mode === "register"
-                    ? handleRegister
-                    : handlePasswordReset
-              }
-            >
-              <label htmlFor="auth-email">CORREO ELECTRÓNICO</label>
-
-              <input
-                id="auth-email"
-                type="email"
-                placeholder="tu correo electrónico"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                required
-              />
-
-              {mode !== "forgot" && (
-                <>
-                  <label htmlFor="auth-password">CONTRASEÑA</label>
-                  <input
-                    id="auth-password"
-                    type="password"
-                    placeholder="Tu contraseña"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    autoComplete={mode === "login" ? "current-password" : "new-password"}
-                    required
-                  />
-                </>
-              )}
-
-              {mode === "register" && (
-                <>
-                  <label htmlFor="auth-confirm">CONFIRMAR CONTRASEÑA</label>
-                  <input
-                    id="auth-confirm"
-                    type="password"
-                    placeholder="Repite tu contraseña"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
-                </>
-              )}
-
-              {error && <div className="auth-message error-message">{error}</div>}
-              {message && <div className="auth-message success-message">{message}</div>}
-
-              <button className="auth-submit" type="submit" disabled={processing}>
-                {processing
-                  ? "PROCESANDO..."
-                  : mode === "login"
-                    ? "ENTRAR"
-                    : mode === "register"
-                      ? "REGISTRARME"
-                      : "ENVIAR INSTRUCCIONES"}
-              </button>
-            </form>
-
-            <div className="auth-links">
-              {mode === "login" && (
-                <>
-                  <button onClick={() => openMode("forgot")}>
-                    ¿Olvidaste tu contraseña?
-                  </button>
-                  <p>
-                    ¿No tienes cuenta?{" "}
-                    <button onClick={() => openMode("register")}>Regístrate</button>
-                  </p>
-                </>
-              )}
-
-              {mode === "register" && (
-                <p>
-                  ¿Ya tienes cuenta?{" "}
-                  <button onClick={() => openMode("login")}>Inicia sesión</button>
-                </p>
-              )}
-
-              {mode === "forgot" && (
-                <p>
-                  <button onClick={() => openMode("login")}>
-                    Volver al inicio de sesión
-                  </button>
-                </p>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
     </main>
   );
 }
