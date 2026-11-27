@@ -1,4 +1,3 @@
-
 import React from "react";
 import "./WelcomeScreen.css";
 
@@ -31,11 +30,6 @@ export default function WelcomeScreen({
         <div className="welcome-logo-caption">COMPETICIÓN OFICIAL</div>
       </div>
 
-      <div className="welcome-matches-heading">
-        <h2>PRÓXIMOS ENFRENTAMIENTOS</h2>
-        <span className="welcome-live"><i /> EN VIVO</span>
-      </div>
-
       <div className="welcome-matches-panel">
         {announcement.active && (
           <div className="announcement-bar">
@@ -62,7 +56,6 @@ export default function WelcomeScreen({
         {!matchesLoading && !matchesError && currentMatchday && (
           <>
             <div className="matchday-label">
-              <span>JORNADA</span>
               <strong>{currentMatchday.jornada}</strong>
             </div>
 
