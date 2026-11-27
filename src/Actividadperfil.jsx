@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import {
   collection,
@@ -145,11 +146,12 @@ export default function useActividadPerfil({
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
 
+    // DESLIZAR HACIA LA IZQUIERDA ABRE LAS ESTADÍSTICAS.
     if (
-      dx > PROFILE_SWIPE_THRESHOLD &&
+      dx < -PROFILE_SWIPE_THRESHOLD &&
       Math.abs(dx) > Math.abs(dy) * 1.25
     ) {
-      openOwnPublicProfile();
+      openOwnPlayerStats();
     }
   };
 
@@ -365,8 +367,14 @@ export default function useActividadPerfil({
   // ESTADÍSTICAS DEL JUGADOR
   // =========================================
 
-  const openPlayerStats = async () => {
-    const nick = selectedPlayer || selectedPlayerProfile?.nick || "";
+  const openPlayerStats = async (requestedNick = "") => {
+    const nick = String(
+      requestedNick ||
+      selectedPlayer ||
+      selectedPlayerProfile?.nick ||
+      ""
+    ).trim();
+
     if (!nick) return;
 
     setPlayerView("stats");
@@ -401,6 +409,45 @@ export default function useActividadPerfil({
     } finally {
       setStatsLoading(false);
     }
+  };
+
+  // =========================================
+  // ABRIR ESTADÍSTICAS DEL PERFIL PROPIO
+  // =========================================
+
+  const openOwnPlayerStats = () => {
+    if (!ownProfile) return;
+
+    const officialNick = String(ownProfile.nick || "").trim();
+
+    if (!officialNick) {
+      setOwnProfileError(
+        "TU PERFIL NO TIENE UN NICK OFICIAL PARA CONSULTAR ESTADÍSTICAS."
+      );
+      return;
+    }
+
+    const ownPublicProfile = {
+      uid: ownProfile.uid || user?.uid || "",
+      nick: officialNick,
+      equipo: String(ownProfile.equipo || ""),
+      biografia: String(ownProfile.biografia || ""),
+      fotoPerfil: String(ownProfile.fotoPerfil || "").startsWith("https://")
+        ? String(ownProfile.fotoPerfil)
+        : "",
+      gradientePerfil: String(ownProfile.gradientePerfil || "")
+    };
+
+    setSelectedPlayerProfile(ownPublicProfile);
+    setSelectedPlayerPhoto(ownPublicProfile.fotoPerfil);
+    setPlayerPhotoLoading(false);
+    setPlayerPhotoStatus("");
+    setOwnProfileOpen(false);
+    setOwnBiographyEditing(false);
+    resetProfileSwipe();
+
+    // Se envía el nick directamente para evitar estados desactualizados.
+    openPlayerStats(officialNick);
   };
 
   // =========================================
@@ -1138,7 +1185,7 @@ export default function useActividadPerfil({
                 letterSpacing: ".8px"
               }}
             >
-              DESLIZA HACIA LA DERECHA PARA VER TU PERFIL PÚBLICO →
+              ← DESLIZA HACIA LA IZQUIERDA PARA VER TUS ESTADÍSTICAS
             </div>
           )}
 
