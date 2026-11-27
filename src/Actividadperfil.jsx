@@ -1161,7 +1161,7 @@ export default function useActividadPerfil({
         <>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: "13px",
             margin: "18px 0"
           }}>
@@ -1213,7 +1213,7 @@ export default function useActividadPerfil({
 
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(105px, 1fr))",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
             gap: "10px",
             margin: "15px 0"
           }}>
