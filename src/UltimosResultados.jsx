@@ -662,11 +662,7 @@ export default function UltimosResultados({
             </span>
           )}
 
-          {posicion ? (
-            <TeamPosition position={posicion} />
-          ) : clasificacionLoading ? (
-            <span className="ur-posicion-cargando">...</span>
-          ) : null}
+          <TeamPosition position={posicion} />
         </div>
       </div>
     );
@@ -704,6 +700,7 @@ export default function UltimosResultados({
       border: 1px solid ${COLORES.borde};
       border-radius: 14px;
       padding: 17px;
+      margin-top: 20px;
       margin-bottom: 20px;
     }
 
@@ -797,8 +794,6 @@ export default function UltimosResultados({
       min-width: 0;
     }
 
-    /* ESCUDO Y CÍRCULO DE POSICIÓN */
-
     .ur-escudo-posicion {
       position: relative;
       overflow: visible;
@@ -827,27 +822,6 @@ export default function UltimosResultados({
       font-size: 23px;
       font-weight: 1000;
       text-align: center;
-    }
-
-    .ur-posicion-cargando {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      z-index: 5;
-      width: 31px;
-      height: 31px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      font-size: 13px;
-      font-weight: 1000;
-      font-family: Arial, sans-serif;
-      color: #ffffff;
-      background: linear-gradient(145deg, #263b50, #071522);
-      border: 2px solid #00d9ff;
-      box-shadow: 0 0 10px rgba(0, 217, 255, 0.55);
     }
 
     .ur-equipo-nombre {
@@ -979,42 +953,6 @@ export default function UltimosResultados({
       font-size: 13px;
       font-weight: 900;
       margin-top: 5px;
-    }
-
-    .ur-resumen-detalle {
-      background: ${COLORES.tarjeta};
-      border: 1px solid ${COLORES.borde};
-      border-radius: 14px;
-      padding: 17px 9px;
-      margin-bottom: 20px;
-    }
-
-    .ur-resumen-equipos {
-      display: grid;
-      grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
-      align-items: center;
-      gap: 5px;
-    }
-
-    .ur-resumen-marcador {
-      color: white;
-      font-size: 27px;
-      font-weight: 1000;
-      white-space: nowrap;
-    }
-
-    .ur-mapas-titulo {
-      color: white;
-      font-size: 19px;
-      font-weight: 1000;
-      letter-spacing: 1px;
-      margin: 0 0 7px;
-    }
-
-    .ur-deslizar {
-      color: ${COLORES.secundario};
-      font-size: 13px;
-      margin-bottom: 14px;
     }
 
     .ur-mapas-navegacion {
@@ -1266,10 +1204,6 @@ export default function UltimosResultados({
       .ur-marcador {
         font-size: 29px;
       }
-
-      .ur-resumen-marcador {
-        font-size: 23px;
-      }
     }
 
     @media (min-width: 700px) {
@@ -1298,8 +1232,6 @@ export default function UltimosResultados({
 
   if (partidoSeleccionado) {
     const partido = partidoSeleccionado;
-    const equipo1 = partido._equipo1;
-    const equipo2 = partido._equipo2;
 
     return (
       <div className="ur-contenedor">
@@ -1316,30 +1248,6 @@ export default function UltimosResultados({
               JORNADA {partido._jornada} · PARTIDO {partido._numeroPartido}
             </div>
           </div>
-        </div>
-
-        <div className="ur-resumen-detalle">
-          <div className="ur-resumen-equipos">
-            <div className="ur-equipo">
-              {renderEquipoConPosicion(equipo1)}
-              <div className="ur-equipo-nombre">{equipo1}</div>
-            </div>
-
-            <div className="ur-resumen-marcador">
-              {partido._marcador1} - {partido._marcador2}
-            </div>
-
-            <div className="ur-equipo">
-              {renderEquipoConPosicion(equipo2)}
-              <div className="ur-equipo-nombre">{equipo2}</div>
-            </div>
-          </div>
-        </div>
-
-        <h3 className="ur-mapas-titulo">5 MAPAS</h3>
-
-        <div className="ur-deslizar">
-          Selecciona un mapa para consultar sus estadísticas.
         </div>
 
         <div className="ur-mapas-navegacion">
@@ -1567,33 +1475,7 @@ export default function UltimosResultados({
     <div className="ur-contenedor">
       <style>{estilos}</style>
 
-      <div className="ur-filtro">
-        <div className="ur-filtro-superior">
-          <span className="ur-filtro-titulo">
-            FILTRAR JORNADA
-          </span>
-
-          <span className="ur-filtro-cantidad">
-            15 JORNADAS
-          </span>
-        </div>
-
-        <select
-          className="ur-select"
-          value={jornadaSeleccionada}
-          onChange={(event) =>
-            setJornadaSeleccionada(event.target.value)
-          }
-        >
-          <option value="TODAS">TODAS LAS JORNADAS</option>
-
-          {jornadasDisponibles.map((jornada) => (
-            <option key={jornada} value={String(jornada)}>
-              JORNADA {jornada}
-            </option>
-          ))}
-        </select>
-      </div>
+      <h2 className="ur-titulo">ÚLTIMOS RESULTADOS</h2>
 
       {matchesLoading ? (
         <div className="ur-cargando">
@@ -1695,7 +1577,35 @@ export default function UltimosResultados({
         </div>
       )}
 
-      <h2 className="ur-titulo">ÚLTIMOS RESULTADOS</h2>
+      {/* FILTRO DE JORNADA DEBAJO DE LOS PARTIDOS */}
+
+      <div className="ur-filtro">
+        <div className="ur-filtro-superior">
+          <span className="ur-filtro-titulo">
+            FILTRAR JORNADA
+          </span>
+
+          <span className="ur-filtro-cantidad">
+            15 JORNADAS
+          </span>
+        </div>
+
+        <select
+          className="ur-select"
+          value={jornadaSeleccionada}
+          onChange={(event) =>
+            setJornadaSeleccionada(event.target.value)
+          }
+        >
+          <option value="TODAS">TODAS LAS JORNADAS</option>
+
+          {jornadasDisponibles.map((jornada) => (
+            <option key={jornada} value={String(jornada)}>
+              JORNADA {jornada}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }
