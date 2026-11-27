@@ -8,13 +8,18 @@ import {
   limit,
   onSnapshot,
   doc,
-  getDoc
+  getDoc,
+  setDoc,
+  addDoc,
+  deleteDoc,
+  serverTimestamp
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
 import "./Publicaciones.css";
 
 const MAX_PUBLICACIONES = 50;
+const MAX_COMENTARIO = 300;
 const WORKER_URL = "https://liga4vs4-media-api.itenias01.workers.dev";
 
 const TIPOS_PERMITIDOS = [
@@ -22,6 +27,13 @@ const TIPOS_PERMITIDOS = [
   "image/png",
   "image/webp",
   "video/mp4"
+];
+
+const TIPOS_REACCION = [
+  { tipo: "me_gusta", nombre: "Me gusta", emoji: "👍" },
+  { tipo: "brutal", nombre: "Brutal", emoji: "🔥" },
+  { tipo: "divertido", nombre: "Divertido", emoji: "😂" },
+  { tipo: "impresionante", nombre: "Impresionante", emoji: "🤯" }
 ];
 
 function obtenerIniciales(nombre = "") {
@@ -107,12 +119,524 @@ function AvatarJugador({ nombre, foto }) {
   );
 }
 
+// =========================================
+// REACCIONES Y COMENTARIOS
+// =========================================
+
+function PublicacionInteracciones({
+  publicacion,
+  usuario,
+  jugadorAsignado,
+  esAdmin,
+  nombreJugador
+}) {
+  const [reacciones, setReacciones] = useState([]);
+  const [comentarios, setComentarios] = useState([]);
+
+  const [textoComentario, setTextoComentario] = useState("");
+  const [enviandoComentario, setEnviandoComentario] = useState(false);
+  const [reaccionando, setReaccionando] = useState(false);
+  const [eliminandoComentarioId, setEliminandoComentarioId] = useState("");
+
+  const [errorInteraccion, setErrorInteraccion] = useState("");
+  const [mensajeInteraccion, setMensajeInteraccion] = useState("");
+
+  const [mostrarComentarios, setMostrarComentarios] = useState(false);
+
+  const comentarioRef = useRef(null);
+
+  // =========================================
+  // ESCUCHAR REACCIONES EN TIEMPO REAL
+  // =========================================
+
+  useEffect(() => {
+    if (!usuario || !publicacion?.id) {
+      setReacciones([]);
+      return;
+    }
+
+    const reaccionesRef = collection(
+      db,
+      "publicaciones",
+      publicacion.id,
+      "reacciones"
+    );
+
+    const unsubscribe = onSnapshot(
+      reaccionesRef,
+      (snapshot) => {
+        const lista = snapshot.docs.map((documento) => ({
+          id: documento.id,
+          ...documento.data()
+        }));
+
+        setReacciones(lista);
+      },
+      (error) => {
+        console.error("Error al escuchar reacciones:", error);
+        setErrorInteraccion(
+          "No se pudieron cargar las reacciones."
+        );
+      }
+    );
+
+    return () => unsubscribe();
+  }, [usuario, publicacion.id]);
+
+  // =========================================
+  // ESCUCHAR COMENTARIOS EN TIEMPO REAL
+  // =========================================
+
+  useEffect(() => {
+    if (!usuario || !publicacion?.id) {
+      setComentarios([]);
+      return;
+    }
+
+    const comentariosRef = collection(
+      db,
+      "publicaciones",
+      publicacion.id,
+      "comentarios"
+    );
+
+    const comentariosQuery = query(
+      comentariosRef,
+      orderBy("createdAt", "asc")
+    );
+
+    const unsubscribe = onSnapshot(
+      comentariosQuery,
+      (snapshot) => {
+        const lista = snapshot.docs.map((documento) => ({
+          id: documento.id,
+          ...documento.data()
+        }));
+
+        setComentarios(lista);
+      },
+      (error) => {
+        console.error("Error al escuchar comentarios:", error);
+        setErrorInteraccion(
+          "No se pudieron cargar los comentarios."
+        );
+      }
+    );
+
+    return () => unsubscribe();
+  }, [usuario, publicacion.id]);
+
+  const miReaccion = reacciones.find(
+    (reaccion) => reaccion.uid === usuario?.uid
+  );
+
+  const puedeInteractuar = Boolean(usuario && jugadorAsignado);
+
+  // =========================================
+  // REGISTRAR, CAMBIAR O RETIRAR REACCIÓN
+  // =========================================
+
+  const gestionarReaccion = async (tipo) => {
+    if (!usuario || !jugadorAsignado || reaccionando) return;
+
+    setErrorInteraccion("");
+    setMensajeInteraccion("");
+    setReaccionando(true);
+
+    try {
+      const reaccionRef = doc(
+        db,
+        "publicaciones",
+        publicacion.id,
+        "reacciones",
+        usuario.uid
+      );
+
+      if (miReaccion?.tipo === tipo) {
+        await deleteDoc(reaccionRef);
+      } else {
+        const datosReaccion = {
+          uid: usuario.uid,
+          nombre: nombreJugador || usuario.displayName || "JUGADOR",
+          tipo,
+          updatedAt: serverTimestamp()
+        };
+
+        if (!miReaccion) {
+          datosReaccion.createdAt = serverTimestamp();
+        }
+
+        await setDoc(reaccionRef, datosReaccion, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error al guardar reacción:", error);
+
+      setErrorInteraccion(
+        error.code === "permission-denied"
+          ? "Firebase no permite registrar esta reacción. Revisa las reglas de Firestore."
+          : "No se pudo guardar tu reacción. Inténtalo nuevamente."
+      );
+    } finally {
+      setReaccionando(false);
+    }
+  };
+
+  // =========================================
+  // PUBLICAR COMENTARIO
+  // =========================================
+
+  const publicarComentario = async (event) => {
+    event.preventDefault();
+
+    if (!usuario || !jugadorAsignado || enviandoComentario) return;
+
+    const texto = textoComentario.trim();
+
+    if (!texto) {
+      setErrorInteraccion("Escribe un comentario antes de enviarlo.");
+      return;
+    }
+
+    if (texto.length > MAX_COMENTARIO) {
+      setErrorInteraccion(
+        "El comentario no puede superar los 300 caracteres."
+      );
+      return;
+    }
+
+    setErrorInteraccion("");
+    setMensajeInteraccion("");
+    setEnviandoComentario(true);
+
+    try {
+      const comentariosRef = collection(
+        db,
+        "publicaciones",
+        publicacion.id,
+        "comentarios"
+      );
+
+      await addDoc(comentariosRef, {
+        uid: usuario.uid,
+        nombre: nombreJugador || usuario.displayName || "JUGADOR",
+        texto,
+        createdAt: serverTimestamp()
+      });
+
+      setTextoComentario("");
+      setMostrarComentarios(true);
+      setMensajeInteraccion("Comentario publicado.");
+    } catch (error) {
+      console.error("Error al publicar comentario:", error);
+
+      setErrorInteraccion(
+        error.code === "permission-denied"
+          ? "Firebase no permite publicar comentarios. Revisa las reglas de Firestore."
+          : "No se pudo publicar el comentario. Inténtalo nuevamente."
+      );
+    } finally {
+      setEnviandoComentario(false);
+    }
+  };
+
+  // =========================================
+  // ELIMINAR COMENTARIO
+  // =========================================
+
+  const eliminarComentario = async (comentario) => {
+    if (!usuario || !comentario?.id) return;
+
+    const esAutor = comentario.uid === usuario.uid;
+
+    if (!esAutor && !esAdmin) return;
+
+    const confirmar = window.confirm(
+      "¿Deseas eliminar este comentario?"
+    );
+
+    if (!confirmar) return;
+
+    setErrorInteraccion("");
+    setMensajeInteraccion("");
+    setEliminandoComentarioId(comentario.id);
+
+    try {
+      const comentarioRef = doc(
+        db,
+        "publicaciones",
+        publicacion.id,
+        "comentarios",
+        comentario.id
+      );
+
+      await deleteDoc(comentarioRef);
+
+      setMensajeInteraccion("Comentario eliminado.");
+    } catch (error) {
+      console.error("Error al eliminar comentario:", error);
+
+      setErrorInteraccion(
+        error.code === "permission-denied"
+          ? "No tienes permiso para eliminar este comentario según las reglas de Firestore."
+          : "No se pudo eliminar el comentario."
+      );
+    } finally {
+      setEliminandoComentarioId("");
+    }
+  };
+
+  const totalReacciones = reacciones.length;
+
+  const resumenReacciones = TIPOS_REACCION.map((tipo) => ({
+    ...tipo,
+    cantidad: reacciones.filter(
+      (reaccion) => reaccion.tipo === tipo.tipo
+    ).length
+  })).filter((tipo) => tipo.cantidad > 0);
+
+  return (
+    <section className="publicacion-interacciones">
+
+      {/* RESUMEN DE REACCIONES */}
+
+      <div className="publicacion-resumen-interacciones">
+
+        <div className="publicacion-resumen-reacciones">
+          {resumenReacciones.length > 0 ? (
+            <>
+              <span className="publicacion-reacciones-emojis">
+                {resumenReacciones.map((reaccion) => (
+                  <span key={reaccion.tipo}>
+                    {reaccion.emoji}
+                  </span>
+                ))}
+              </span>
+
+              <span>
+                {totalReacciones}{" "}
+                {totalReacciones === 1 ? "reacción" : "reacciones"}
+              </span>
+            </>
+          ) : (
+            <span>Sé el primero en reaccionar</span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="publicacion-comentarios-contador"
+          onClick={() => setMostrarComentarios((actual) => !actual)}
+        >
+          {comentarios.length}{" "}
+          {comentarios.length === 1 ? "comentario" : "comentarios"}
+        </button>
+
+      </div>
+
+      {/* BOTONES DE REACCIÓN */}
+
+      <div className="publicacion-reacciones">
+
+        {TIPOS_REACCION.map((reaccion) => {
+          const activa = miReaccion?.tipo === reaccion.tipo;
+
+          return (
+            <button
+              key={reaccion.tipo}
+              type="button"
+              className={`publicacion-reaccion-btn ${
+                activa ? "activa" : ""
+              }`}
+              onClick={() => gestionarReaccion(reaccion.tipo)}
+              disabled={!puedeInteractuar || reaccionando}
+              title={
+                puedeInteractuar
+                  ? reaccion.nombre
+                  : "Necesitas ser un jugador asignado para reaccionar"
+              }
+              aria-pressed={activa}
+            >
+              <span>{reaccion.emoji}</span>
+              <span>{reaccion.nombre}</span>
+            </button>
+          );
+        })}
+
+      </div>
+
+      {!usuario && (
+        <p className="publicacion-interaccion-aviso">
+          Inicia sesión para reaccionar y comentar.
+        </p>
+      )}
+
+      {usuario && !jugadorAsignado && (
+        <p className="publicacion-interaccion-aviso">
+          Solo los jugadores asignados pueden reaccionar y comentar.
+        </p>
+      )}
+
+      {/* BOTÓN PARA MOSTRAR COMENTARIOS */}
+
+      <button
+        type="button"
+        className="publicacion-toggle-comentarios"
+        onClick={() => setMostrarComentarios((actual) => !actual)}
+      >
+        <span>💬</span>
+        {mostrarComentarios
+          ? "OCULTAR COMENTARIOS"
+          : "VER COMENTARIOS"}
+        <span className="publicacion-toggle-flecha">
+          {mostrarComentarios ? "▲" : "▼"}
+        </span>
+      </button>
+
+      {/* SECCIÓN DE COMENTARIOS */}
+
+      {mostrarComentarios && (
+        <div className="publicacion-comentarios">
+
+          {comentarios.length === 0 ? (
+            <div className="publicacion-comentarios-vacio">
+              Todavía no hay comentarios. ¡Inicia la conversación!
+            </div>
+          ) : (
+            <div className="publicacion-lista-comentarios">
+
+              {comentarios.map((comentario) => {
+                const esAutor = comentario.uid === usuario?.uid;
+                const puedeEliminarComentario =
+                  Boolean(esAutor || esAdmin);
+
+                return (
+                  <article
+                    key={comentario.id}
+                    className="publicacion-comentario"
+                  >
+
+                    <div className="publicacion-comentario-avatar">
+                      {obtenerIniciales(comentario.nombre || "JUGADOR")}
+                    </div>
+
+                    <div className="publicacion-comentario-contenido">
+
+                      <div className="publicacion-comentario-cabecera">
+                        <strong>
+                          {comentario.nombre || "JUGADOR"}
+                        </strong>
+
+                        <span>
+                          {formatearFecha(comentario.createdAt)}
+                        </span>
+                      </div>
+
+                      <p>{comentario.texto}</p>
+
+                      {puedeEliminarComentario && (
+                        <button
+                          type="button"
+                          className="publicacion-comentario-eliminar"
+                          disabled={
+                            eliminandoComentarioId === comentario.id
+                          }
+                          onClick={() => eliminarComentario(comentario)}
+                        >
+                          {eliminandoComentarioId === comentario.id
+                            ? "ELIMINANDO..."
+                            : "ELIMINAR"}
+                        </button>
+                      )}
+
+                    </div>
+
+                  </article>
+                );
+              })}
+
+            </div>
+          )}
+
+          {/* FORMULARIO DE COMENTARIO */}
+
+          {puedeInteractuar && (
+            <form
+              className="publicacion-comentario-form"
+              onSubmit={publicarComentario}
+            >
+
+              <textarea
+                ref={comentarioRef}
+                value={textoComentario}
+                onChange={(event) =>
+                  setTextoComentario(
+                    event.target.value.slice(0, MAX_COMENTARIO)
+                  )
+                }
+                placeholder="Escribe un comentario..."
+                maxLength={MAX_COMENTARIO}
+                rows={2}
+                disabled={enviandoComentario}
+              />
+
+              <div className="publicacion-comentario-form-footer">
+
+                <span>
+                  {textoComentario.length}/{MAX_COMENTARIO}
+                </span>
+
+                <button
+                  type="submit"
+                  disabled={
+                    enviandoComentario ||
+                    !textoComentario.trim()
+                  }
+                >
+                  {enviandoComentario
+                    ? "ENVIANDO..."
+                    : "PUBLICAR COMENTARIO"}
+                </button>
+
+              </div>
+
+            </form>
+          )}
+
+        </div>
+      )}
+
+      {/* MENSAJES DE ESTADO */}
+
+      {mensajeInteraccion && (
+        <p className="publicacion-interaccion-exito">
+          {mensajeInteraccion}
+        </p>
+      )}
+
+      {errorInteraccion && (
+        <p className="publicacion-interaccion-error">
+          {errorInteraccion}
+        </p>
+      )}
+
+    </section>
+  );
+}
+
+// =========================================
+// TARJETA DE PUBLICACIÓN
+// =========================================
+
 function TarjetaPublicacion({
   publicacion,
   perfil,
   puedeEliminar,
   eliminando,
-  onEliminar
+  onEliminar,
+  usuario,
+  jugadorAsignado,
+  esAdmin,
+  nombreJugador
 }) {
   const nombre =
     publicacion.nick ||
@@ -182,6 +706,16 @@ function TarjetaPublicacion({
         <span className="publicacion-footer-brand">LIGA4VS4</span>
       </div>
 
+      {/* REACCIONES Y COMENTARIOS */}
+
+      <PublicacionInteracciones
+        publicacion={publicacion}
+        usuario={usuario}
+        jugadorAsignado={jugadorAsignado}
+        esAdmin={esAdmin}
+        nombreJugador={nombreJugador}
+      />
+
       {puedeEliminar && (
         <div className="publicacion-acciones">
 
@@ -204,6 +738,10 @@ function TarjetaPublicacion({
   );
 }
 
+// =========================================
+// COMPONENTE PRINCIPAL
+// =========================================
+
 export default function Publicaciones() {
 
   const [usuario, setUsuario] = useState(auth.currentUser);
@@ -217,6 +755,7 @@ export default function Publicaciones() {
   const [jugadorAsignado, setJugadorAsignado] = useState(false);
   const [esAdmin, setEsAdmin] = useState(false);
   const [cargandoPermisos, setCargandoPermisos] = useState(true);
+  const [nombreJugador, setNombreJugador] = useState("");
 
   const [descripcion, setDescripcion] = useState("");
   const [archivo, setArchivo] = useState(null);
@@ -252,6 +791,7 @@ export default function Publicaciones() {
 
       setJugadorAsignado(false);
       setEsAdmin(false);
+      setNombreJugador("");
       setCargandoPermisos(true);
 
       if (!usuario) {
@@ -274,11 +814,16 @@ export default function Publicaciones() {
         if (jugadorSnapshot.exists()) {
           const jugador = jugadorSnapshot.data();
 
-          setJugadorAsignado(
+          const asignado =
             jugador.estado === "ASIGNADO" &&
             Boolean(jugador.nick?.trim()) &&
-            Boolean(jugador.equipo?.trim())
-          );
+            Boolean(jugador.equipo?.trim());
+
+          setJugadorAsignado(asignado);
+
+          if (asignado) {
+            setNombreJugador(jugador.nick.trim());
+          }
         }
 
         if (adminSnapshot.exists()) {
@@ -297,6 +842,7 @@ export default function Publicaciones() {
         if (activo) {
           setJugadorAsignado(false);
           setEsAdmin(false);
+          setNombreJugador("");
         }
 
       } finally {
@@ -884,6 +1430,10 @@ export default function Publicaciones() {
               puedeEliminar={puedeEliminar}
               eliminando={eliminandoId === publicacion.id}
               onEliminar={eliminarPublicacion}
+              usuario={usuario}
+              jugadorAsignado={jugadorAsignado}
+              esAdmin={esAdmin}
+              nombreJugador={nombreJugador}
             />
           );
         })}
